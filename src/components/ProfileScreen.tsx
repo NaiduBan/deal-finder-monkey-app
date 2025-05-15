@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, User, MapPin, Bell, Heart, Ticket, CreditCard, LogOut, ChevronRight } from 'lucide-react';
+import { ChevronLeft, User, MapPin, Bell, Heart, Ticket, CreditCard, LogOut, ChevronRight, Settings } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 import { useToast } from '@/hooks/use-toast';
 import { mockUser, mockOffers } from '@/mockData';
@@ -48,7 +48,9 @@ const ProfileScreen = () => {
           <ChevronLeft className="w-6 h-6" />
         </Link>
         <h1 className="text-xl font-semibold">My Profile</h1>
-        <div className="w-6"></div> {/* For alignment */}
+        <Link to="/settings">
+          <Settings className="w-6 h-6" />
+        </Link>
       </div>
       
       {/* Profile info */}

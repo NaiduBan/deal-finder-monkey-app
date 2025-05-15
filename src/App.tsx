@@ -15,6 +15,8 @@ import CategoryScreen from "./components/CategoryScreen";
 import OfferDetailScreen from "./components/OfferDetailScreen";
 import ChatbotScreen from "./components/ChatbotScreen";
 import ProfileScreen from "./components/ProfileScreen";
+import SettingsScreen from "./components/SettingsScreen";
+import PreferenceScreen from "./components/PreferenceScreen";
 import BottomNavigation from "./components/BottomNavigation";
 import { useLocation } from "react-router-dom";
 
@@ -53,6 +55,8 @@ const App = () => (
                   <Route path="/offer/:offerId" element={<OfferDetailScreen />} />
                   <Route path="/chatbot" element={<ChatbotScreen />} />
                   <Route path="/profile" element={<ProfileScreen />} />
+                  <Route path="/settings" element={<SettingsScreen />} />
+                  <Route path="/preferences/:preferenceType" element={<PreferenceScreen />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </AppLayout>
