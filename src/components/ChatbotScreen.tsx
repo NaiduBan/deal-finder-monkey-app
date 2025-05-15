@@ -7,6 +7,7 @@ import { mockChatMessages } from '@/mockData';
 import { Link } from 'react-router-dom';
 import { Message } from '@/types';
 import { toast } from "@/components/ui/use-toast";
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const ChatbotScreen = () => {
   const [messages, setMessages] = useState<Message[]>(mockChatMessages);
@@ -22,8 +23,8 @@ const ChatbotScreen = () => {
     scrollToBottom();
   }, [messages]);
   
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendMessage = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     
     if (!input.trim()) return;
     
@@ -36,6 +37,7 @@ const ChatbotScreen = () => {
     };
     
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = input; // Store current input before clearing
     setInput('');
     setIsTyping(true);
     
@@ -44,7 +46,7 @@ const ChatbotScreen = () => {
       let botResponse: string;
       
       // Enhanced response logic based on keywords
-      const lowercaseInput = input.toLowerCase();
+      const lowercaseInput = currentInput.toLowerCase();
       if (lowercaseInput.includes('deal') || lowercaseInput.includes('offer')) {
         botResponse = "I found several great deals nearby! 🎉\n\n• Electronics: 30% off Samsung devices\n• Grocery: BOGO deals at Whole Foods\n• Fashion: 50% off at Nike\n\nWhich category interests you most?";
       } else if (lowercaseInput.includes('electronic') || lowercaseInput.includes('phone')) {
@@ -89,6 +91,13 @@ const ChatbotScreen = () => {
     }, 1500);
   };
 
+  // Handle Enter key press
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSendMessage();
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-monkeyBackground">
       {/* Header */}
@@ -103,8 +112,8 @@ const ChatbotScreen = () => {
       </div>
       
       {/* Messages container */}
-      <div className="flex-1 p-4 overflow-y-auto bg-gradient-to-b from-green-50 to-yellow-50">
-        <div className="space-y-4">
+      <ScrollArea className="flex-1 p-4 overflow-y-auto bg-gradient-to-b from-green-50 to-yellow-50">
+        <div className="space-y-4 pb-2">
           {messages.map((message) => (
             <div
               key={message.id}
@@ -138,7 +147,7 @@ const ChatbotScreen = () => {
           )}
           <div ref={messagesEndRef} />
         </div>
-      </div>
+      </ScrollArea>
       
       {/* Input area */}
       <form onSubmit={handleSendMessage} className="p-4 bg-white shadow-up border-t border-gray-100">
@@ -147,7 +156,9 @@ const ChatbotScreen = () => {
             placeholder="Ask about deals near you..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyPress={handleKeyPress}
             className="flex-1 border-gray-200 focus:border-monkeyGreen"
+            autoFocus
           />
           <Button 
             type="button"
