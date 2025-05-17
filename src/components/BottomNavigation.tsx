@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Search, MessageCircle, User, SlidersHorizontal } from 'lucide-react';
+import { Home, Search, MessageCircle, User, ShoppingBag, Store, CreditCard } from 'lucide-react';
 
 const BottomNavigation = () => {
   const location = useLocation();
@@ -17,12 +17,14 @@ const BottomNavigation = () => {
     { path: '/home', icon: Home, label: 'Home' },
     { path: '/search', icon: Search, label: 'Search' },
     { path: '/chatbot', icon: MessageCircle, label: 'Assistant' },
-    { path: '/preferences', icon: SlidersHorizontal, label: 'Preferences' },
+    { path: '/preferences/brands', icon: ShoppingBag, label: 'Brands' },
+    { path: '/preferences/stores', icon: Store, label: 'Stores' },
+    { path: '/preferences/banks', icon: CreditCard, label: 'Banks' },
     { path: '/profile', icon: User, label: 'Profile' }
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-10 bg-white border-t">
+    <div className="fixed bottom-0 left-0 right-0 z-10 bg-white border-t overflow-x-auto">
       <div className="flex justify-around items-center">
         {navItems.map((item) => {
           const active = isActive(item.path);
@@ -32,12 +34,12 @@ const BottomNavigation = () => {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex flex-col items-center py-2 px-2 ${
+              className={`flex flex-col items-center py-2 px-1 ${
                 active ? 'text-monkeyYellow' : 'text-gray-600'
               }`}
             >
               <div className={`p-1 rounded-full ${active ? 'bg-monkeyGreen' : ''}`}>
-                <IconComponent className="w-5 h-5" />
+                <IconComponent className="w-4 h-4" />
               </div>
               <span className="text-xs mt-1">{item.label}</span>
             </Link>
