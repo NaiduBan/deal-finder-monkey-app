@@ -17,6 +17,7 @@ import ChatbotScreen from "./components/ChatbotScreen";
 import ProfileScreen from "./components/ProfileScreen";
 import SettingsScreen from "./components/SettingsScreen";
 import PreferenceScreen from "./components/PreferenceScreen";
+import SearchPreferencesScreen from "./components/SearchPreferencesScreen";
 import BottomNavigation from "./components/BottomNavigation";
 import { useLocation } from "react-router-dom";
 
@@ -51,6 +52,8 @@ const App = () => (
                   <Route path="/splash" element={<SplashScreen />} />
                   <Route path="/login" element={<LoginScreen />} />
                   <Route path="/home" element={<HomeScreen />} />
+                  <Route path="/search" element={<SearchPreferencesScreen />} />
+                  <Route path="/preferences" element={<SearchPreferencesScreen />} />
                   <Route path="/category/:categoryId" element={<CategoryScreen />} />
                   <Route path="/offer/:offerId" element={<OfferDetailScreen />} />
                   <Route path="/chatbot" element={<ChatbotScreen />} />

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Search, MessageCircle, User } from 'lucide-react';
+import { Home, Search, MessageCircle, User, SlidersHorizontal } from 'lucide-react';
 
 const BottomNavigation = () => {
   const location = useLocation();
@@ -17,6 +17,7 @@ const BottomNavigation = () => {
     { path: '/home', icon: Home, label: 'Home' },
     { path: '/search', icon: Search, label: 'Search' },
     { path: '/chatbot', icon: MessageCircle, label: 'Assistant' },
+    { path: '/preferences', icon: SlidersHorizontal, label: 'Preferences' },
     { path: '/profile', icon: User, label: 'Profile' }
   ];
 
@@ -31,7 +32,7 @@ const BottomNavigation = () => {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex flex-col items-center py-2 px-3 ${
+              className={`flex flex-col items-center py-2 px-2 ${
                 active ? 'text-monkeyYellow' : 'text-gray-600'
               }`}
             >
