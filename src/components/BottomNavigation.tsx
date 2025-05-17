@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Search, MessageCircle, User, ShoppingBag, Store, CreditCard } from 'lucide-react';
+import { Home, Search, MessageCircle, User, SlidersHorizontal } from 'lucide-react';
 
 const BottomNavigation = () => {
   const location = useLocation();
@@ -17,9 +17,7 @@ const BottomNavigation = () => {
     { path: '/home', icon: Home, label: 'Home' },
     { path: '/search', icon: Search, label: 'Search' },
     { path: '/chatbot', icon: MessageCircle, label: 'Assistant' },
-    { path: '/preferences/brands', icon: ShoppingBag, label: 'Brands' },
-    { path: '/preferences/stores', icon: Store, label: 'Stores' },
-    { path: '/preferences/banks', icon: CreditCard, label: 'Banks' },
+    { path: '/preferences', icon: SlidersHorizontal, label: 'Preferences' },
     { path: '/profile', icon: User, label: 'Profile' }
   ];
 
@@ -34,12 +32,12 @@ const BottomNavigation = () => {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex flex-col items-center py-2 px-1 ${
+              className={`flex flex-col items-center py-2 px-2 ${
                 active ? 'text-monkeyYellow' : 'text-gray-600'
               }`}
             >
               <div className={`p-1 rounded-full ${active ? 'bg-monkeyGreen' : ''}`}>
-                <IconComponent className="w-4 h-4" />
+                <IconComponent className="w-5 h-5" />
               </div>
               <span className="text-xs mt-1">{item.label}</span>
             </Link>

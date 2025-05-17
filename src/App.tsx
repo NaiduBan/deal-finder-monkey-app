@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -53,13 +53,13 @@ const App = () => (
                   <Route path="/login" element={<LoginScreen />} />
                   <Route path="/home" element={<HomeScreen />} />
                   <Route path="/search" element={<SearchPreferencesScreen />} />
-                  <Route path="/preferences" element={<SearchPreferencesScreen />} />
+                  <Route path="/preferences" element={<Navigate to="/preferences/brands" replace />} />
+                  <Route path="/preferences/:preferenceType" element={<PreferenceScreen />} />
                   <Route path="/category/:categoryId" element={<CategoryScreen />} />
                   <Route path="/offer/:offerId" element={<OfferDetailScreen />} />
                   <Route path="/chatbot" element={<ChatbotScreen />} />
                   <Route path="/profile" element={<ProfileScreen />} />
                   <Route path="/settings" element={<SettingsScreen />} />
-                  <Route path="/preferences/:preferenceType" element={<PreferenceScreen />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </AppLayout>
