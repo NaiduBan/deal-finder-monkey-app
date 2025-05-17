@@ -5,6 +5,7 @@ import { Search, MapPin } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockCategories, mockOffers, mockBanners } from '@/mockData';
+import { useUser } from '@/contexts/UserContext';
 import OfferCard from './OfferCard';
 import CategoryItem from './CategoryItem';
 import BannerCarousel from './BannerCarousel';
@@ -12,6 +13,7 @@ import BannerCarousel from './BannerCarousel';
 const HomeScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { user } = useUser();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +39,9 @@ const HomeScreen = () => {
             <span className="text-sm">San Francisco, CA</span>
           </div>
           <div className="flex items-center space-x-1">
-            <span className="text-xs bg-monkeyYellow text-black px-2 py-0.5 rounded-full">250 pts</span>
+            <span className="text-xs bg-monkeyYellow text-black px-2 py-0.5 rounded-full">
+              {user.points} pts
+            </span>
           </div>
         </div>
         

@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import { UserProvider } from "./contexts/UserContext";
 
 // Components
 import SplashScreen from "./components/SplashScreen";
@@ -18,6 +19,7 @@ import ProfileScreen from "./components/ProfileScreen";
 import SettingsScreen from "./components/SettingsScreen";
 import PreferenceScreen from "./components/PreferenceScreen";
 import SearchPreferencesScreen from "./components/SearchPreferencesScreen";
+import PointsHistoryScreen from "./components/PointsHistoryScreen";
 import BottomNavigation from "./components/BottomNavigation";
 import { useLocation } from "react-router-dom";
 
@@ -39,34 +41,37 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route 
-            path="*" 
-            element={
-              <AppLayout>
-                <Routes>
-                  <Route path="/splash" element={<SplashScreen />} />
-                  <Route path="/login" element={<LoginScreen />} />
-                  <Route path="/home" element={<HomeScreen />} />
-                  <Route path="/search" element={<SearchPreferencesScreen />} />
-                  <Route path="/preferences" element={<Navigate to="/preferences/brands" replace />} />
-                  <Route path="/preferences/:preferenceType" element={<PreferenceScreen />} />
-                  <Route path="/category/:categoryId" element={<CategoryScreen />} />
-                  <Route path="/offer/:offerId" element={<OfferDetailScreen />} />
-                  <Route path="/chatbot" element={<ChatbotScreen />} />
-                  <Route path="/profile" element={<ProfileScreen />} />
-                  <Route path="/settings" element={<SettingsScreen />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </AppLayout>
-            } 
-          />
-        </Routes>
-      </BrowserRouter>
+      <UserProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route 
+              path="*" 
+              element={
+                <AppLayout>
+                  <Routes>
+                    <Route path="/splash" element={<SplashScreen />} />
+                    <Route path="/login" element={<LoginScreen />} />
+                    <Route path="/home" element={<HomeScreen />} />
+                    <Route path="/search" element={<SearchPreferencesScreen />} />
+                    <Route path="/preferences" element={<Navigate to="/preferences/brands" replace />} />
+                    <Route path="/preferences/:preferenceType" element={<PreferenceScreen />} />
+                    <Route path="/category/:categoryId" element={<CategoryScreen />} />
+                    <Route path="/offer/:offerId" element={<OfferDetailScreen />} />
+                    <Route path="/chatbot" element={<ChatbotScreen />} />
+                    <Route path="/profile" element={<ProfileScreen />} />
+                    <Route path="/settings" element={<SettingsScreen />} />
+                    <Route path="/points" element={<PointsHistoryScreen />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </AppLayout>
+              } 
+            />
+          </Routes>
+        </BrowserRouter>
+      </UserProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

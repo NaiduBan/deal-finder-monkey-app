@@ -4,11 +4,12 @@ import { Link } from 'react-router-dom';
 import { ChevronLeft, User, MapPin, Bell, Heart, Ticket, CreditCard, LogOut, ChevronRight, Settings } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 import { useToast } from '@/hooks/use-toast';
-import { mockUser, mockOffers } from '@/mockData';
+import { mockOffers } from '@/mockData';
+import { useUser } from '@/contexts/UserContext';
 
 const ProfileScreen = () => {
   const { toast } = useToast();
-  const [user, setUser] = useState(mockUser);
+  const { user, updatePoints } = useUser();
   const [notifications, setNotifications] = useState({
     offers: true,
     expiry: true,
@@ -23,10 +24,20 @@ const ProfileScreen = () => {
     setNotifications(prev => {
       const newSettings = { ...prev, [type]: !prev[type] };
       
-      toast({
-        title: `${type} notifications ${newSettings[type] ? 'enabled' : 'disabled'}`,
-        description: `You will ${newSettings[type] ? 'now' : 'no longer'} receive ${type} notifications`,
-      });
+      // Give points for enabling notifications
+      if (newSettings[type] && !prev[type]) {
+        updatePoints(10);
+        
+        toast({
+          title: `${type} notifications enabled`,
+          description: `You received 10 points for enabling ${type} notifications!`,
+        });
+      } else {
+        toast({
+          title: `${type} notifications ${newSettings[type] ? 'enabled' : 'disabled'}`,
+          description: `You will ${newSettings[type] ? 'now' : 'no longer'} receive ${type} notifications`,
+        });
+      }
       
       return newSettings;
     });
