@@ -1,50 +1,10 @@
-
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ChevronLeft, Search, Check } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-
-// Mock data - in a real app, this would come from an API
-const mockBrands = [
-  { id: 'b1', name: 'Nike', logo: '🏷️' },
-  { id: 'b2', name: 'Adidas', logo: '🏷️' },
-  { id: 'b3', name: 'Apple', logo: '🏷️' },
-  { id: 'b4', name: 'Samsung', logo: '🏷️' },
-  { id: 'b5', name: 'Amazon', logo: '🏷️' },
-  { id: 'b6', name: 'Sony', logo: '🏷️' },
-  { id: 'b7', name: 'Microsoft', logo: '🏷️' },
-  { id: 'b8', name: 'H&M', logo: '🏷️' },
-  { id: 'b9', name: 'Zara', logo: '🏷️' },
-  { id: 'b10', name: 'IKEA', logo: '🏷️' },
-];
-
-const mockStores = [
-  { id: 's1', name: 'Walmart', logo: '🏬' },
-  { id: 's2', name: 'Target', logo: '🏬' },
-  { id: 's3', name: 'Best Buy', logo: '🏬' },
-  { id: 's4', name: 'Walgreens', logo: '🏬' },
-  { id: 's5', name: 'CVS', logo: '🏬' },
-  { id: 's6', name: 'Costco', logo: '🏬' },
-  { id: 's7', name: 'Kroger', logo: '🏬' },
-  { id: 's8', name: 'Whole Foods', logo: '🏬' },
-  { id: 's9', name: 'Home Depot', logo: '🏬' },
-  { id: 's10', name: 'Lowe\'s', logo: '🏬' },
-];
-
-const mockBanks = [
-  { id: 'bk1', name: 'Bank of America', logo: '🏦' },
-  { id: 'bk2', name: 'Chase', logo: '🏦' },
-  { id: 'bk3', name: 'Wells Fargo', logo: '🏦' },
-  { id: 'bk4', name: 'Citibank', logo: '🏦' },
-  { id: 'bk5', name: 'Capital One', logo: '🏦' },
-  { id: 'bk6', name: 'American Express', logo: '🏦' },
-  { id: 'bk7', name: 'Discover', logo: '🏦' },
-  { id: 'bk8', name: 'TD Bank', logo: '🏦' },
-  { id: 'bk9', name: 'US Bank', logo: '🏦' },
-  { id: 'bk10', name: 'PNC Bank', logo: '🏦' },
-];
+import { mockBrands, mockStores, mockBanks } from '@/mockData';
 
 const PreferenceScreen = () => {
   const { preferenceType } = useParams<{ preferenceType: string }>();
