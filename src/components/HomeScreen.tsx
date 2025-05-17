@@ -39,9 +39,11 @@ const HomeScreen = () => {
             <span className="text-sm">San Francisco, CA</span>
           </div>
           <div className="flex items-center space-x-1">
-            <span className="text-xs bg-monkeyYellow text-black px-2 py-0.5 rounded-full">
-              {user.points} pts
-            </span>
+            <Link to="/points" className="flex items-center">
+              <span className="text-xs bg-monkeyYellow text-black px-2 py-0.5 rounded-full">
+                {user.points} pts
+              </span>
+            </Link>
           </div>
         </div>
         
