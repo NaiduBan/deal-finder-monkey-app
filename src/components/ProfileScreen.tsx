@@ -1,8 +1,11 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, User, MapPin, Bell, Heart, Ticket, CreditCard, LogOut, ChevronRight, Settings } from 'lucide-react';
+import { ChevronLeft, User, MapPin, Bell, Heart, Settings, Edit, ChevronRight, LogOut } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useToast } from '@/hooks/use-toast';
 import { mockOffers } from '@/mockData';
 import { useUser } from '@/contexts/UserContext';
@@ -15,6 +18,11 @@ const ProfileScreen = () => {
     expiry: true,
     location: false,
   });
+  
+  // Profile edit state
+  const [profileName, setProfileName] = useState(user.name);
+  const [profilePhone, setProfilePhone] = useState(user.phone);
+  const [profileLocation, setProfileLocation] = useState(user.location);
   
   const savedOffers = mockOffers.filter(offer => 
     user.savedOffers.includes(offer.id)
@@ -43,6 +51,20 @@ const ProfileScreen = () => {
     });
   };
   
+  const handleProfileUpdate = () => {
+    toast({
+      title: "Profile updated",
+      description: "Your profile information has been updated",
+    });
+  };
+  
+  const handleLocationUpdate = () => {
+    toast({
+      title: "Location updated",
+      description: "Your location has been updated",
+    });
+  };
+  
   const handleLogout = () => {
     toast({
       title: 'Logged out successfully',
@@ -65,7 +87,7 @@ const ProfileScreen = () => {
       </div>
       
       {/* Profile info */}
-      <div className="bg-white p-6 flex items-center space-x-4 shadow-sm">
+      <div className="bg-white p-6 flex items-center space-x-4 shadow-sm relative">
         <div className="bg-monkeyGreen/10 rounded-full p-3">
           <User className="w-12 h-12 text-monkeyGreen" />
         </div>
@@ -77,20 +99,72 @@ const ProfileScreen = () => {
             {user.location}
           </div>
         </div>
+        
+        <Dialog>
+          <DialogTrigger asChild>
+            <button className="absolute top-4 right-4 p-2 rounded-full bg-gray-100">
+              <Edit className="w-4 h-4 text-gray-600" />
+            </button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Profile</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label htmlFor="name" className="text-sm font-medium leading-none">Name</label>
+                <Input 
+                  id="name" 
+                  value={profileName} 
+                  onChange={(e) => setProfileName(e.target.value)} 
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="phone" className="text-sm font-medium leading-none">Phone</label>
+                <Input 
+                  id="phone" 
+                  value={profilePhone} 
+                  onChange={(e) => setProfilePhone(e.target.value)} 
+                />
+              </div>
+              <Button onClick={handleProfileUpdate} className="w-full bg-monkeyGreen hover:bg-monkeyGreen/90">Save Changes</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
       
-      {/* Points card */}
-      <div className="mx-4 mt-4 p-4 bg-monkeyGreen rounded-xl text-white flex justify-between items-center">
-        <div>
-          <p className="text-sm opacity-90">Loyalty Points</p>
-          <p className="text-2xl font-bold">{user.points} pts</p>
-        </div>
-        <Link 
-          to="/points" 
-          className="bg-monkeyYellow text-black px-3 py-1 rounded-full text-sm font-semibold"
-        >
-          Redeem
-        </Link>
+      {/* Location Edit */}
+      <div className="m-4 bg-white rounded-xl p-4 shadow-sm">
+        <h3 className="font-semibold text-lg mb-2 flex items-center">
+          <MapPin className="w-5 h-5 mr-2 text-monkeyGreen" /> 
+          Location
+        </h3>
+        
+        <Dialog>
+          <DialogTrigger asChild>
+            <div className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+              <span>{user.location}</span>
+              <ChevronRight className="w-5 h-5 text-gray-400" />
+            </div>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Update Location</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label htmlFor="location" className="text-sm font-medium leading-none">Location</label>
+                <Input 
+                  id="location" 
+                  value={profileLocation} 
+                  onChange={(e) => setProfileLocation(e.target.value)} 
+                  placeholder="Enter your city, state"
+                />
+              </div>
+              <Button onClick={handleLocationUpdate} className="w-full bg-monkeyGreen hover:bg-monkeyGreen/90">Update Location</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
       
       {/* Saved offers */}

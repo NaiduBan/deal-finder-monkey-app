@@ -20,6 +20,7 @@ import SettingsScreen from "./components/SettingsScreen";
 import PreferenceScreen from "./components/PreferenceScreen";
 import SearchPreferencesScreen from "./components/SearchPreferencesScreen";
 import PointsHistoryScreen from "./components/PointsHistoryScreen";
+import NotificationsScreen from "./components/NotificationsScreen";
 import BottomNavigation from "./components/BottomNavigation";
 import { useLocation } from "react-router-dom";
 
@@ -64,6 +65,7 @@ const App = () => (
                     <Route path="/profile" element={<ProfileScreen />} />
                     <Route path="/settings" element={<SettingsScreen />} />
                     <Route path="/points" element={<PointsHistoryScreen />} />
+                    <Route path="/notifications" element={<NotificationsScreen />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </AppLayout>

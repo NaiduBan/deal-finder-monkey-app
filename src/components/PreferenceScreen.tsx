@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Search, ShoppingBag, Store, CreditCard } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { mockBrands, mockStores, mockBanks } from '@/mockData';
@@ -125,25 +125,49 @@ const PreferenceScreen = () => {
               </div>
             </div>
           
-            {/* List of items based on active tab */}
+            {/* Selected items as bubbles */}
+            <div className="px-4 py-3">
+              <h3 className="text-sm text-gray-600 mb-2">Selected {title}</h3>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {selectedItems.length > 0 ? (
+                  filteredData
+                    .filter(item => selectedItems.includes(item.id))
+                    .map(item => (
+                      <Badge 
+                        key={item.id}
+                        variant="outline" 
+                        className="bg-monkeyGreen/10 text-monkeyGreen border-monkeyGreen/30 px-3 py-1"
+                        onClick={() => toggleSelection(item.id)}
+                      >
+                        {item.logo} {item.name}
+                      </Badge>
+                    ))
+                ) : (
+                  <p className="text-sm text-gray-500">No {title.toLowerCase()} selected</p>
+                )}
+              </div>
+            </div>
+            
+            {/* List of available items */}
             <div className="px-4 space-y-2 mt-2">
+              <h3 className="text-sm text-gray-600 mb-2">Available {title}</h3>
+              
               {filteredData.length > 0 ? (
-                filteredData.map((item) => (
-                  <div 
-                    key={item.id}
-                    className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm"
-                  >
-                    <div className="flex items-center">
-                      <span className="text-2xl mr-3">{item.logo}</span>
-                      <span className="font-medium">{item.name}</span>
-                    </div>
-                    <Checkbox 
-                      checked={selectedItems.includes(item.id)} 
-                      onCheckedChange={() => toggleSelection(item.id)}
-                      className="border-monkeyGreen text-monkeyGreen"
-                    />
-                  </div>
-                ))
+                <div className="flex flex-wrap gap-2">
+                  {filteredData
+                    .filter(item => !selectedItems.includes(item.id))
+                    .map((item) => (
+                      <Badge 
+                        key={item.id}
+                        variant="outline" 
+                        className="bg-white hover:bg-gray-100 text-gray-800 cursor-pointer px-3 py-1"
+                        onClick={() => toggleSelection(item.id)}
+                      >
+                        {item.logo} {item.name}
+                      </Badge>
+                    ))
+                  }
+                </div>
               ) : (
                 <div className="text-center py-6 text-gray-500">
                   No results found. Try a different search term.

@@ -2,12 +2,6 @@ import { Offer, Category, User, BannerItem } from "./types";
 
 export const mockCategories: Category[] = [
   {
-    id: "supermarket",
-    name: "Supermarket",
-    icon: "shopping-cart",
-    subcategories: ["Groceries", "Bakery", "Dairy", "Meat"]
-  },
-  {
     id: "electronics",
     name: "Electronics",
     icon: "laptop",
@@ -36,6 +30,24 @@ export const mockCategories: Category[] = [
     name: "Online",
     icon: "globe",
     subcategories: ["Amazon", "eBay", "Walmart", "Target"]
+  },
+  {
+    id: "beauty",
+    name: "Beauty",
+    icon: "sparkles",
+    subcategories: ["Skincare", "Makeup", "Haircare", "Fragrance"]
+  },
+  {
+    id: "health",
+    name: "Health",
+    icon: "heart",
+    subcategories: ["Supplements", "Fitness", "Medical", "Wellness"]
+  },
+  {
+    id: "travel",
+    name: "Travel",
+    icon: "plane",
+    subcategories: ["Hotels", "Flights", "Cruises", "Car Rentals"]
   }
 ];
 
@@ -240,6 +252,11 @@ export const mockBrands = [
   { id: 'b8', name: 'H&M', logo: '🏷️' },
   { id: 'b9', name: 'Zara', logo: '🏷️' },
   { id: 'b10', name: 'IKEA', logo: '🏷️' },
+  { id: 'b11', name: 'Lenovo', logo: '🏷️' },
+  { id: 'b12', name: 'Dell', logo: '🏷️' },
+  { id: 'b13', name: 'HP', logo: '🏷️' },
+  { id: 'b14', name: 'Asus', logo: '🏷️' },
+  { id: 'b15', name: 'LG', logo: '🏷️' },
 ];
 
 export const mockStores = [
@@ -253,6 +270,11 @@ export const mockStores = [
   { id: 's8', name: 'Whole Foods', logo: '🏬' },
   { id: 's9', name: 'Home Depot', logo: '🏬' },
   { id: 's10', name: 'Lowe\'s', logo: '🏬' },
+  { id: 's11', name: 'Macy\'s', logo: '🏬' },
+  { id: 's12', name: 'Nordstrom', logo: '🏬' },
+  { id: 's13', name: 'Apple Store', logo: '🏬' },
+  { id: 's14', name: 'GameStop', logo: '🏬' },
+  { id: 's15', name: 'Nike Store', logo: '🏬' },
 ];
 
 export const mockBanks = [
@@ -266,4 +288,9 @@ export const mockBanks = [
   { id: 'bk8', name: 'TD Bank', logo: '🏦' },
   { id: 'bk9', name: 'US Bank', logo: '🏦' },
   { id: 'bk10', name: 'PNC Bank', logo: '🏦' },
+  { id: 'bk11', name: 'HSBC', logo: '🏦' },
+  { id: 'bk12', name: 'Santander', logo: '🏦' },
+  { id: 'bk13', name: 'Citizens Bank', logo: '🏦' },
+  { id: 'bk14', name: 'Ally Bank', logo: '🏦' },
+  { id: 'bk15', name: 'Barclays', logo: '🏦' },
 ];

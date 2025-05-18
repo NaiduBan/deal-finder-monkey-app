@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Category } from '@/types';
-import { ShoppingCart, Laptop, ShoppingBag, Home, Globe } from 'lucide-react';
+import { ShoppingCart, Laptop, ShoppingBag, Home, Globe, Heart, Sparkles, Plane } from 'lucide-react';
 
 interface CategoryItemProps {
   category: Category;
@@ -22,6 +22,12 @@ const CategoryItem = ({ category }: CategoryItemProps) => {
         return <Home className="w-6 h-6 text-monkeyGreen" />;
       case 'globe':
         return <Globe className="w-6 h-6 text-monkeyGreen" />;
+      case 'heart':
+        return <Heart className="w-6 h-6 text-monkeyGreen" />;
+      case 'sparkles':
+        return <Sparkles className="w-6 h-6 text-monkeyGreen" />;
+      case 'plane':
+        return <Plane className="w-6 h-6 text-monkeyGreen" />;
       default:
         return <ShoppingBag className="w-6 h-6 text-monkeyGreen" />;
     }

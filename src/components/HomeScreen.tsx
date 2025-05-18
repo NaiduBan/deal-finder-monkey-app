@@ -1,25 +1,16 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, MapPin } from 'lucide-react';
-import { Input } from "@/components/ui/input";
+import { MapPin, Bell } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockCategories, mockOffers, mockBanners } from '@/mockData';
+import { mockCategories, mockOffers } from '@/mockData';
 import { useUser } from '@/contexts/UserContext';
 import OfferCard from './OfferCard';
 import CategoryItem from './CategoryItem';
-import BannerCarousel from './BannerCarousel';
 
 const HomeScreen = () => {
-  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useUser();
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // In a real app, this would search offers
-    console.log('Searching for:', searchQuery);
-  };
 
   const loadMoreOffers = () => {
     setIsLoading(true);
@@ -29,6 +20,11 @@ const HomeScreen = () => {
     }, 2000);
   };
 
+  // Get saved offers
+  const savedOffers = mockOffers.filter(offer => 
+    user.savedOffers.includes(offer.id)
+  );
+
   return (
     <div className="pb-16 bg-monkeyBackground min-h-screen">
       {/* Header with location */}
@@ -36,48 +32,50 @@ const HomeScreen = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-1">
             <MapPin className="w-4 h-4" />
-            <span className="text-sm">San Francisco, CA</span>
+            <span className="text-sm">{user.location}</span>
           </div>
           <div className="flex items-center space-x-1">
-            <Link to="/points" className="flex items-center">
-              <span className="text-xs bg-monkeyYellow text-black px-2 py-0.5 rounded-full">
-                {user.points} pts
+            <Link to="/notifications" className="flex items-center">
+              <Bell className="w-5 h-5 text-white" />
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-monkeyYellow text-[10px] text-black absolute translate-x-3 -translate-y-2">
+                3
               </span>
             </Link>
           </div>
         </div>
-        
-        {/* Search bar */}
-        <form onSubmit={handleSearch} className="mt-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              type="search"
-              placeholder="Search offers, stores, products..."
-              className="pl-10 pr-4 py-2 w-full bg-white/90 border-none"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </form>
       </div>
       
       {/* Main content */}
       <div className="p-4 space-y-6">
         {/* Categories carousel */}
         <div>
-          <h2 className="font-bold mb-3 text-lg">Categories</h2>
+          <h2 className="font-bold mb-3 text-lg">For You</h2>
           <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-hide">
-            {mockCategories.map((category) => (
-              <CategoryItem key={category.id} category={category} />
-            ))}
+            {mockCategories
+              .filter(category => category.id !== "supermarket")
+              .map((category) => (
+                <CategoryItem key={category.id} category={category} />
+              ))}
           </div>
         </div>
         
-        {/* Banners carousel */}
+        {/* Favorites section */}
         <div>
-          <h2 className="font-bold mb-3 text-lg">Featured Deals</h2>
-          <BannerCarousel banners={mockBanners} />
+          <h2 className="font-bold mb-3 text-lg">Your Favorites</h2>
+          {savedOffers.length > 0 ? (
+            <div className="grid grid-cols-2 gap-4">
+              {savedOffers.map((offer) => (
+                <Link key={offer.id} to={`/offer/${offer.id}`}>
+                  <OfferCard offer={offer} />
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white p-6 rounded-lg text-center shadow-sm">
+              <p className="text-gray-500">No saved offers yet</p>
+              <p className="text-sm text-gray-400 mt-2">Save offers to see them here</p>
+            </div>
+          )}
         </div>
         
         {/* Offers section */}
