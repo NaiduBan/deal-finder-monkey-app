@@ -18,7 +18,7 @@ import ChatbotScreen from "./components/ChatbotScreen";
 import ProfileScreen from "./components/ProfileScreen";
 import SettingsScreen from "./components/SettingsScreen";
 import PreferenceScreen from "./components/PreferenceScreen";
-import SearchPreferencesScreen from "./components/SearchPreferencesScreen";
+import SavedOffersScreen from "./components/SavedOffersScreen";
 import PointsHistoryScreen from "./components/PointsHistoryScreen";
 import NotificationsScreen from "./components/NotificationsScreen";
 import BottomNavigation from "./components/BottomNavigation";
@@ -56,7 +56,7 @@ const App = () => (
                     <Route path="/splash" element={<SplashScreen />} />
                     <Route path="/login" element={<LoginScreen />} />
                     <Route path="/home" element={<HomeScreen />} />
-                    <Route path="/search" element={<SearchPreferencesScreen />} />
+                    <Route path="/saved" element={<SavedOffersScreen />} />
                     <Route path="/preferences" element={<Navigate to="/preferences/brands" replace />} />
                     <Route path="/preferences/:preferenceType" element={<PreferenceScreen />} />
                     <Route path="/category/:categoryId" element={<CategoryScreen />} />

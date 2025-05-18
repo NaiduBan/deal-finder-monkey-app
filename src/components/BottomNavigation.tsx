@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Search, MessageCircle, User, SlidersHorizontal } from 'lucide-react';
+import { Home, Bookmark, MessageCircle, User, SlidersHorizontal } from 'lucide-react';
 
 const BottomNavigation = () => {
   const location = useLocation();
@@ -15,7 +15,7 @@ const BottomNavigation = () => {
   // Navigation items
   const navItems = [
     { path: '/home', icon: Home, label: 'Home' },
-    { path: '/search', icon: Search, label: 'Search' },
+    { path: '/saved', icon: Bookmark, label: 'Saved' },
     { path: '/chatbot', icon: MessageCircle, label: 'Assistant' },
     { path: '/preferences', icon: SlidersHorizontal, label: 'Preferences' },
     { path: '/profile', icon: User, label: 'Profile' }
