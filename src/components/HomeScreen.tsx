@@ -12,15 +12,14 @@ import CategoryItem from './CategoryItem';
 const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useUser();
-  const { offers, categories, isLoading: isDataLoading } = useData();
+  const { offers, categories, isLoading: isDataLoading, refetchOffers } = useData();
   const [searchQuery, setSearchQuery] = useState('');
 
   const loadMoreOffers = () => {
     setIsLoading(true);
-    // Simulate loading more offers
-    setTimeout(() => {
+    refetchOffers().then(() => {
       setIsLoading(false);
-    }, 2000);
+    });
   };
 
   // Get saved offers
@@ -78,13 +77,19 @@ const HomeScreen = () => {
         {/* Categories carousel */}
         <div>
           <h2 className="font-bold mb-3 text-lg">For You</h2>
-          <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-hide">
-            {categories
-              .filter(category => category.id !== "supermarket")
-              .map((category) => (
-                <CategoryItem key={category.id} category={category} />
-              ))}
-          </div>
+          {isDataLoading ? (
+            <div className="flex justify-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-monkeyGreen"></div>
+            </div>
+          ) : (
+            <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-hide">
+              {categories
+                .filter(category => category.id !== "supermarket")
+                .map((category) => (
+                  <CategoryItem key={category.id} category={category} />
+                ))}
+            </div>
+          )}
         </div>
         
         {/* Favorites section */}
@@ -94,7 +99,7 @@ const HomeScreen = () => {
             <div className="grid grid-cols-2 gap-4">
               {savedOffers.map((offer) => (
                 <Link key={offer.id} to={`/offer/${offer.id}`}>
-                  <OfferCard offer={{...offer}} />
+                  <OfferCard offer={offer} />
                 </Link>
               ))}
             </div>

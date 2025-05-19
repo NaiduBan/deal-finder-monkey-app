@@ -9,7 +9,98 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      categories: {
+        Row: {
+          created_at: string
+          icon: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          icon: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          icon?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      offers: {
+        Row: {
+          affiliate_link: string | null
+          category_id: string | null
+          created_at: string
+          description: string
+          expiry_date: string | null
+          id: string
+          image_url: string | null
+          is_amazon: boolean | null
+          location_address: string | null
+          location_lat: number | null
+          location_lng: number | null
+          original_price: number
+          price: number
+          savings: string | null
+          store: string
+          terms: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          affiliate_link?: string | null
+          category_id?: string | null
+          created_at?: string
+          description: string
+          expiry_date?: string | null
+          id?: string
+          image_url?: string | null
+          is_amazon?: boolean | null
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          original_price: number
+          price: number
+          savings?: string | null
+          store: string
+          terms?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          affiliate_link?: string | null
+          category_id?: string | null
+          created_at?: string
+          description?: string
+          expiry_date?: string | null
+          id?: string
+          image_url?: string | null
+          is_amazon?: boolean | null
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          original_price?: number
+          price?: number
+          savings?: string | null
+          store?: string
+          terms?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offers_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
