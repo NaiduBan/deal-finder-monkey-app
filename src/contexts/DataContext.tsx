@@ -25,9 +25,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   } = useQuery({
     queryKey: ['offers'],
     queryFn: apiService.getOffers,
-    // Fall back to mock data if the API fails
-    onError: (error) => {
-      console.error('Failed to fetch offers from API, using mock data', error);
+    // Using onSettled instead of onError for newer React Query versions
+    onSettled: (data, error) => {
+      if (error) {
+        console.error('Failed to fetch offers from API, using mock data', error);
+      }
     }
   });
 
