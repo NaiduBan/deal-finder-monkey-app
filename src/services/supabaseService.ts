@@ -52,7 +52,21 @@ export async function fetchOffers(): Promise<Offer[]> {
     isAmazon: item.is_amazon || false,
     affiliateLink: item.affiliate_link || undefined,
     terms: item.terms || undefined,
-    savings: item.savings || ""
+    savings: item.savings || "",
+    // Map new fields
+    lmdId: item.lmd_id || undefined,
+    merchantHomepage: item.merchant_homepage || undefined,
+    longOffer: item.long_offer || undefined,
+    code: item.code || undefined,
+    termsAndConditions: item.terms_and_conditions || undefined,
+    featured: item.featured || false,
+    publisherExclusive: item.publisher_exclusive || false,
+    url: item.url || undefined,
+    smartlink: item.smartlink || undefined,
+    offerType: item.offer_type || undefined,
+    offerValue: item.offer_value || undefined,
+    status: item.status || undefined,
+    startDate: item.start_date || undefined
   }));
 }
 

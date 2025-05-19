@@ -18,6 +18,20 @@ export interface Offer {
   affiliateLink?: string;
   terms?: string;
   savings: number | string;
+  // New fields from the data structure
+  lmdId?: string;
+  merchantHomepage?: string;
+  longOffer?: string;
+  code?: string;
+  termsAndConditions?: string;
+  featured?: boolean;
+  publisherExclusive?: boolean;
+  url?: string;
+  smartlink?: string;
+  offerType?: string;
+  offerValue?: string;
+  status?: string;
+  startDate?: string;
 }
 
 export interface Category {

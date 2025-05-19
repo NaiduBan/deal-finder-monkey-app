@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Bookmark, Share2, MapPin, Info, Clock, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Bookmark, Share2, MapPin, Info, Clock, AlertTriangle, ExternalLink, Tag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { mockOffers } from '@/mockData';
+import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 
 const OfferDetailScreen = () => {
@@ -11,12 +11,13 @@ const OfferDetailScreen = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isSaved, setIsSaved] = useState(false);
+  const { offers } = useData();
   
-  const offerIndex = mockOffers.findIndex(offer => offer.id === offerId);
-  const offer = mockOffers[offerIndex];
+  const offerIndex = offers.findIndex(offer => offer.id === offerId);
+  const offer = offerIndex !== -1 ? offers[offerIndex] : null;
   
-  const nextOfferId = offerIndex < mockOffers.length - 1 ? mockOffers[offerIndex + 1].id : null;
-  const prevOfferId = offerIndex > 0 ? mockOffers[offerIndex - 1].id : null;
+  const nextOfferId = offerIndex < offers.length - 1 ? offers[offerIndex + 1].id : null;
+  const prevOfferId = offerIndex > 0 ? offers[offerIndex - 1].id : null;
   
   if (!offer) {
     return (
@@ -54,6 +55,13 @@ const OfferDetailScreen = () => {
       toast({
         title: 'Opening Maps',
         description: `Navigating to ${offer.store}`,
+      });
+    } else if (offer.url || offer.smartlink || offer.merchantHomepage) {
+      const link = offer.smartlink || offer.url || offer.merchantHomepage;
+      // In a real app, this would open the link in a browser
+      toast({
+        title: 'Opening link',
+        description: `Redirecting to ${offer.store}'s website`,
       });
     }
   };
@@ -119,7 +127,11 @@ const OfferDetailScreen = () => {
           </div>
           <div className="text-gray-500 text-sm flex items-center">
             <Clock className="w-4 h-4 mr-1" />
-            Expires {new Date(offer.expiryDate).toLocaleDateString()}
+            {offer.expiryDate ? (
+              `Expires ${new Date(offer.expiryDate).toLocaleDateString()}`
+            ) : (
+              "No expiry date"
+            )}
           </div>
         </div>
         
@@ -131,12 +143,30 @@ const OfferDetailScreen = () => {
         
         {/* Price */}
         <div className="flex items-baseline space-x-2">
-          <span className="text-2xl font-bold">${offer.price.toFixed(2)}</span>
-          <span className="text-gray-500 line-through">${offer.originalPrice.toFixed(2)}</span>
+          <span className="text-2xl font-bold">₹{offer.price.toFixed(2)}</span>
+          <span className="text-gray-500 line-through">₹{offer.originalPrice.toFixed(2)}</span>
         </div>
         
         {/* Description */}
         <p className="text-gray-700">{offer.description}</p>
+        
+        {/* Long offer if available */}
+        {offer.longOffer && (
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <p className="text-gray-700">{offer.longOffer}</p>
+          </div>
+        )}
+        
+        {/* Show code if available */}
+        {offer.code && (
+          <div className="flex items-center space-x-2 bg-monkeyYellow/20 p-3 rounded-lg">
+            <Tag className="w-5 h-5 text-monkeyGreen" />
+            <div>
+              <p className="font-semibold">Code: {offer.code}</p>
+              <p className="text-sm text-gray-600">Use this code at checkout</p>
+            </div>
+          </div>
+        )}
         
         {/* Location if available */}
         {offer.location && (
@@ -149,11 +179,39 @@ const OfferDetailScreen = () => {
           </div>
         )}
         
+        {/* Merchant Homepage if available */}
+        {offer.merchantHomepage && (
+          <div className="flex items-center space-x-2 bg-white p-3 rounded-lg shadow-sm">
+            <ExternalLink className="w-5 h-5 text-monkeyGreen" />
+            <div>
+              <p className="font-semibold">Visit merchant website</p>
+              <p className="text-sm text-gray-600 truncate">{offer.merchantHomepage}</p>
+            </div>
+          </div>
+        )}
+        
         {/* Terms */}
-        {offer.terms && (
+        {(offer.terms || offer.termsAndConditions) && (
           <div className="bg-monkeyYellow/10 p-3 rounded-lg flex items-start space-x-2">
             <Info className="w-5 h-5 text-monkeyYellow flex-shrink-0" />
-            <p className="text-sm text-gray-700">{offer.terms}</p>
+            <p className="text-sm text-gray-700">{offer.termsAndConditions || offer.terms}</p>
+          </div>
+        )}
+        
+        {/* Additional details - Offer Type & Value */}
+        {(offer.offerType || offer.offerValue) && (
+          <div className="bg-white p-3 rounded-lg shadow-sm">
+            <h3 className="font-semibold mb-2">Offer Details</h3>
+            {offer.offerType && (
+              <p className="text-sm text-gray-700">
+                <span className="font-medium">Type:</span> {offer.offerType}
+              </p>
+            )}
+            {offer.offerValue && (
+              <p className="text-sm text-gray-700">
+                <span className="font-medium">Value:</span> {offer.offerValue}
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -164,7 +222,10 @@ const OfferDetailScreen = () => {
           className="w-full h-12 monkey-button"
           onClick={handleBuyNow}
         >
-          {offer.isAmazon ? 'Buy on Amazon' : 'Get This Deal'}
+          {offer.isAmazon ? 'Buy on Amazon' : 
+           offer.code ? 'Copy Code' : 
+           (offer.url || offer.smartlink) ? 'Visit Website' : 
+           'Get This Deal'}
         </Button>
       </div>
     </div>
