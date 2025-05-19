@@ -24,6 +24,7 @@ export async function fetchCategories(): Promise<Category[]> {
 
 // Function to fetch all offers from the Data table
 export async function fetchOffers(): Promise<Offer[]> {
+  console.log('Fetching offers from Data table...');
   const { data, error } = await supabase
     .from('Data')
     .select('*');
@@ -31,6 +32,15 @@ export async function fetchOffers(): Promise<Offer[]> {
   if (error) {
     console.error('Error fetching offers:', error);
     throw error;
+  }
+  
+  console.log('Data table results:', data ? data.length : 0, 'records found');
+  
+  // If no data is found, try to fall back to the mockOffers
+  if (!data || data.length === 0) {
+    console.log('No data found in Data table, falling back to mock data');
+    const { mockOffers } = await import('@/mockData');
+    return mockOffers;
   }
   
   // Generate random IDs for offers from Data table since they don't have IDs

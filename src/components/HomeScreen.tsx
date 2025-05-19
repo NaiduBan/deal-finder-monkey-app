@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Bell, Search } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,8 +12,17 @@ import CategoryItem from './CategoryItem';
 const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useUser();
-  const { offers, categories, isLoading: isDataLoading, refetchOffers } = useData();
+  const { offers, categories, isLoading: isDataLoading, error, refetchOffers } = useData();
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    // Log for debugging purposes
+    console.log("Home Screen Rendered");
+    console.log("Offers loaded:", offers ? offers.length : 0);
+    console.log("Categories loaded:", categories ? categories.length : 0);
+    console.log("Is loading:", isDataLoading);
+    console.log("Error:", error);
+  }, [offers, categories, isDataLoading, error]);
 
   const loadMoreOffers = () => {
     setIsLoading(true);
@@ -30,9 +39,9 @@ const HomeScreen = () => {
   // Filter offers based on search query
   const filteredOffers = offers.filter(offer => 
     searchQuery === '' || 
-    offer.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    offer.store.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    offer.category.toLowerCase().includes(searchQuery.toLowerCase())
+    (offer.title && offer.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (offer.store && offer.store.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (offer.category && offer.category.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   // Format price in Indian Rupees
@@ -129,23 +138,39 @@ const HomeScreen = () => {
                   <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-monkeyGreen"></div>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-4">
-                  {filteredOffers.map((offer) => (
-                    <Link key={offer.id} to={`/offer/${offer.id}`}>
-                      <OfferCard offer={offer} />
-                    </Link>
-                  ))}
-                </div>
+                <>
+                  {error && (
+                    <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                      <p className="text-red-600">Error loading offers: {error.message}</p>
+                    </div>
+                  )}
+                  
+                  {!error && filteredOffers.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      {filteredOffers.map((offer) => (
+                        <Link key={offer.id} to={`/offer/${offer.id}`}>
+                          <OfferCard offer={offer} />
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    !error && (
+                      <div className="bg-white p-6 rounded-lg text-center shadow-sm">
+                        <p className="text-gray-500">No offers found</p>
+                        <p className="text-sm text-gray-400 mt-2">Try a different search term or check back later</p>
+                        <button
+                          onClick={refetchOffers}
+                          className="mt-4 bg-monkeyGreen text-white px-4 py-2 rounded-lg"
+                        >
+                          Refresh Data
+                        </button>
+                      </div>
+                    )
+                  )}
+                </>
               )}
               
-              {!isDataLoading && filteredOffers.length === 0 && (
-                <div className="bg-white p-6 rounded-lg text-center shadow-sm">
-                  <p className="text-gray-500">No offers found</p>
-                  <p className="text-sm text-gray-400 mt-2">Try a different search term</p>
-                </div>
-              )}
-              
-              {!isDataLoading && filteredOffers.length > 0 && (
+              {!isDataLoading && !error && filteredOffers.length > 0 && (
                 <button 
                   onClick={loadMoreOffers}
                   className="w-full py-3 text-center text-monkeyGreen border border-monkeyGreen rounded-lg mt-4 flex items-center justify-center"
@@ -171,6 +196,12 @@ const HomeScreen = () => {
                   </Link>
                 ))}
               </div>
+              
+              {filteredOffers.filter(offer => !offer.isAmazon).length === 0 && (
+                <div className="bg-white p-6 rounded-lg text-center shadow-sm">
+                  <p className="text-gray-500">No nearby offers found</p>
+                </div>
+              )}
             </TabsContent>
             
             <TabsContent value="amazon" className="space-y-4">
@@ -181,6 +212,12 @@ const HomeScreen = () => {
                   </Link>
                 ))}
               </div>
+              
+              {filteredOffers.filter(offer => offer.isAmazon).length === 0 && (
+                <div className="bg-white p-6 rounded-lg text-center shadow-sm">
+                  <p className="text-gray-500">No Amazon offers found</p>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>
