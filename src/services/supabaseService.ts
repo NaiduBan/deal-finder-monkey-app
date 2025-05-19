@@ -16,7 +16,7 @@ export async function fetchCategories(): Promise<Category[]> {
       throw error;
     }
     
-    console.log('Categories fetched:', data ? data.length : 0);
+    console.log('Categories fetched from categories table:', data ? data.length : 0);
     
     // If no categories found, try to extract categories from Data table
     if (!data || data.length === 0) {
@@ -38,14 +38,14 @@ export async function fetchCategories(): Promise<Category[]> {
         
         dataTable.forEach(item => {
           if (item.categories) {
-            const cats = item.categories.split(',').map(c => c.trim());
-            cats.forEach(catName => {
+            const cats = item.categories.split(',').map((c: string) => c.trim());
+            cats.forEach((catName: string) => {
               if (catName && !categoryMap.has(catName.toLowerCase())) {
                 const id = catName.toLowerCase().replace(/\s+/g, '-');
                 categoryMap.set(catName.toLowerCase(), {
                   id,
                   name: catName,
-                  icon: '🏷️', // Default icon
+                  icon: getCategoryIcon(catName), // Get appropriate icon based on category name
                   subcategories: []
                 });
               }
@@ -56,7 +56,26 @@ export async function fetchCategories(): Promise<Category[]> {
         const extractedCategories = Array.from(categoryMap.values());
         console.log('Extracted categories from Data table:', extractedCategories.length);
         
+        // Store the extracted categories in the categories table for future use
         if (extractedCategories.length > 0) {
+          try {
+            const { error: insertError } = await supabase
+              .from('categories')
+              .upsert(extractedCategories.map(cat => ({
+                id: cat.id,
+                name: cat.name,
+                icon: cat.icon
+              })));
+            
+            if (insertError) {
+              console.error('Error storing extracted categories:', insertError);
+            } else {
+              console.log('Successfully stored extracted categories in categories table');
+            }
+          } catch (err) {
+            console.error('Failed to store extracted categories:', err);
+          }
+          
           return extractedCategories;
         }
       }
@@ -69,12 +88,41 @@ export async function fetchCategories(): Promise<Category[]> {
     return data.map(item => ({
       id: item.id,
       name: item.name,
-      icon: item.icon,
+      icon: item.icon || getCategoryIcon(item.name),
       subcategories: []  // We don't have subcategories in the DB schema yet
     }));
   } catch (error) {
     console.error('Error in fetchCategories, falling back to mock data:', error);
     return mockCategories;
+  }
+}
+
+// Helper function to get appropriate icon based on category name
+function getCategoryIcon(categoryName: string): string {
+  const nameLower = categoryName.toLowerCase();
+  
+  if (nameLower.includes('food') || nameLower.includes('restaurant') || nameLower.includes('dining')) {
+    return 'utensils';
+  } else if (nameLower.includes('electronic') || nameLower.includes('tech')) {
+    return 'laptop';
+  } else if (nameLower.includes('fashion') || nameLower.includes('cloth') || nameLower.includes('apparel')) {
+    return 'shirt';
+  } else if (nameLower.includes('travel') || nameLower.includes('flight') || nameLower.includes('hotel')) {
+    return 'plane';
+  } else if (nameLower.includes('home') || nameLower.includes('furniture')) {
+    return 'home';
+  } else if (nameLower.includes('beauty') || nameLower.includes('care')) {
+    return 'sparkles';
+  } else if (nameLower.includes('health') || nameLower.includes('fitness')) {
+    return 'heart';
+  } else if (nameLower.includes('entertainment') || nameLower.includes('movie')) {
+    return 'tv';
+  } else if (nameLower.includes('gift') || nameLower.includes('present')) {
+    return 'gift';
+  } else if (nameLower.includes('coffee') || nameLower.includes('cafe')) {
+    return 'coffee';
+  } else {
+    return 'shopping-bag';  // Default icon
   }
 }
 
@@ -227,6 +275,8 @@ export async function saveOfferForUser(userId: string, offerId: string): Promise
       throw new Error('User ID and Offer ID are required');
     }
     
+    console.log('Saving offer for user:', userId, offerId);
+    
     const { error } = await supabase
       .from('saved_offers')
       .insert({
@@ -256,6 +306,8 @@ export async function unsaveOfferForUser(userId: string, offerId: string): Promi
     if (!userId || !offerId) {
       throw new Error('User ID and Offer ID are required');
     }
+    
+    console.log('Removing saved offer for user:', userId, offerId);
     
     const { error } = await supabase
       .from('saved_offers')
@@ -305,9 +357,83 @@ export async function fetchUserPreferences(userId: string, preferenceType: strin
   }
 }
 
+// Function to save user preferences
+export async function saveUserPreference(userId: string, preferenceType: string, preferenceId: string): Promise<boolean> {
+  try {
+    if (!userId || !preferenceType || !preferenceId) {
+      throw new Error('User ID, preference type, and preference ID are required');
+    }
+    
+    // Check if preference already exists
+    const { data: existingPreference, error: checkError } = await supabase
+      .from('user_preferences')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('preference_type', preferenceType)
+      .eq('preference_id', preferenceId)
+      .single();
+      
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means not found, which is expected
+      console.error('Error checking existing preference:', checkError);
+      return false;
+    }
+    
+    // If preference already exists, don't add it again
+    if (existingPreference) {
+      return true;
+    }
+    
+    // Insert the new preference
+    const { error } = await supabase
+      .from('user_preferences')
+      .insert({
+        user_id: userId,
+        preference_type: preferenceType,
+        preference_id: preferenceId
+      });
+      
+    if (error) {
+      console.error('Error saving user preference:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in saveUserPreference:', error);
+    return false;
+  }
+}
+
+// Function to remove user preference
+export async function removeUserPreference(userId: string, preferenceType: string, preferenceId: string): Promise<boolean> {
+  try {
+    if (!userId || !preferenceType || !preferenceId) {
+      throw new Error('User ID, preference type, and preference ID are required');
+    }
+    
+    const { error } = await supabase
+      .from('user_preferences')
+      .delete()
+      .eq('user_id', userId)
+      .eq('preference_type', preferenceType)
+      .eq('preference_id', preferenceId);
+      
+    if (error) {
+      console.error('Error removing user preference:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in removeUserPreference:', error);
+    return false;
+  }
+}
+
 // Function to apply preferences to offers
 export function applyPreferencesToOffers(offers: Offer[], preferences: {[key: string]: string[]}): Offer[] {
-  if (!preferences || Object.keys(preferences).length === 0) {
+  if (!preferences || Object.keys(preferences).length === 0 || 
+      (preferences.stores.length === 0 && preferences.brands.length === 0 && preferences.banks.length === 0)) {
     return offers;
   }
   
@@ -347,7 +473,100 @@ export function applyPreferencesToOffers(offers: Offer[], preferences: {[key: st
       }
     }
     
-    // If no preferences match or if preferences array is empty, include the offer if we have no preferences
-    return Object.keys(preferences).every(key => preferences[key].length === 0);
+    // If no preferences match, don't include the offer
+    return false;
   });
+}
+
+// Function to search offers
+export async function searchOffers(query: string): Promise<Offer[]> {
+  try {
+    if (!query.trim()) {
+      return [];
+    }
+    
+    const searchTerm = `%${query}%`;
+    
+    const { data, error } = await supabase
+      .from('Data')
+      .select('*')
+      .or(`title.ilike.${searchTerm},description.ilike.${searchTerm},store.ilike.${searchTerm},categories.ilike.${searchTerm}`)
+      .limit(20);
+      
+    if (error) {
+      console.error('Error searching offers:', error);
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      return [];
+    }
+    
+    // Transform data to Offer type (reuse the transformation logic from fetchOffers)
+    return data.map((item, index) => {
+      // Calculate price and savings (same logic as in fetchOffers)
+      let price = 0;
+      let originalPrice = 0;
+      let savings = '';
+      
+      if (item.offer_value) {
+        const offerValue = item.offer_value;
+        if (offerValue.includes('%')) {
+          const percent = parseInt(offerValue.replace(/[^0-9]/g, ''));
+          originalPrice = Math.floor(1000 + Math.random() * 9000);
+          price = Math.floor(originalPrice * (1 - percent / 100));
+          savings = `${percent}%`;
+        } else if (offerValue.match(/\d+/)) {
+          const amount = parseInt(offerValue.replace(/[^0-9]/g, ''));
+          price = amount;
+          originalPrice = price + Math.floor(Math.random() * 500) + 100;
+          savings = `₹${originalPrice - price}`;
+        } else {
+          price = Math.floor(Math.random() * 1000) + 100;
+          originalPrice = price + Math.floor(Math.random() * 500) + 100;
+          savings = `₹${originalPrice - price}`;
+        }
+      } else {
+        price = Math.floor(Math.random() * 1000) + 100;
+        originalPrice = price + Math.floor(Math.random() * 500) + 100;
+        savings = `₹${originalPrice - price}`;
+      }
+      
+      const isAmazon = (item.store && item.store.toLowerCase().includes('amazon')) || 
+                      (item.merchant_homepage && item.merchant_homepage.toLowerCase().includes('amazon'));
+      
+      return {
+        id: `data-${item.lmd_id || index}`,
+        title: item.title || "",
+        description: item.description || item.long_offer || "",
+        imageUrl: item.image_url || "",
+        store: item.store || "",
+        category: item.categories || "",
+        price: price,
+        originalPrice: originalPrice,
+        expiryDate: item.end_date || "",
+        isAmazon: isAmazon,
+        savings: savings,
+        // Fields from the Data table
+        lmdId: Number(item.lmd_id) || 0,
+        merchantHomepage: item.merchant_homepage || "",
+        longOffer: item.long_offer || "",
+        code: item.code || "",
+        termsAndConditions: item.terms_and_conditions || "",
+        featured: item.featured === "true" || item.featured === "1",
+        publisherExclusive: item.publisher_exclusive === "true" || item.publisher_exclusive === "1",
+        url: item.url || "",
+        smartlink: item.smartlink || "",
+        offerType: item.type || "",
+        offerValue: item.offer_value || "",
+        status: item.status || "",
+        startDate: item.start_date || "",
+        endDate: item.end_date || "",
+        categories: item.categories || ""
+      };
+    });
+  } catch (error) {
+    console.error('Error in searchOffers:', error);
+    return [];
+  }
 }

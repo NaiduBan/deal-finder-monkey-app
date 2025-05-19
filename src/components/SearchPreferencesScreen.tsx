@@ -1,29 +1,26 @@
 
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Search, SlidersHorizontal, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
-} from '@/components/ui/navigation-menu';
-import { cn } from '@/lib/utils';
+import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useUser } from '@/contexts/UserContext';
 import { mockBrands, mockStores, mockBanks } from '@/mockData';
 
 // Define preference types to match those in PreferenceScreen
 type PreferenceType = 'brands' | 'stores' | 'banks';
 
 const SearchPreferencesScreen = () => {
+  const navigate = useNavigate();
+  const { user } = useUser();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'search' | 'preferences'>('search');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
   // Preferences settings
   const [preferences, setPreferences] = useState({
@@ -32,20 +29,79 @@ const SearchPreferencesScreen = () => {
     newDeals: true,
   });
 
+  // Load recent searches from localStorage on component mount
+  useEffect(() => {
+    const savedSearches = localStorage.getItem('recentSearches');
+    if (savedSearches) {
+      setRecentSearches(JSON.parse(savedSearches));
+    }
+  }, []);
+
+  // Save recent searches to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('recentSearches', JSON.stringify(recentSearches));
+  }, [recentSearches]);
+
   const handlePreferenceChange = (key: keyof typeof preferences) => {
     setPreferences(prev => ({
       ...prev,
       [key]: !prev[key]
     }));
+    
+    // Show toast notification
+    toast({
+      title: "Preference updated",
+      description: `${key} preference has been ${!preferences[key] ? 'enabled' : 'disabled'}.`,
+    });
   };
 
-  const handleClearSearch = () => {
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!searchQuery.trim()) return;
+    
+    // Add to recent searches
+    if (!recentSearches.includes(searchQuery)) {
+      const updatedSearches = [searchQuery, ...recentSearches.slice(0, 4)];
+      setRecentSearches(updatedSearches);
+    }
+    
+    try {
+      // Search in the Data table
+      const { data: searchData, error } = await supabase
+        .from('Data')
+        .select('*')
+        .or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,store.ilike.%${searchQuery}%,categories.ilike.%${searchQuery}%`)
+        .limit(10);
+        
+      if (error) {
+        console.error('Error searching offers:', error);
+        setSearchResults([]);
+      } else {
+        console.log('Search results:', searchData);
+        setSearchResults(searchData || []);
+      }
+    } catch (err) {
+      console.error('Error during search:', err);
+      setSearchResults([]);
+    }
+  };
+
+  const clearSearch = () => {
     setSearchQuery('');
+    setSearchResults([]);
+  };
+
+  const clearRecentSearch = (search: string) => {
+    setRecentSearches(recentSearches.filter(item => item !== search));
+  };
+
+  const clearAllRecentSearches = () => {
+    setRecentSearches([]);
   };
 
   const navigateToPreference = (type: PreferenceType) => {
-    // Navigation would happen here through react-router
-    console.log(`Navigate to ${type} preferences`);
+    navigate(`/preferences/${type}`);
   };
 
   return (
@@ -76,69 +132,91 @@ const SearchPreferencesScreen = () => {
 
       {activeTab === 'search' ? (
         <div className="p-4">
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              type="search"
-              placeholder="Search offers, stores, brands..."
-              className="pl-10 pr-10 py-2 w-full border-gray-200"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && (
-              <button 
-                onClick={handleClearSearch}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+          <form onSubmit={handleSearch}>
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                type="search"
+                placeholder="Search offers, stores, brands..."
+                className="pl-10 pr-10 py-2 w-full border-gray-200"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button 
+                  type="button"
+                  onClick={clearSearch}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <button type="submit" className="hidden">Search</button>
+          </form>
 
-          {/* Recent searches (placeholder) */}
-          {!searchQuery && (
+          {/* Recent searches */}
+          {!searchQuery && recentSearches.length > 0 && (
             <>
-              <h3 className="text-sm font-medium text-gray-500 mb-2">Recent Searches</h3>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-medium text-gray-500">Recent Searches</h3>
+                {recentSearches.length > 1 && (
+                  <button 
+                    onClick={clearAllRecentSearches}
+                    className="text-xs text-monkeyGreen"
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
               <div className="space-y-2">
-                <div className="flex items-center justify-between p-3 bg-white rounded-lg">
-                  <div className="flex items-center">
-                    <Search className="w-4 h-4 mr-2 text-gray-400" />
-                    <span>Coffee discount</span>
+                {recentSearches.map((search, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg">
+                    <button 
+                      onClick={() => {
+                        setSearchQuery(search);
+                        handleSearch(new Event('submit') as any);
+                      }}
+                      className="flex items-center flex-grow text-left"
+                    >
+                      <Search className="w-4 h-4 mr-2 text-gray-400" />
+                      <span>{search}</span>
+                    </button>
+                    <button onClick={() => clearRecentSearch(search)}>
+                      <X className="w-4 h-4 text-gray-400" />
+                    </button>
                   </div>
-                  <X className="w-4 h-4 text-gray-400" />
-                </div>
-                <div className="flex items-center justify-between p-3 bg-white rounded-lg">
-                  <div className="flex items-center">
-                    <Search className="w-4 h-4 mr-2 text-gray-400" />
-                    <span>Electronics sale</span>
-                  </div>
-                  <X className="w-4 h-4 text-gray-400" />
-                </div>
-                <div className="flex items-center justify-between p-3 bg-white rounded-lg">
-                  <div className="flex items-center">
-                    <Search className="w-4 h-4 mr-2 text-gray-400" />
-                    <span>Fast food deals</span>
-                  </div>
-                  <X className="w-4 h-4 text-gray-400" />
-                </div>
+                ))}
               </div>
             </>
           )}
 
-          {/* Search results (placeholder) */}
+          {/* Search results */}
           {searchQuery && (
             <div className="space-y-2">
               <h3 className="text-sm font-medium text-gray-500 mb-2">Results for "{searchQuery}"</h3>
-              <div className="space-y-2">
-                <Link to="/offer/1" className="block p-3 bg-white rounded-lg">
-                  <div className="font-medium">30% Off at Starbucks</div>
-                  <div className="text-sm text-gray-500">Valid until May 30, 2025</div>
-                </Link>
-                <Link to="/offer/2" className="block p-3 bg-white rounded-lg">
-                  <div className="font-medium">Buy 1 Get 1 Free at Pizza Hut</div>
-                  <div className="text-sm text-gray-500">Valid until June 15, 2025</div>
-                </Link>
-              </div>
+              {searchResults.length > 0 ? (
+                <div className="space-y-2">
+                  {searchResults.map((result) => (
+                    <Link 
+                      key={`data-${result.lmd_id}`} 
+                      to={`/offer/data-${result.lmd_id}`} 
+                      className="block p-3 bg-white rounded-lg"
+                    >
+                      <div className="font-medium">{result.title || "Untitled Offer"}</div>
+                      <div className="text-sm text-gray-500">
+                        {result.store ? `${result.store} • ` : ""}
+                        {result.end_date ? `Valid until ${result.end_date}` : "Limited time offer"}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white p-6 rounded-lg text-center shadow-sm">
+                  <p className="text-gray-500">No results found for "{searchQuery}"</p>
+                  <p className="text-sm text-gray-400 mt-2">Try a different search term</p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -151,28 +229,26 @@ const SearchPreferencesScreen = () => {
               Preference Categories
             </h3>
             
-            <NavigationMenu className="w-full">
-              <NavigationMenuList className="w-full flex justify-between">
-                <NavigationMenuItem className="flex-1">
-                  <Link to="/preferences/brands" className="block w-full text-center py-2 px-1 hover:bg-gray-50 rounded">
-                    <span className="text-2xl">🏷️</span>
-                    <p className="text-xs mt-1">Brands</p>
-                  </Link>
-                </NavigationMenuItem>
-                <NavigationMenuItem className="flex-1">
-                  <Link to="/preferences/stores" className="block w-full text-center py-2 px-1 hover:bg-gray-50 rounded">
-                    <span className="text-2xl">🏬</span>
-                    <p className="text-xs mt-1">Stores</p>
-                  </Link>
-                </NavigationMenuItem>
-                <NavigationMenuItem className="flex-1">
-                  <Link to="/preferences/banks" className="block w-full text-center py-2 px-1 hover:bg-gray-50 rounded">
-                    <span className="text-2xl">🏦</span>
-                    <p className="text-xs mt-1">Banks</p>
-                  </Link>
-                </NavigationMenuItem>
-              </NavigationMenuList>
-            </NavigationMenu>
+            <div className="w-full flex justify-between">
+              <div className="flex-1">
+                <Link to="/preferences/brands" className="block w-full text-center py-2 px-1 hover:bg-gray-50 rounded">
+                  <span className="text-2xl">🏷️</span>
+                  <p className="text-xs mt-1">Brands</p>
+                </Link>
+              </div>
+              <div className="flex-1">
+                <Link to="/preferences/stores" className="block w-full text-center py-2 px-1 hover:bg-gray-50 rounded">
+                  <span className="text-2xl">🏬</span>
+                  <p className="text-xs mt-1">Stores</p>
+                </Link>
+              </div>
+              <div className="flex-1">
+                <Link to="/preferences/banks" className="block w-full text-center py-2 px-1 hover:bg-gray-50 rounded">
+                  <span className="text-2xl">🏦</span>
+                  <p className="text-xs mt-1">Banks</p>
+                </Link>
+              </div>
+            </div>
           </div>
 
           {/* Quick Filters */}
@@ -225,19 +301,44 @@ const SearchPreferencesScreen = () => {
           <div className="bg-white rounded-lg p-4">
             <h3 className="font-semibold mb-3">Popular Categories</h3>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" className="rounded-full">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-full"
+                onClick={() => navigate('/category/food-drinks')}
+              >
                 Food & Drinks
               </Button>
-              <Button variant="outline" size="sm" className="rounded-full">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-full"
+                onClick={() => navigate('/category/fashion')}
+              >
                 Fashion
               </Button>
-              <Button variant="outline" size="sm" className="rounded-full">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-full"
+                onClick={() => navigate('/category/electronics')}
+              >
                 Electronics
               </Button>
-              <Button variant="outline" size="sm" className="rounded-full">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-full"
+                onClick={() => navigate('/category/travel')}
+              >
                 Travel
               </Button>
-              <Button variant="outline" size="sm" className="rounded-full">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-full"
+                onClick={() => navigate('/category/entertainment')}
+              >
                 Entertainment
               </Button>
             </div>

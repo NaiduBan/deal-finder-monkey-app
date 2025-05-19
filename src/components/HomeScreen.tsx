@@ -10,6 +10,7 @@ import { useData } from '@/contexts/DataContext';
 import OfferCard from './OfferCard';
 import CategoryItem from './CategoryItem';
 import { supabase } from '@/integrations/supabase/client';
+import { applyPreferencesToOffers } from '@/services/supabaseService';
 
 const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -22,11 +23,24 @@ const HomeScreen = () => {
     banks: []
   });
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+  // Debounce search input
+  useEffect(() => {
+    const timerId = setTimeout(() => {
+      setDebouncedSearchTerm(searchQuery);
+    }, 300);
+
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [searchQuery]);
 
   // Fetch user preferences when component mounts
   useEffect(() => {
     const fetchUserPreferences = async () => {
       try {
+        console.log("Fetching user preferences...");
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
@@ -91,22 +105,47 @@ const HomeScreen = () => {
     }
     
     // Then filter by search query if one exists
-    const matchesSearch = !searchQuery || 
-      (offer.title && offer.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (offer.store && offer.store.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (offer.description && offer.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (offer.category && offer.category.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    if (!matchesSearch) return false;
-    
-    // If user has set preferences and we're not specifically searching, filter by them
-    if (!searchQuery && userPreferences.stores.length > 0 && offer.store) {
-      const storeMatches = userPreferences.stores.some(prefId => 
-        offer.store?.toLowerCase().includes(prefId.toLowerCase()) ||
-        prefId.toLowerCase().includes(offer.store?.toLowerCase() || '')
-      );
+    if (debouncedSearchTerm) {
+      const searchTermLower = debouncedSearchTerm.toLowerCase();
+      const matchesSearch = 
+        (offer.title && offer.title.toLowerCase().includes(searchTermLower)) ||
+        (offer.store && offer.store.toLowerCase().includes(searchTermLower)) ||
+        (offer.description && offer.description.toLowerCase().includes(searchTermLower)) ||
+        (offer.category && offer.category.toLowerCase().includes(searchTermLower));
       
-      if (userPreferences.stores.length > 0 && !storeMatches) {
+      if (!matchesSearch) return false;
+    }
+    
+    // If there are preferences and we're not specifically searching, apply preference filtering
+    if (!debouncedSearchTerm && (
+        userPreferences.stores.length > 0 || 
+        userPreferences.brands.length > 0 || 
+        userPreferences.banks.length > 0)) {
+      
+      // Check if offer matches store preferences
+      if (userPreferences.stores.length > 0) {
+        const storeMatches = userPreferences.stores.some(prefId => 
+          offer.store?.toLowerCase().includes(prefId.toLowerCase()) ||
+          prefId.toLowerCase().includes(offer.store?.toLowerCase() || '')
+        );
+        
+        // Check if offer matches brand/category preferences
+        const brandMatches = userPreferences.brands.some(prefId => 
+          offer.category?.toLowerCase().includes(prefId.toLowerCase()) ||
+          prefId.toLowerCase().includes(offer.category?.toLowerCase() || '')
+        );
+        
+        // Check if offer matches bank preferences (in description)
+        const bankMatches = userPreferences.banks.some(prefId => 
+          offer.description?.toLowerCase().includes(prefId.toLowerCase())
+        );
+        
+        // Return true if any preference matches
+        if (storeMatches || brandMatches || bankMatches) {
+          return true;
+        }
+        
+        // If user has preferences but none match, don't show this offer
         return false;
       }
     }
@@ -123,11 +162,6 @@ const HomeScreen = () => {
     } else {
       setSelectedCategory(categoryId);
     }
-  };
-
-  // Format price in Indian Rupees
-  const formatPrice = (price: number) => {
-    return `₹${price.toLocaleString('en-IN')}`;
   };
 
   // Updated search handler with debouncing
@@ -208,7 +242,7 @@ const HomeScreen = () => {
         </div>
         
         {/* Active filters */}
-        {(selectedCategory || searchQuery) && (
+        {(selectedCategory || debouncedSearchTerm) && (
           <div className="flex flex-wrap gap-2">
             {selectedCategory && (
               <div className="bg-monkeyGreen/10 text-monkeyGreen px-3 py-1 rounded-full text-sm flex items-center">
@@ -221,22 +255,26 @@ const HomeScreen = () => {
                 </button>
               </div>
             )}
-            {searchQuery && (
+            {debouncedSearchTerm && (
               <div className="bg-monkeyGreen/10 text-monkeyGreen px-3 py-1 rounded-full text-sm flex items-center">
-                "{searchQuery}"
+                "{debouncedSearchTerm}"
                 <button 
-                  onClick={() => setSearchQuery('')}
+                  onClick={() => {
+                    setSearchQuery('');
+                    setDebouncedSearchTerm('');
+                  }}
                   className="ml-1 text-monkeyGreen"
                 >
                   ✕
                 </button>
               </div>
             )}
-            {(selectedCategory || searchQuery) && (
+            {(selectedCategory || debouncedSearchTerm) && (
               <button 
                 onClick={() => {
                   setSelectedCategory(null);
                   setSearchQuery('');
+                  setDebouncedSearchTerm('');
                 }}
                 className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-600"
               >

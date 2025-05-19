@@ -57,6 +57,8 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         setAuthSession(session);
         
         if (session) {
+          console.log("User is authenticated:", session.user.id);
+          
           // If authenticated, fetch user profile from Supabase
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
@@ -69,6 +71,8 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           }
           
           if (profileData) {
+            console.log("Profile data fetched:", profileData);
+            
             // Fetch saved offers for this user
             const { data: savedOffers, error: savedOffersError } = await supabase
               .from('saved_offers')
@@ -79,12 +83,13 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
               console.error('Error fetching saved offers:', savedOffersError);
             }
             
+            console.log("Saved offers:", savedOffers);
+            
             // Update the user state with data from Supabase
             setUser(prevUser => ({
               ...prevUser,
               id: session.user.id,
-              // Use the session user email instead of accessing the User type email directly
-              email: session.user.email || prevUser.email,
+              email: session.user.email || '',
               location: profileData.location || 'India',
               savedOffers: savedOffers ? savedOffers.map(item => item.offer_id) : []
             }));
@@ -99,6 +104,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     
     // Listen for auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event, session?.user.id);
       setAuthSession(session);
       
       if (event === 'SIGNED_IN' && session) {
@@ -115,12 +121,13 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           .select('offer_id')
           .eq('user_id', session.user.id);
         
+        console.log("Signed in - saved offers:", savedOffers);
+        
         // Update user state
         setUser(prevUser => ({
           ...prevUser,
           id: session.user.id,
-          // Use the session user email instead of accessing the User type email directly
-          email: session.user.email || prevUser.email,
+          email: session.user.email || '',
           location: profileData?.location || 'India',
           savedOffers: savedOffers ? savedOffers.map(item => item.offer_id) : []
         }));
@@ -179,7 +186,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       // If user is authenticated, save to Supabase
       if (authSession && authSession.user) {
         try {
-          console.log('Saving to Supabase:', offerId);
+          console.log('Saving to Supabase:', offerId, 'User ID:', authSession.user.id);
           const { error } = await supabase
             .from('saved_offers')
             .insert({
@@ -230,7 +237,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     // If user is authenticated, remove from Supabase
     if (authSession && authSession.user) {
       try {
-        console.log('Removing from Supabase:', offerId);
+        console.log('Removing from Supabase:', offerId, 'User ID:', authSession.user.id);
         const { error } = await supabase
           .from('saved_offers')
           .delete()
