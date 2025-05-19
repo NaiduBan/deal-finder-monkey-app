@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Bell, Search } from 'lucide-react';
+import { MapPin, Bell, Search, AlertCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
 import OfferCard from './OfferCard';
@@ -12,7 +13,7 @@ import CategoryItem from './CategoryItem';
 const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useUser();
-  const { offers, categories, isLoading: isDataLoading, error, refetchOffers } = useData();
+  const { offers, categories, isLoading: isDataLoading, error, refetchOffers, isUsingMockData } = useData();
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -22,7 +23,8 @@ const HomeScreen = () => {
     console.log("Categories loaded:", categories ? categories.length : 0);
     console.log("Is loading:", isDataLoading);
     console.log("Error:", error);
-  }, [offers, categories, isDataLoading, error]);
+    console.log("Using mock data:", isUsingMockData);
+  }, [offers, categories, isDataLoading, error, isUsingMockData]);
 
   const loadMoreOffers = () => {
     setIsLoading(true);
@@ -71,6 +73,16 @@ const HomeScreen = () => {
       
       {/* Main content */}
       <div className="p-4 space-y-6">
+        {/* Data source alert */}
+        {isUsingMockData && (
+          <Alert className="bg-amber-50 border-amber-200">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-700">
+              Showing sample data. No real offers found in the database.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         {/* Search Bar */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
