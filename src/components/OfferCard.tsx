@@ -8,6 +8,11 @@ interface OfferCardProps {
 }
 
 const OfferCard = ({ offer }: OfferCardProps) => {
+  // Format price in Indian Rupees
+  const formatPrice = (price: number) => {
+    return `₹${price.toLocaleString('en-IN')}`;
+  };
+
   return (
     <div className="offer-card h-full flex flex-col">
       <div className="aspect-square relative">
@@ -27,8 +32,8 @@ const OfferCard = ({ offer }: OfferCardProps) => {
         
         <div className="flex justify-between items-center mt-2">
           <div className="flex items-baseline gap-1">
-            <span className="font-bold">${offer.price.toFixed(2)}</span>
-            <span className="text-xs text-gray-500 line-through">${offer.originalPrice.toFixed(2)}</span>
+            <span className="font-bold">{formatPrice(offer.price)}</span>
+            <span className="text-xs text-gray-500 line-through">{formatPrice(offer.originalPrice)}</span>
           </div>
           
           {offer.location && (

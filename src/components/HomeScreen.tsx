@@ -4,14 +4,15 @@ import { Link } from 'react-router-dom';
 import { MapPin, Bell, Search } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { mockCategories, mockOffers } from '@/mockData';
 import { useUser } from '@/contexts/UserContext';
+import { useData } from '@/contexts/DataContext';
 import OfferCard from './OfferCard';
 import CategoryItem from './CategoryItem';
 
 const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useUser();
+  const { offers, categories, isLoading: isDataLoading } = useData();
   const [searchQuery, setSearchQuery] = useState('');
 
   const loadMoreOffers = () => {
@@ -23,12 +24,12 @@ const HomeScreen = () => {
   };
 
   // Get saved offers
-  const savedOffers = mockOffers.filter(offer => 
+  const savedOffers = offers.filter(offer => 
     user.savedOffers.includes(offer.id)
   );
   
   // Filter offers based on search query
-  const filteredOffers = mockOffers.filter(offer => 
+  const filteredOffers = offers.filter(offer => 
     searchQuery === '' || 
     offer.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     offer.store.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -47,7 +48,7 @@ const HomeScreen = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-1">
             <MapPin className="w-4 h-4" />
-            <span className="text-sm">India</span>
+            <span className="text-sm">{user.location}</span>
           </div>
           <div className="flex items-center space-x-1">
             <Link to="/notifications" className="flex items-center">
@@ -78,7 +79,7 @@ const HomeScreen = () => {
         <div>
           <h2 className="font-bold mb-3 text-lg">For You</h2>
           <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-hide">
-            {mockCategories
+            {categories
               .filter(category => category.id !== "supermarket")
               .map((category) => (
                 <CategoryItem key={category.id} category={category} />
@@ -93,7 +94,7 @@ const HomeScreen = () => {
             <div className="grid grid-cols-2 gap-4">
               {savedOffers.map((offer) => (
                 <Link key={offer.id} to={`/offer/${offer.id}`}>
-                  <OfferCard offer={{...offer, price: offer.price}} />
+                  <OfferCard offer={{...offer}} />
                 </Link>
               ))}
             </div>
@@ -118,22 +119,28 @@ const HomeScreen = () => {
             </div>
             
             <TabsContent value="all" className="space-y-4 mt-2">
-              <div className="grid grid-cols-2 gap-4">
-                {filteredOffers.map((offer) => (
-                  <Link key={offer.id} to={`/offer/${offer.id}`}>
-                    <OfferCard offer={offer} />
-                  </Link>
-                ))}
-              </div>
+              {isDataLoading ? (
+                <div className="flex justify-center items-center py-10">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-monkeyGreen"></div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  {filteredOffers.map((offer) => (
+                    <Link key={offer.id} to={`/offer/${offer.id}`}>
+                      <OfferCard offer={offer} />
+                    </Link>
+                  ))}
+                </div>
+              )}
               
-              {filteredOffers.length === 0 && (
+              {!isDataLoading && filteredOffers.length === 0 && (
                 <div className="bg-white p-6 rounded-lg text-center shadow-sm">
                   <p className="text-gray-500">No offers found</p>
                   <p className="text-sm text-gray-400 mt-2">Try a different search term</p>
                 </div>
               )}
               
-              {filteredOffers.length > 0 && (
+              {!isDataLoading && filteredOffers.length > 0 && (
                 <button 
                   onClick={loadMoreOffers}
                   className="w-full py-3 text-center text-monkeyGreen border border-monkeyGreen rounded-lg mt-4 flex items-center justify-center"
