@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
-import { mockBrands, mockStores, mockBanks } from '@/mockData';
+import { useData } from '@/contexts/DataContext';
 
 // Define preference types to match those in PreferenceScreen
 type PreferenceType = 'brands' | 'stores' | 'banks';
@@ -17,6 +17,7 @@ type PreferenceType = 'brands' | 'stores' | 'banks';
 const SearchPreferencesScreen = () => {
   const navigate = useNavigate();
   const { user } = useUser();
+  const { offers } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'search' | 'preferences'>('search');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -103,6 +104,27 @@ const SearchPreferencesScreen = () => {
   const navigateToPreference = (type: PreferenceType) => {
     navigate(`/preferences/${type}`);
   };
+
+  // Extract unique categories from offers for popular categories section
+  const getPopularCategories = () => {
+    const categories = new Set<string>();
+    offers.forEach(offer => {
+      if (offer.category) {
+        const cats = offer.category.split(',');
+        cats.forEach(cat => {
+          const trimmedCat = cat.trim();
+          if (trimmedCat) categories.add(trimmedCat);
+        });
+      }
+    });
+    
+    return Array.from(categories).slice(0, 5).map(cat => ({
+      name: cat,
+      id: cat.toLowerCase().replace(/\s+/g, '-')
+    }));
+  };
+
+  const popularCategories = getPopularCategories();
 
   return (
     <div className="pb-16 bg-monkeyBackground min-h-screen">
@@ -301,46 +323,46 @@ const SearchPreferencesScreen = () => {
           <div className="bg-white rounded-lg p-4">
             <h3 className="font-semibold mb-3">Popular Categories</h3>
             <div className="flex flex-wrap gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="rounded-full"
-                onClick={() => navigate('/category/food-drinks')}
-              >
-                Food & Drinks
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="rounded-full"
-                onClick={() => navigate('/category/fashion')}
-              >
-                Fashion
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="rounded-full"
-                onClick={() => navigate('/category/electronics')}
-              >
-                Electronics
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="rounded-full"
-                onClick={() => navigate('/category/travel')}
-              >
-                Travel
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="rounded-full"
-                onClick={() => navigate('/category/entertainment')}
-              >
-                Entertainment
-              </Button>
+              {popularCategories.length > 0 ? (
+                popularCategories.map((category) => (
+                  <Button 
+                    key={category.id}
+                    variant="outline" 
+                    size="sm" 
+                    className="rounded-full"
+                    onClick={() => navigate(`/category/${category.id}`)}
+                  >
+                    {category.name}
+                  </Button>
+                ))
+              ) : (
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="rounded-full"
+                    onClick={() => navigate('/category/food-drinks')}
+                  >
+                    Food & Drinks
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="rounded-full"
+                    onClick={() => navigate('/category/fashion')}
+                  >
+                    Fashion
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="rounded-full"
+                    onClick={() => navigate('/category/electronics')}
+                  >
+                    Electronics
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>

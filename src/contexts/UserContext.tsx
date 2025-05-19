@@ -31,14 +31,16 @@ const getInitialUser = (): User => {
       // Set default location to India
       return {
         ...mockUser,
-        location: 'India'
+        location: 'India',
+        savedOffers: []
       };
     }
   } catch (error) {
     console.error('Error retrieving user from localStorage:', error);
     return {
       ...mockUser,
-      location: 'India'
+      location: 'India',
+      savedOffers: []
     };
   }
 };
@@ -104,7 +106,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     
     // Listen for auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, session?.user.id);
+      console.log("Auth state changed:", event, session?.user?.id);
       setAuthSession(session);
       
       if (event === 'SIGNED_IN' && session) {

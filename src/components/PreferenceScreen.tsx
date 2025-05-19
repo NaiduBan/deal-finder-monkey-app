@@ -16,12 +16,156 @@ const PreferenceScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [items, setItems] = useState<Array<{id: string, name: string, logo?: string}>>([]);
   
-  // Fetch user preferences from Supabase on component mount
+  // Fetch data from Supabase based on preference type
   useEffect(() => {
-    const fetchUserPreferences = async () => {
+    const fetchData = async () => {
       setIsLoading(true);
       
+      try {
+        let fetchedItems: Array<{id: string, name: string, logo?: string}> = [];
+        
+        switch (preferenceType) {
+          case 'brands':
+            // For brands, extract unique categories from Data table
+            const { data: categoriesData, error: categoriesError } = await supabase
+              .from('Data')
+              .select('categories')
+              .not('categories', 'is', null);
+            
+            if (categoriesError) {
+              console.error('Error fetching categories:', categoriesError);
+              // Fallback to mock data
+              fetchedItems = mockBrands;
+            } else if (categoriesData) {
+              // Extract unique categories
+              const uniqueCategories = new Set<string>();
+              
+              categoriesData.forEach(item => {
+                if (item.categories) {
+                  const categories = item.categories.split(',');
+                  categories.forEach((cat: string) => {
+                    const trimmedCat = cat.trim();
+                    if (trimmedCat) uniqueCategories.add(trimmedCat);
+                  });
+                }
+              });
+              
+              // Convert to our format
+              fetchedItems = Array.from(uniqueCategories).map((cat, index) => ({
+                id: `b${index}`,
+                name: cat,
+                logo: cat.charAt(0).toUpperCase()
+              }));
+            }
+            break;
+            
+          case 'stores':
+            // For stores, extract unique store names from Data table
+            const { data: storesData, error: storesError } = await supabase
+              .from('Data')
+              .select('store')
+              .not('store', 'is', null);
+            
+            if (storesError) {
+              console.error('Error fetching stores:', storesError);
+              // Fallback to mock data
+              fetchedItems = mockStores;
+            } else if (storesData) {
+              // Extract unique stores
+              const uniqueStores = new Set<string>();
+              
+              storesData.forEach(item => {
+                if (item.store) {
+                  const store = item.store.trim();
+                  if (store) uniqueStores.add(store);
+                }
+              });
+              
+              // Convert to our format
+              fetchedItems = Array.from(uniqueStores).map((store, index) => ({
+                id: `s${index}`,
+                name: store,
+                logo: store.charAt(0).toUpperCase()
+              }));
+            }
+            break;
+            
+          case 'banks':
+            // For banks, extract bank references from offer descriptions
+            const { data: offersData, error: offersError } = await supabase
+              .from('Data')
+              .select('description, long_offer')
+              .not('description', 'is', null);
+            
+            if (offersError) {
+              console.error('Error fetching offers for bank extraction:', offersError);
+              // Fallback to mock data
+              fetchedItems = mockBanks;
+            } else if (offersData) {
+              // Common bank names in India to look for
+              const bankNames = [
+                'HDFC', 'SBI', 'ICICI', 'Axis', 'RBL', 'Kotak', 
+                'Bank of Baroda', 'Punjab National', 'IDBI', 'Canara',
+                'Federal', 'IndusInd', 'Yes Bank', 'Union Bank'
+              ];
+              
+              const bankReferences: {[key: string]: number} = {};
+              
+              offersData.forEach(item => {
+                const fullText = `${item.description || ''} ${item.long_offer || ''}`;
+                
+                bankNames.forEach(bank => {
+                  if (fullText.includes(bank)) {
+                    bankReferences[bank] = (bankReferences[bank] || 0) + 1;
+                  }
+                });
+              });
+              
+              // Convert to our format, only include banks that were actually found
+              fetchedItems = Object.keys(bankReferences).map((bank, index) => ({
+                id: `bk${index}`,
+                name: bank,
+                logo: '🏦'
+              }));
+              
+              // If no banks found, use mock data
+              if (fetchedItems.length === 0) {
+                fetchedItems = mockBanks;
+              }
+            }
+            break;
+            
+          default:
+            fetchedItems = [];
+        }
+        
+        setItems(fetchedItems);
+      } catch (error) {
+        console.error(`Error loading ${preferenceType}:`, error);
+        
+        // Set mock data as fallback
+        switch (preferenceType) {
+          case 'brands':
+            setItems(mockBrands);
+            break;
+          case 'stores':
+            setItems(mockStores);
+            break;
+          case 'banks':
+            setItems(mockBanks);
+            break;
+          default:
+            setItems([]);
+        }
+      }
+      
+      // Now fetch user preferences from Supabase
+      fetchUserPreferences();
+    };
+    
+    const fetchUserPreferences = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
@@ -62,18 +206,18 @@ const PreferenceScreen = () => {
       }
     };
     
-    fetchUserPreferences();
+    fetchData();
   }, [preferenceType]);
   
   // Determine which data to use based on preference type
   const getDataAndTitle = (type: string) => {
     switch (type) {
       case 'brands':
-        return { data: mockBrands, title: 'Favorite Brands' };
+        return { data: items, title: 'Favorite Brands' };
       case 'stores':
-        return { data: mockStores, title: 'Preferred Stores' };
+        return { data: items, title: 'Preferred Stores' };
       case 'banks':
-        return { data: mockBanks, title: 'Bank Offers' };
+        return { data: items, title: 'Bank Offers' };
       default:
         return { data: [], title: 'Preferences' };
     }
@@ -141,12 +285,18 @@ const PreferenceScreen = () => {
           title: "Preferences saved",
           description: `Your ${title.toLowerCase()} have been updated`,
         });
+        
+        // Redirect to home to see updated offers
+        navigate('/home');
       } else {
         // User not authenticated, just show a success message
         toast({
           title: "Preferences saved locally",
           description: `Your ${title.toLowerCase()} have been updated locally`,
         });
+        
+        // Redirect to home
+        navigate('/home');
       }
     } catch (error: any) {
       toast({
