@@ -1,10 +1,10 @@
 
 export interface Offer {
   id: string;
-  title: string;
-  description: string;
-  imageUrl: string;
-  store: string;
+  title: string | null;
+  description: string | null;
+  imageUrl: string | null;
+  store: string | null;
   category: string;
   price: number;
   originalPrice: number;
@@ -18,20 +18,22 @@ export interface Offer {
   affiliateLink?: string;
   terms?: string;
   savings: number | string;
-  // New fields from the data structure
-  lmdId?: string;
-  merchantHomepage?: string;
-  longOffer?: string;
-  code?: string;
-  termsAndConditions?: string;
-  featured?: boolean;
-  publisherExclusive?: boolean;
-  url?: string;
-  smartlink?: string;
-  offerType?: string;
-  offerValue?: string;
-  status?: string;
-  startDate?: string;
+  // Fields from the Data table structure
+  lmdId: number;
+  merchantHomepage: string | null;
+  longOffer: string | null;
+  code: string | null;
+  termsAndConditions: string | null;
+  featured: boolean;
+  publisherExclusive: boolean;
+  url: string | null;
+  smartlink: string | null;
+  offerType: string | null;
+  offerValue: string | null;
+  status: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  categories: string | null;
 }
 
 export interface Category {

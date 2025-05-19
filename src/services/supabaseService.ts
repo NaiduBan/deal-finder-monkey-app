@@ -22,51 +22,48 @@ export async function fetchCategories(): Promise<Category[]> {
   }));
 }
 
-// Function to fetch all offers
+// Function to fetch all offers from the Data table
 export async function fetchOffers(): Promise<Offer[]> {
   const { data, error } = await supabase
-    .from('offers')
-    .select('*, categories(*)');
+    .from('Data')
+    .select('*');
   
   if (error) {
     console.error('Error fetching offers:', error);
     throw error;
   }
   
+  // Generate random IDs for offers from Data table since they don't have IDs
   // Transform the data to match our Offer type
-  return data.map(item => ({
-    id: item.id,
-    title: item.title,
-    description: item.description,
+  return data.map((item, index) => ({
+    id: `data-${item.lmd_id || index}`,
+    title: item.title || "",
+    description: item.description || "",
     imageUrl: item.image_url || "",
-    store: item.store,
-    category: item.categories?.name || "",
-    price: Number(item.price),
-    originalPrice: Number(item.original_price),
-    expiryDate: item.expiry_date || "",
-    location: item.location_lat && item.location_lng ? {
-      lat: Number(item.location_lat),
-      lng: Number(item.location_lng),
-      address: item.location_address || ""
-    } : undefined,
-    isAmazon: item.is_amazon || false,
-    affiliateLink: item.affiliate_link || undefined,
-    terms: item.terms || undefined,
-    savings: item.savings || "",
-    // Map new fields
-    lmdId: item.lmd_id || undefined,
-    merchantHomepage: item.merchant_homepage || undefined,
-    longOffer: item.long_offer || undefined,
-    code: item.code || undefined,
-    termsAndConditions: item.terms_and_conditions || undefined,
-    featured: item.featured || false,
-    publisherExclusive: item.publisher_exclusive || false,
-    url: item.url || undefined,
-    smartlink: item.smartlink || undefined,
-    offerType: item.offer_type || undefined,
-    offerValue: item.offer_value || undefined,
-    status: item.status || undefined,
-    startDate: item.start_date || undefined
+    store: item.store || "",
+    category: item.categories || "",
+    // Use placeholder values for required fields that don't exist in Data table
+    price: 0, 
+    originalPrice: 0,
+    expiryDate: item.end_date || "",
+    isAmazon: false,
+    savings: "",
+    // Fields from the Data table
+    lmdId: item.lmd_id,
+    merchantHomepage: item.merchant_homepage,
+    longOffer: item.long_offer,
+    code: item.code,
+    termsAndConditions: item.terms_and_conditions,
+    featured: item.featured === "true" || item.featured === "1",
+    publisherExclusive: item.publisher_exclusive === "true" || item.publisher_exclusive === "1",
+    url: item.url,
+    smartlink: item.smartlink,
+    offerType: item.type,
+    offerValue: item.offer_value,
+    status: item.status,
+    startDate: item.start_date,
+    endDate: item.end_date,
+    categories: item.categories
   }));
 }
 

@@ -30,6 +30,75 @@ export type Database = {
         }
         Relationships: []
       }
+      Data: {
+        Row: {
+          categories: string | null
+          code: string | null
+          description: string | null
+          end_date: string | null
+          featured: string | null
+          image_url: string | null
+          lmd_id: number
+          long_offer: string | null
+          merchant_homepage: string | null
+          offer: string | null
+          offer_value: string | null
+          publisher_exclusive: string | null
+          smartlink: string | null
+          start_date: string | null
+          status: string | null
+          store: string | null
+          terms_and_conditions: string | null
+          title: string | null
+          type: string | null
+          url: string | null
+        }
+        Insert: {
+          categories?: string | null
+          code?: string | null
+          description?: string | null
+          end_date?: string | null
+          featured?: string | null
+          image_url?: string | null
+          lmd_id: number
+          long_offer?: string | null
+          merchant_homepage?: string | null
+          offer?: string | null
+          offer_value?: string | null
+          publisher_exclusive?: string | null
+          smartlink?: string | null
+          start_date?: string | null
+          status?: string | null
+          store?: string | null
+          terms_and_conditions?: string | null
+          title?: string | null
+          type?: string | null
+          url?: string | null
+        }
+        Update: {
+          categories?: string | null
+          code?: string | null
+          description?: string | null
+          end_date?: string | null
+          featured?: string | null
+          image_url?: string | null
+          lmd_id?: number
+          long_offer?: string | null
+          merchant_homepage?: string | null
+          offer?: string | null
+          offer_value?: string | null
+          publisher_exclusive?: string | null
+          smartlink?: string | null
+          start_date?: string | null
+          status?: string | null
+          store?: string | null
+          terms_and_conditions?: string | null
+          title?: string | null
+          type?: string | null
+          url?: string | null
+        }
+        Relationships: []
+      }
       offers: {
         Row: {
           affiliate_link: string | null
@@ -133,6 +202,13 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "offers_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offers_temp_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"

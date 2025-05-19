@@ -17,24 +17,28 @@ const OfferCard = ({ offer }: OfferCardProps) => {
     <div className="offer-card h-full flex flex-col">
       <div className="aspect-square relative">
         <img 
-          src={offer.imageUrl} 
-          alt={offer.title} 
+          src={offer.imageUrl || "/placeholder.svg"} 
+          alt={offer.title || "Offer"} 
           className="w-full h-full object-cover"
         />
         <div className="absolute top-2 right-2 bg-monkeyYellow text-black text-xs font-bold px-2 py-0.5 rounded-full">
-          {offer.savings}
+          {offer.offerValue || offer.savings}
         </div>
       </div>
       
       <div className="p-3 flex-1 flex flex-col">
-        <p className="text-xs text-monkeyGreen font-medium">{offer.store}</p>
-        <h3 className="font-medium text-sm line-clamp-2 flex-1">{offer.title}</h3>
+        <p className="text-xs text-monkeyGreen font-medium">{offer.store || "Store"}</p>
+        <h3 className="font-medium text-sm line-clamp-2 flex-1">{offer.title || "Offer Title"}</h3>
         
         <div className="flex justify-between items-center mt-2">
-          <div className="flex items-baseline gap-1">
-            <span className="font-bold">{formatPrice(offer.price)}</span>
-            <span className="text-xs text-gray-500 line-through">{formatPrice(offer.originalPrice)}</span>
-          </div>
+          {(offer.price > 0 || offer.originalPrice > 0) && (
+            <div className="flex items-baseline gap-1">
+              <span className="font-bold">{formatPrice(offer.price)}</span>
+              {offer.originalPrice > 0 && (
+                <span className="text-xs text-gray-500 line-through">{formatPrice(offer.originalPrice)}</span>
+              )}
+            </div>
+          )}
           
           {offer.location && (
             <div className="flex items-center text-xs text-gray-500">
