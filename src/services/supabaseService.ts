@@ -37,7 +37,7 @@ export async function fetchCategories(): Promise<Category[]> {
   }
 }
 
-// Function to fetch all offers from ONLY the Data table
+// Function to fetch all offers from the Data table
 export async function fetchOffers(): Promise<Offer[]> {
   try {
     console.log('Fetching offers from Data table...');
@@ -73,7 +73,7 @@ export async function fetchOffers(): Promise<Offer[]> {
       isAmazon: false,
       savings: "",
       // Fields from the Data table
-      lmdId: Number(item.lmd_id) || 0, // Convert to number to fix type issue
+      lmdId: Number(item.lmd_id) || 0,
       merchantHomepage: item.merchant_homepage || "",
       longOffer: item.long_offer || "",
       code: item.code || "",

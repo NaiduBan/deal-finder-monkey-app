@@ -101,120 +101,72 @@ export type Database = {
       }
       offers: {
         Row: {
-          affiliate_link: string | null
-          category_id: string | null
+          categories: string | null
           code: string | null
-          created_at: string
-          description: string
-          expiry_date: string | null
-          featured: boolean | null
-          id: string
+          description: string | null
+          end_date: string | null
+          featured: string | null
           image_url: string | null
-          is_amazon: boolean | null
-          lmd_id: string | null
-          location_address: string | null
-          location_lat: number | null
-          location_lng: number | null
+          lmd_id: number
           long_offer: string | null
           merchant_homepage: string | null
-          offer_type: string | null
+          offer: string | null
           offer_value: string | null
-          original_price: number
-          price: number
-          publisher_exclusive: boolean | null
-          savings: string | null
+          publisher_exclusive: string | null
           smartlink: string | null
           start_date: string | null
           status: string | null
-          store: string
-          terms: string | null
+          store: string | null
           terms_and_conditions: string | null
-          title: string
-          updated_at: string
+          title: string | null
+          type: string | null
           url: string | null
         }
         Insert: {
-          affiliate_link?: string | null
-          category_id?: string | null
+          categories?: string | null
           code?: string | null
-          created_at?: string
-          description: string
-          expiry_date?: string | null
-          featured?: boolean | null
-          id?: string
+          description?: string | null
+          end_date?: string | null
+          featured?: string | null
           image_url?: string | null
-          is_amazon?: boolean | null
-          lmd_id?: string | null
-          location_address?: string | null
-          location_lat?: number | null
-          location_lng?: number | null
+          lmd_id: number
           long_offer?: string | null
           merchant_homepage?: string | null
-          offer_type?: string | null
+          offer?: string | null
           offer_value?: string | null
-          original_price: number
-          price: number
-          publisher_exclusive?: boolean | null
-          savings?: string | null
+          publisher_exclusive?: string | null
           smartlink?: string | null
           start_date?: string | null
           status?: string | null
-          store: string
-          terms?: string | null
+          store?: string | null
           terms_and_conditions?: string | null
-          title: string
-          updated_at?: string
+          title?: string | null
+          type?: string | null
           url?: string | null
         }
         Update: {
-          affiliate_link?: string | null
-          category_id?: string | null
+          categories?: string | null
           code?: string | null
-          created_at?: string
-          description?: string
-          expiry_date?: string | null
-          featured?: boolean | null
-          id?: string
+          description?: string | null
+          end_date?: string | null
+          featured?: string | null
           image_url?: string | null
-          is_amazon?: boolean | null
-          lmd_id?: string | null
-          location_address?: string | null
-          location_lat?: number | null
-          location_lng?: number | null
+          lmd_id?: number
           long_offer?: string | null
           merchant_homepage?: string | null
-          offer_type?: string | null
+          offer?: string | null
           offer_value?: string | null
-          original_price?: number
-          price?: number
-          publisher_exclusive?: boolean | null
-          savings?: string | null
+          publisher_exclusive?: string | null
           smartlink?: string | null
           start_date?: string | null
           status?: string | null
-          store?: string
-          terms?: string | null
+          store?: string | null
           terms_and_conditions?: string | null
-          title?: string
-          updated_at?: string
+          title?: string | null
+          type?: string | null
           url?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "offers_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "offers_temp_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
