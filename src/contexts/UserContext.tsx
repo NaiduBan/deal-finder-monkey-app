@@ -19,10 +19,26 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 const getInitialUser = (): User => {
   try {
     const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : mockUser;
+    if (savedUser) {
+      const parsedUser = JSON.parse(savedUser);
+      // Update location to India if it's the first time
+      if (parsedUser.location !== 'India') {
+        parsedUser.location = 'India';
+      }
+      return parsedUser;
+    } else {
+      // Set default location to India
+      return {
+        ...mockUser,
+        location: 'India'
+      };
+    }
   } catch (error) {
     console.error('Error retrieving user from localStorage:', error);
-    return mockUser;
+    return {
+      ...mockUser,
+      location: 'India'
+    };
   }
 };
 

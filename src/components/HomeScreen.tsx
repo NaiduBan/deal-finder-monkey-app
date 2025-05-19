@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Bell } from 'lucide-react';
+import { MapPin, Bell, Search } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { mockCategories, mockOffers } from '@/mockData';
 import { useUser } from '@/contexts/UserContext';
 import OfferCard from './OfferCard';
@@ -11,6 +12,7 @@ import CategoryItem from './CategoryItem';
 const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useUser();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadMoreOffers = () => {
     setIsLoading(true);
@@ -24,6 +26,19 @@ const HomeScreen = () => {
   const savedOffers = mockOffers.filter(offer => 
     user.savedOffers.includes(offer.id)
   );
+  
+  // Filter offers based on search query
+  const filteredOffers = mockOffers.filter(offer => 
+    searchQuery === '' || 
+    offer.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    offer.store.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    offer.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Format price in Indian Rupees
+  const formatPrice = (price: number) => {
+    return `₹${price.toLocaleString('en-IN')}`;
+  };
 
   return (
     <div className="pb-16 bg-monkeyBackground min-h-screen">
@@ -32,7 +47,7 @@ const HomeScreen = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-1">
             <MapPin className="w-4 h-4" />
-            <span className="text-sm">{user.location}</span>
+            <span className="text-sm">India</span>
           </div>
           <div className="flex items-center space-x-1">
             <Link to="/notifications" className="flex items-center">
@@ -47,6 +62,18 @@ const HomeScreen = () => {
       
       {/* Main content */}
       <div className="p-4 space-y-6">
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            type="search"
+            placeholder="Search for offers, stores, categories..."
+            className="pl-10 pr-4 py-2 w-full border-gray-200"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        
         {/* Categories carousel */}
         <div>
           <h2 className="font-bold mb-3 text-lg">For You</h2>
@@ -66,7 +93,7 @@ const HomeScreen = () => {
             <div className="grid grid-cols-2 gap-4">
               {savedOffers.map((offer) => (
                 <Link key={offer.id} to={`/offer/${offer.id}`}>
-                  <OfferCard offer={offer} />
+                  <OfferCard offer={{...offer, price: offer.price}} />
                 </Link>
               ))}
             </div>
@@ -92,33 +119,41 @@ const HomeScreen = () => {
             
             <TabsContent value="all" className="space-y-4 mt-2">
               <div className="grid grid-cols-2 gap-4">
-                {mockOffers.map((offer) => (
+                {filteredOffers.map((offer) => (
                   <Link key={offer.id} to={`/offer/${offer.id}`}>
                     <OfferCard offer={offer} />
                   </Link>
                 ))}
               </div>
               
-              {/* Load more button */}
-              <button 
-                onClick={loadMoreOffers}
-                className="w-full py-3 text-center text-monkeyGreen border border-monkeyGreen rounded-lg mt-4 flex items-center justify-center"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 rounded-full border-2 border-monkeyGreen border-t-transparent animate-spin"></div>
-                    <span>Loading more...</span>
-                  </div>
-                ) : (
-                  <span>Load more</span>
-                )}
-              </button>
+              {filteredOffers.length === 0 && (
+                <div className="bg-white p-6 rounded-lg text-center shadow-sm">
+                  <p className="text-gray-500">No offers found</p>
+                  <p className="text-sm text-gray-400 mt-2">Try a different search term</p>
+                </div>
+              )}
+              
+              {filteredOffers.length > 0 && (
+                <button 
+                  onClick={loadMoreOffers}
+                  className="w-full py-3 text-center text-monkeyGreen border border-monkeyGreen rounded-lg mt-4 flex items-center justify-center"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 rounded-full border-2 border-monkeyGreen border-t-transparent animate-spin"></div>
+                      <span>Loading more...</span>
+                    </div>
+                  ) : (
+                    <span>Load more</span>
+                  )}
+                </button>
+              )}
             </TabsContent>
             
             <TabsContent value="nearby" className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                {mockOffers.filter(offer => !offer.isAmazon).map((offer) => (
+                {filteredOffers.filter(offer => !offer.isAmazon).map((offer) => (
                   <Link key={offer.id} to={`/offer/${offer.id}`}>
                     <OfferCard offer={offer} />
                   </Link>
@@ -128,7 +163,7 @@ const HomeScreen = () => {
             
             <TabsContent value="amazon" className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                {mockOffers.filter(offer => offer.isAmazon).map((offer) => (
+                {filteredOffers.filter(offer => offer.isAmazon).map((offer) => (
                   <Link key={offer.id} to={`/offer/${offer.id}`}>
                     <OfferCard offer={offer} />
                   </Link>

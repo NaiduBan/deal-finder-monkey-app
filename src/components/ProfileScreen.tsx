@@ -1,13 +1,12 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, User, MapPin, Bell, Heart, Settings, Edit, ChevronRight, LogOut } from 'lucide-react';
+import { ChevronLeft, User, MapPin, Bell, Settings, Edit, ChevronRight, LogOut } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from '@/hooks/use-toast';
-import { mockOffers } from '@/mockData';
 import { useUser } from '@/contexts/UserContext';
 
 const ProfileScreen = () => {
@@ -23,10 +22,6 @@ const ProfileScreen = () => {
   const [profileName, setProfileName] = useState(user.name);
   const [profilePhone, setProfilePhone] = useState(user.phone);
   const [profileLocation, setProfileLocation] = useState(user.location);
-  
-  const savedOffers = mockOffers.filter(offer => 
-    user.savedOffers.includes(offer.id)
-  );
   
   const handleNotificationChange = (type: keyof typeof notifications) => {
     setNotifications(prev => {
@@ -167,31 +162,6 @@ const ProfileScreen = () => {
         </Dialog>
       </div>
       
-      {/* Saved offers */}
-      <div className="m-4 bg-white rounded-xl p-4 shadow-sm">
-        <h3 className="font-semibold text-lg mb-2 flex items-center">
-          <Heart className="w-5 h-5 mr-2 text-monkeyGreen" /> 
-          Saved Offers
-        </h3>
-        
-        {savedOffers.length > 0 ? (
-          <div className="space-y-3">
-            {savedOffers.map(offer => (
-              <Link key={offer.id} to={`/offer/${offer.id}`} className="flex items-center p-2 hover:bg-gray-50 rounded-lg">
-                <img src={offer.imageUrl} alt={offer.title} className="w-12 h-12 object-cover rounded-md mr-3" />
-                <div className="flex-1">
-                  <p className="font-medium">{offer.title}</p>
-                  <p className="text-sm text-gray-600">{offer.store}</p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-400" />
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500 text-center py-4">No saved offers yet</p>
-        )}
-      </div>
-      
       {/* Notification settings */}
       <div className="m-4 bg-white rounded-xl p-4 shadow-sm">
         <h3 className="font-semibold text-lg mb-2 flex items-center">
@@ -236,29 +206,6 @@ const ProfileScreen = () => {
             />
           </div>
         </div>
-      </div>
-      
-      {/* Preferences */}
-      <div className="m-4 bg-white rounded-xl p-4 shadow-sm">
-        <h3 className="font-semibold text-lg mb-2">Preferences</h3>
-        
-        <Link to="/preferences/brands" className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-lg">
-          <span>Favorite Brands</span>
-          <ChevronRight className="w-5 h-5 text-gray-400" />
-        </Link>
-        
-        <Link to="/preferences/stores" className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-lg">
-          <span>Preferred Stores</span>
-          <ChevronRight className="w-5 h-5 text-gray-400" />
-        </Link>
-        
-        <Link to="/preferences/banks" className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-lg">
-          <span>Bank Offers</span>
-          <div className="flex items-center">
-            <span className="text-sm text-gray-500 mr-2">{user.preferences.banks.length} selected</span>
-            <ChevronRight className="w-5 h-5 text-gray-400" />
-          </div>
-        </Link>
       </div>
       
       {/* Logout button */}
