@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Search, ShoppingBag, Store, CreditCard } from 'lucide-react';
@@ -17,18 +18,6 @@ const PreferenceScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [items, setItems] = useState<Array<{id: string, name: string, logo?: string}>>([]);
   
-  // Load cached selections first for responsive UI
-  useEffect(() => {
-    try {
-      const cachedSelections = localStorage.getItem(`selected_${preferenceType}`);
-      if (cachedSelections) {
-        setSelectedItems(JSON.parse(cachedSelections));
-      }
-    } catch (error) {
-      console.error('Error loading cached selections:', error);
-    }
-  }, [preferenceType]);
-  
   // Fetch data from Supabase based on preference type
   useEffect(() => {
     const fetchData = async () => {
@@ -36,15 +25,6 @@ const PreferenceScreen = () => {
       
       try {
         let fetchedItems: Array<{id: string, name: string, logo?: string}> = [];
-        
-        // First check if we have cached data
-        const cachedItems = localStorage.getItem(`items_${preferenceType}`);
-        if (cachedItems) {
-          fetchedItems = JSON.parse(cachedItems);
-          setItems(fetchedItems);
-          setIsLoading(false);
-          console.log(`Using cached ${preferenceType} while fetching fresh data...`);
-        }
         
         switch (preferenceType) {
           case 'brands':
@@ -56,11 +36,8 @@ const PreferenceScreen = () => {
             
             if (categoriesError) {
               console.error('Error fetching categories:', categoriesError);
-              // Fallback to mock data if no cached data
-              if (!cachedItems) {
-                fetchedItems = mockBrands;
-                setItems(fetchedItems);
-              }
+              // Fallback to mock data
+              fetchedItems = mockBrands;
             } else if (categoriesData) {
               // Extract unique categories
               const uniqueCategories = new Set<string>();
@@ -81,11 +58,6 @@ const PreferenceScreen = () => {
                 name: cat,
                 logo: cat.charAt(0).toUpperCase()
               }));
-              
-              setItems(fetchedItems);
-              
-              // Cache the data
-              localStorage.setItem(`items_${preferenceType}`, JSON.stringify(fetchedItems));
             }
             break;
             
@@ -98,11 +70,8 @@ const PreferenceScreen = () => {
             
             if (storesError) {
               console.error('Error fetching stores:', storesError);
-              // Fallback to mock data if no cached data
-              if (!cachedItems) {
-                fetchedItems = mockStores;
-                setItems(fetchedItems);
-              }
+              // Fallback to mock data
+              fetchedItems = mockStores;
             } else if (storesData) {
               // Extract unique stores
               const uniqueStores = new Set<string>();
@@ -120,11 +89,6 @@ const PreferenceScreen = () => {
                 name: store,
                 logo: store.charAt(0).toUpperCase()
               }));
-              
-              setItems(fetchedItems);
-              
-              // Cache the data
-              localStorage.setItem(`items_${preferenceType}`, JSON.stringify(fetchedItems));
             }
             break;
             
@@ -137,11 +101,8 @@ const PreferenceScreen = () => {
             
             if (offersError) {
               console.error('Error fetching offers for bank extraction:', offersError);
-              // Fallback to mock data if no cached data
-              if (!cachedItems) {
-                fetchedItems = mockBanks;
-                setItems(fetchedItems);
-              }
+              // Fallback to mock data
+              fetchedItems = mockBanks;
             } else if (offersData) {
               // Common bank names in India to look for
               const bankNames = [
@@ -170,42 +131,33 @@ const PreferenceScreen = () => {
               }));
               
               // If no banks found, use mock data
-              if (fetchedItems.length === 0 && !cachedItems) {
+              if (fetchedItems.length === 0) {
                 fetchedItems = mockBanks;
               }
-              
-              setItems(fetchedItems);
-              
-              // Cache the data
-              localStorage.setItem(`items_${preferenceType}`, JSON.stringify(fetchedItems));
             }
             break;
             
           default:
             fetchedItems = [];
         }
+        
+        setItems(fetchedItems);
       } catch (error) {
         console.error(`Error loading ${preferenceType}:`, error);
         
-        // Check for cached data before falling back to mock
-        const cachedItems = localStorage.getItem(`items_${preferenceType}`);
-        if (cachedItems) {
-          setItems(JSON.parse(cachedItems));
-        } else {
-          // Set mock data as fallback
-          switch (preferenceType) {
-            case 'brands':
-              setItems(mockBrands);
-              break;
-            case 'stores':
-              setItems(mockStores);
-              break;
-            case 'banks':
-              setItems(mockBanks);
-              break;
-            default:
-              setItems([]);
-          }
+        // Set mock data as fallback
+        switch (preferenceType) {
+          case 'brands':
+            setItems(mockBrands);
+            break;
+          case 'stores':
+            setItems(mockStores);
+            break;
+          case 'banks':
+            setItems(mockBanks);
+            break;
+          default:
+            setItems([]);
         }
       }
       
@@ -229,32 +181,22 @@ const PreferenceScreen = () => {
             console.error('Error fetching preferences:', error);
           } else if (data) {
             // Set the selected items based on fetched preferences
-            const selectedPrefs = data.map(pref => pref.preference_id);
-            setSelectedItems(selectedPrefs);
-            
-            // Cache the selections
-            localStorage.setItem(`selected_${preferenceType}`, JSON.stringify(selectedPrefs));
+            setSelectedItems(data.map(pref => pref.preference_id));
           }
         } else {
-          // Check for cached selections first
-          const cachedSelections = localStorage.getItem(`selected_${preferenceType}`);
-          if (cachedSelections) {
-            setSelectedItems(JSON.parse(cachedSelections));
-          } else {
-            // If not authenticated and no cache, use default selections
-            switch (preferenceType) {
-              case 'brands':
-                setSelectedItems(['b1', 'b3', 'b5']);
-                break;
-              case 'stores':
-                setSelectedItems(['s2', 's4', 's8']);
-                break;
-              case 'banks':
-                setSelectedItems(['bk2', 'bk5', 'bk6']);
-                break;
-              default:
-                setSelectedItems([]);
-            }
+          // If not authenticated, use default selections based on preference type
+          switch (preferenceType) {
+            case 'brands':
+              setSelectedItems(['b1', 'b3', 'b5']);
+              break;
+            case 'stores':
+              setSelectedItems(['s2', 's4', 's8']);
+              break;
+            case 'banks':
+              setSelectedItems(['bk2', 'bk5', 'bk6']);
+              break;
+            default:
+              setSelectedItems([]);
           }
         }
       } catch (error) {
@@ -265,53 +207,6 @@ const PreferenceScreen = () => {
     };
     
     fetchData();
-  }, [preferenceType]);
-  
-  // Set up real-time listener for preference changes
-  useEffect(() => {
-    const { data: { session } } = supabase.auth.getSession();
-    
-    if (!session?.user?.id) return;
-    
-    const channel = supabase
-      .channel('public:user_preferences')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'user_preferences',
-          filter: `user_id=eq.${session.user.id}` 
-        },
-        async () => {
-          console.log('Preferences changed, refreshing...');
-          
-          // Fetch updated preferences
-          const { data, error } = await supabase
-            .from('user_preferences')
-            .select('preference_id')
-            .eq('user_id', session.user.id)
-            .eq('preference_type', preferenceType);
-            
-          if (error) {
-            console.error('Error refreshing preferences:', error);
-            return;
-          }
-          
-          if (data) {
-            const updatedPrefs = data.map(pref => pref.preference_id);
-            setSelectedItems(updatedPrefs);
-            
-            // Cache the updated selections
-            localStorage.setItem(`selected_${preferenceType}`, JSON.stringify(updatedPrefs));
-          }
-        }
-      )
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [preferenceType]);
   
   // Determine which data to use based on preference type
@@ -341,14 +236,11 @@ const PreferenceScreen = () => {
   
   const toggleSelection = (id: string) => {
     setSelectedItems(prev => {
-      const newSelections = prev.includes(id) 
-        ? prev.filter(itemId => itemId !== id)
-        : [...prev, id];
-        
-      // Cache the selections immediately
-      localStorage.setItem(`selected_${preferenceType}`, JSON.stringify(newSelections));
-      
-      return newSelections;
+      if (prev.includes(id)) {
+        return prev.filter(itemId => itemId !== id);
+      } else {
+        return [...prev, id];
+      }
     });
   };
   
@@ -394,15 +286,10 @@ const PreferenceScreen = () => {
           description: `Your ${title.toLowerCase()} have been updated`,
         });
         
-        // Cache the final selections
-        localStorage.setItem(`selected_${preferenceType}`, JSON.stringify(selectedItems));
-        
         // Redirect to home to see updated offers
         navigate('/home');
       } else {
-        // User not authenticated, just show a success message and save to localStorage
-        localStorage.setItem(`selected_${preferenceType}`, JSON.stringify(selectedItems));
-        
+        // User not authenticated, just show a success message
         toast({
           title: "Preferences saved locally",
           description: `Your ${title.toLowerCase()} have been updated locally`,
