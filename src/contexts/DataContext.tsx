@@ -29,7 +29,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let usingMockData = false;
     
     try {
-      // Try to fetch data from Supabase
+      // Try to fetch data from Supabase (specifically the Data table)
       const [offersData, categoriesData] = await Promise.all([
         fetchOffers(),
         fetchCategories()
@@ -37,13 +37,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('Fetch successful:', offersData.length, 'offers,', categoriesData.length, 'categories');
       
-      // Check if we got real data or if the service fell back to mock data
+      // Check if we got real data from the Data table
       if (offersData.length > 0 && offersData[0].id.startsWith('data-')) {
-        console.log('Using real data from Supabase');
+        console.log('Using real data from Supabase Data table');
         setOffers(offersData);
         setIsUsingMockData(false);
       } else {
-        console.log('No data from Supabase, using mock offers');
+        console.log('No data from Supabase Data table, using mock offers');
         setOffers(mockOffers);
         setIsUsingMockData(true);
         usingMockData = true;
@@ -61,7 +61,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (usingMockData) {
         toast({
           title: "Using sample data",
-          description: "Could not connect to the database. Showing sample offers instead.",
+          description: "Could not find data in the Data table. Showing sample offers instead.",
           variant: "default",
         });
       }
@@ -77,7 +77,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       toast({
         title: "Connection Error",
-        description: "Could not fetch real offers. Using sample data instead.",
+        description: "Could not fetch data from the Data table. Using sample data instead.",
         variant: "destructive",
       });
     } finally {
@@ -97,16 +97,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const offersData = await fetchOffers();
       console.log('Refetch successful:', offersData.length, 'offers');
       
-      if (offersData.length > 0) {
+      if (offersData.length > 0 && offersData[0].id.startsWith('data-')) {
+        console.log('Using real data from refetch');
         setOffers(offersData);
         setError(null);
         setIsUsingMockData(false);
+        
+        toast({
+          title: "Data refreshed",
+          description: "Successfully loaded offers from the Data table.",
+          variant: "default",
+        });
       } else {
         // If no real data was found, keep using mock data
-        console.log('No real data found on refetch, keeping mock data');
+        console.log('No real data found in Data table on refetch, keeping mock data');
+        setOffers(mockOffers);
+        setIsUsingMockData(true);
+        
         toast({
           title: "No offers found",
-          description: "Could not find any offers in the database.",
+          description: "Could not find any offers in the Data table.",
           variant: "default",
         });
       }
@@ -116,7 +126,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       toast({
         title: "Error refreshing",
-        description: "Could not refresh offers. Please try again later.",
+        description: "Could not refresh offers from the Data table. Please try again later.",
         variant: "destructive",
       });
     } finally {
