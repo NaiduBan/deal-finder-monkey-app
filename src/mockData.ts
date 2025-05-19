@@ -1,3 +1,4 @@
+
 import { Offer, Category, User, BannerItem } from "./types";
 
 export const mockCategories: Category[] = [
@@ -69,7 +70,23 @@ export const mockOffers: Offer[] = [
     },
     isAmazon: false,
     terms: "Limited to in-store purchases only. Cannot be combined with other offers.",
-    savings: "50%"
+    savings: "50%",
+    // Added fields to match updated Offer interface
+    lmdId: 1001,
+    merchantHomepage: "https://wholefoods.com",
+    longOffer: "Enjoy 50% off all organic fruits and vegetables this weekend. Great time to stock up on healthy foods!",
+    code: null,
+    termsAndConditions: "Cannot be combined with other discounts. Valid in-store only.",
+    featured: false,
+    publisherExclusive: false,
+    url: "https://wholefoods.com/offers",
+    smartlink: null,
+    offerType: "discount",
+    offerValue: "50% Off",
+    status: "active",
+    startDate: "2025-05-25",
+    endDate: "2025-06-01",
+    categories: "supermarket,grocery"
   },
   {
     id: "offer2",
@@ -88,7 +105,23 @@ export const mockOffers: Offer[] = [
     },
     isAmazon: false,
     terms: "Requires eligible trade-in. In-store only.",
-    savings: "$200"
+    savings: "$200",
+    // Added fields
+    lmdId: 1002,
+    merchantHomepage: "https://bestbuy.com",
+    longOffer: "Trade in your old phone and get $200 off on the new Samsung Galaxy S23 Ultra. Limited time offer.",
+    code: null,
+    termsAndConditions: "Requires eligible trade-in. Offer valid in-store only.",
+    featured: true,
+    publisherExclusive: false,
+    url: "https://bestbuy.com/offers/samsung",
+    smartlink: null,
+    offerType: "discount",
+    offerValue: "$200 Off",
+    status: "active",
+    startDate: "2025-05-10",
+    endDate: "2025-05-30",
+    categories: "electronics,phones"
   },
   {
     id: "offer3",
@@ -107,7 +140,23 @@ export const mockOffers: Offer[] = [
     },
     isAmazon: false,
     terms: "While supplies last. Select models only.",
-    savings: "30%"
+    savings: "30%",
+    // Added fields
+    lmdId: 1003,
+    merchantHomepage: "https://footlocker.com",
+    longOffer: "Get 30% off all Nike Air Max models. Limited time offer available in store and online.",
+    code: null,
+    termsAndConditions: "While supplies last. Select models only.",
+    featured: false,
+    publisherExclusive: false,
+    url: "https://footlocker.com/offers/nike",
+    smartlink: null,
+    offerType: "discount",
+    offerValue: "30% Off",
+    status: "active",
+    startDate: "2025-05-01",
+    endDate: "2025-05-25",
+    categories: "fashion,shoes"
   },
   {
     id: "offer4",
@@ -121,7 +170,23 @@ export const mockOffers: Offer[] = [
     expiryDate: "2025-06-10",
     isAmazon: true,
     affiliateLink: "https://amazon.com/dp/B09B8V1LZ3?tag=offersmonkey0e-21",
-    savings: "30%"
+    savings: "30%",
+    // Added fields
+    lmdId: 1004,
+    merchantHomepage: "https://amazon.com",
+    longOffer: "Get the Echo Dot (5th Gen) smart speaker with Alexa for 30% off. Limited time offer.",
+    code: null,
+    termsAndConditions: "Amazon Prime members only. Limited to 2 per customer.",
+    featured: true,
+    publisherExclusive: false,
+    url: "https://amazon.com/dp/B09B8V1LZ3",
+    smartlink: "https://amazon.com/dp/B09B8V1LZ3?tag=offersmonkey0e-21",
+    offerType: "sale",
+    offerValue: "30% Off",
+    status: "active",
+    startDate: "2025-05-15",
+    endDate: "2025-06-10",
+    categories: "electronics,smart-home"
   },
   {
     id: "offer5",
@@ -140,7 +205,23 @@ export const mockOffers: Offer[] = [
     },
     isAmazon: false,
     terms: "Floor models only. Delivery fees apply.",
-    savings: "40%"
+    savings: "40%",
+    // Added fields
+    lmdId: 1005,
+    merchantHomepage: "https://ashleyhomestore.com",
+    longOffer: "Get 40% off Italian genuine leather sofas. Floor models only, limited quantities available.",
+    code: null,
+    termsAndConditions: "Floor models only. Delivery fees apply. Cannot be combined with other offers.",
+    featured: false,
+    publisherExclusive: false,
+    url: "https://ashleyhomestore.com/offers",
+    smartlink: null,
+    offerType: "discount",
+    offerValue: "40% Off",
+    status: "active",
+    startDate: "2025-05-20",
+    endDate: "2025-06-15",
+    categories: "furniture,homegoods"
   },
   {
     id: "offer6",
@@ -159,7 +240,23 @@ export const mockOffers: Offer[] = [
     },
     isAmazon: false,
     terms: "In-store only. Certificate of authenticity included.",
-    savings: "35%"
+    savings: "35%",
+    // Added fields
+    lmdId: 1006,
+    merchantHomepage: "https://tiffany.com",
+    longOffer: "Special sale: 14k Gold Ring with 0.5ct diamonds at 35% discount. Certificate of authenticity included.",
+    code: null,
+    termsAndConditions: "In-store only. Certificate of authenticity included. Limited quantities available.",
+    featured: true,
+    publisherExclusive: true,
+    url: "https://tiffany.com/offers",
+    smartlink: null,
+    offerType: "luxury-sale",
+    offerValue: "35% Off",
+    status: "active",
+    startDate: "2025-05-10",
+    endDate: "2025-05-31",
+    categories: "jewelry,accessories"
   },
   {
     id: "offer7",
@@ -173,7 +270,23 @@ export const mockOffers: Offer[] = [
     expiryDate: "2025-06-20",
     isAmazon: true,
     affiliateLink: "https://amazon.com/dp/B08XVYZ1Y5?tag=offersmonkey0e-21",
-    savings: "40%"
+    savings: "40%",
+    // Added fields
+    lmdId: 1007,
+    merchantHomepage: "https://amazon.com",
+    longOffer: "Get the Fire TV Stick 4K for 40% off. Stream your favorite content in 4K quality.",
+    code: null,
+    termsAndConditions: "Limited to 3 per customer. While supplies last.",
+    featured: false,
+    publisherExclusive: false,
+    url: "https://amazon.com/dp/B08XVYZ1Y5",
+    smartlink: "https://amazon.com/dp/B08XVYZ1Y5?tag=offersmonkey0e-21",
+    offerType: "sale",
+    offerValue: "40% Off",
+    status: "active",
+    startDate: "2025-05-20",
+    endDate: "2025-06-20",
+    categories: "electronics,streaming"
   },
   {
     id: "offer8",
@@ -192,7 +305,23 @@ export const mockOffers: Offer[] = [
     },
     isAmazon: false,
     terms: "Limit 4 per customer. Rewards card required.",
-    savings: "50%"
+    savings: "50%",
+    // Added fields
+    lmdId: 1008,
+    merchantHomepage: "https://safeway.com",
+    longOffer: "Buy one get one free on all premium ice cream pints. Perfect for the summer season!",
+    code: null,
+    termsAndConditions: "Limit 4 per customer. Rewards card required. In-store only.",
+    featured: false,
+    publisherExclusive: false,
+    url: "https://safeway.com/offers",
+    smartlink: null,
+    offerType: "bogo",
+    offerValue: "Buy One Get One Free",
+    status: "active",
+    startDate: "2025-05-10",
+    endDate: "2025-05-20",
+    categories: "supermarket,grocery,food"
   }
 ];
 

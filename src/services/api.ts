@@ -1,100 +1,128 @@
 
-import { Offer } from '@/types';
-import axios from 'axios';
+import { Offer, Category, User, BannerItem } from "@/types";
+import { mockOffers, mockCategories, mockBanners, mockUser } from "@/mockData";
 
-const API_BASE_URL = 'http://192.168.0.104:5000';
-
-// Create axios instance with base configuration
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Helper function to convert API data to our app's Offer type
-const mapApiOfferToAppOffer = (apiOffer: any): Offer => {
-  // Parse the offer_value string to get numerical values
-  let price = 0;
-  let originalPrice = 0;
-  let savings = "";
-  
-  // Try to extract price information from offer_value
-  if (apiOffer.offer_value && apiOffer.offer_value !== "Free") {
-    const discountMatch = apiOffer.offer_value.match(/(\d+)%/);
-    if (discountMatch) {
-      savings = `${discountMatch[1]}%`;
-      // Set dummy prices for percentage discounts
-      originalPrice = 100;
-      price = originalPrice * (1 - (parseInt(discountMatch[1], 10) / 100));
-    } else {
-      // Try to extract rupee value
-      const rupeeMatch = apiOffer.offer_value.match(/₹(\d+)/);
-      if (rupeeMatch) {
-        savings = `₹${rupeeMatch[1]}`;
-        price = 100 - parseInt(rupeeMatch[1], 10);
-        originalPrice = 100;
-      } else {
-        // Default values if we can't parse
-        price = 49.99;
-        originalPrice = 99.99;
-        savings = apiOffer.offer_value || "Special";
-      }
-    }
-  } else if (apiOffer.offer_value === "Free") {
-    price = 0;
-    originalPrice = 99.99;
-    savings = "100%";
-  }
-
-  // Map categories string to first category for simplicity
-  const categoryArray = apiOffer.categories ? apiOffer.categories.split(',') : [];
-  const firstCategory = categoryArray.length > 0 ? 
-    categoryArray[0].toLowerCase() : 'electronics';
-
-  return {
-    id: apiOffer.lmd_id || `offer-${Math.random().toString(36).substr(2, 9)}`,
-    title: apiOffer.title || apiOffer.long_offer || "Special Offer",
-    description: apiOffer.description || "",
-    imageUrl: apiOffer.image_url || "/placeholder.svg",
-    store: apiOffer.store || "Online Store",
-    category: firstCategory,
-    price: price,
-    originalPrice: originalPrice,
-    expiryDate: apiOffer.end_date || "2025-12-31",
-    isAmazon: false,
-    affiliateLink: apiOffer.smartlink || apiOffer.url || "",
-    terms: apiOffer.terms_and_conditions || "",
-    savings: savings
-  };
+// Function to simulate API call delay
+const delay = (ms: number): Promise<void> => {
+  return new Promise(resolve => setTimeout(resolve, ms));
 };
 
-export const apiService = {
-  getOffers: async (): Promise<Offer[]> => {
-    try {
-      const response = await apiClient.get('/api/offers');
-      return response.data.map(mapApiOfferToAppOffer);
-    } catch (error) {
-      console.error('Error fetching offers:', error);
-      throw error;
-    }
-  },
-  
-  getOfferById: async (id: string): Promise<Offer> => {
-    try {
-      // Since the API doesn't have a specific endpoint for single offer,
-      // we'll fetch all and find the one we need
-      const response = await apiClient.get('/api/offers');
-      const offer = response.data.find((offer: any) => offer.lmd_id === id);
-      
-      if (!offer) {
-        throw new Error('Offer not found');
-      }
-      
-      return mapApiOfferToAppOffer(offer);
-    } catch (error) {
-      console.error(`Error fetching offer with ID ${id}:`, error);
-      throw error;
-    }
+// Get all offers
+export const getOffers = async (): Promise<Offer[]> => {
+  await delay(500); // Simulate network delay
+  return mockOffers;
+};
+
+// Get featured offers
+export const getFeaturedOffers = async (): Promise<Offer[]> => {
+  await delay(500); // Simulate network delay
+  return mockOffers.filter(offer => offer.featured);
+};
+
+// Get offers by category
+export const getOffersByCategory = async (categoryId: string): Promise<Offer[]> => {
+  await delay(500); // Simulate network delay
+  return mockOffers.filter(offer => offer.category.toLowerCase() === categoryId.toLowerCase());
+};
+
+// Get offer by ID
+export const getOfferById = async (offerId: string): Promise<Offer | null> => {
+  await delay(300); // Simulate network delay
+  const offer = mockOffers.find(offer => offer.id === offerId);
+  return offer || null;
+};
+
+// Get all categories
+export const getCategories = async (): Promise<Category[]> => {
+  await delay(300); // Simulate network delay
+  return mockCategories;
+};
+
+// Get banner items
+export const getBanners = async (): Promise<BannerItem[]> => {
+  await delay(200); // Simulate network delay
+  return mockBanners;
+};
+
+// Get user data
+export const getUserData = async (userId: string): Promise<User | null> => {
+  await delay(300); // Simulate network delay
+  if (userId === mockUser.id) {
+    return mockUser;
   }
+  return null;
+};
+
+// Save offer to user favorites
+export const saveOffer = async (userId: string, offerId: string): Promise<boolean> => {
+  await delay(300); // Simulate network delay
+  return true;
+};
+
+// Remove offer from user favorites
+export const unsaveOffer = async (userId: string, offerId: string): Promise<boolean> => {
+  await delay(300); // Simulate network delay
+  return true;
+};
+
+// Update user preferences
+export const updateUserPreferences = async (
+  userId: string, 
+  preferences: Partial<User['preferences']>
+): Promise<boolean> => {
+  await delay(300); // Simulate network delay
+  return true;
+};
+
+// Search for offers
+export const searchOffers = async (query: string): Promise<Offer[]> => {
+  await delay(400); // Simulate network delay
+  const lowercaseQuery = query.toLowerCase();
+  return mockOffers.filter(
+    offer => 
+      offer.title.toLowerCase().includes(lowercaseQuery) || 
+      offer.description.toLowerCase().includes(lowercaseQuery) ||
+      offer.store.toLowerCase().includes(lowercaseQuery)
+  );
+};
+
+// Simulated API function for creating/adding a new offer
+export const addOffer = async (offerData: Partial<Offer>): Promise<Offer> => {
+  await delay(500); // Simulate network delay
+  
+  // Create a new offer with the provided data and fill in defaults where needed
+  const newOffer: Offer = {
+    id: `offer${Date.now()}`,
+    title: offerData.title || "",
+    description: offerData.description || "",
+    imageUrl: offerData.imageUrl || "/placeholder.svg",
+    store: offerData.store || "",
+    category: offerData.category || "",
+    price: offerData.price || 0,
+    originalPrice: offerData.originalPrice || 0,
+    expiryDate: offerData.expiryDate || new Date().toISOString(),
+    isAmazon: offerData.isAmazon || false,
+    affiliateLink: offerData.affiliateLink || "",
+    terms: offerData.terms || "",
+    savings: offerData.savings || "0%",
+    location: offerData.location,
+    // Add the additional fields required by the Offer interface
+    lmdId: offerData.lmdId || Math.floor(Math.random() * 10000),
+    merchantHomepage: offerData.merchantHomepage || null,
+    longOffer: offerData.longOffer || null,
+    code: offerData.code || null,
+    termsAndConditions: offerData.termsAndConditions || null,
+    featured: offerData.featured || false,
+    publisherExclusive: offerData.publisherExclusive || false,
+    url: offerData.url || null,
+    smartlink: offerData.smartlink || null,
+    offerType: offerData.offerType || null,
+    offerValue: offerData.offerValue || null,
+    status: offerData.status || "active",
+    startDate: offerData.startDate || null,
+    endDate: offerData.endDate || null,
+    categories: offerData.categories || null
+  };
+  
+  return newOffer;
 };
