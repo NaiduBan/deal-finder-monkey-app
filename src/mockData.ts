@@ -347,17 +347,18 @@ export const mockBanners: BannerItem[] = [
 ];
 
 export const mockUser: User = {
-  id: "user1",
-  name: "John Doe",
-  phone: "+1234567890",
-  location: "San Francisco, CA",
+  id: 'user-1',
+  name: 'John Doe',
+  email: 'john@example.com', // Add email property to fix the error
+  phone: '+91 9876543210',
+  location: 'Mumbai',
   preferences: {
-    brands: ["Samsung", "Nike", "Amazon"],
-    stores: ["Best Buy", "Whole Foods", "Target"],
-    banks: ["Chase", "Bank of America"]
+    brands: ['b1', 'b3'],
+    stores: ['s1', 's4'],
+    banks: ['bk1', 'bk3']
   },
-  savedOffers: ["offer2", "offer4"],
-  points: 250
+  savedOffers: ['offer-1', 'offer-3', 'offer-5'],
+  points: 350
 };
 
 export const mockChatMessages = [

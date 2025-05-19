@@ -166,6 +166,8 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Function to save an offer to user's favorites in Supabase
   const saveOffer = async (offerId: string) => {
+    console.log('Saving offer:', offerId);
+    
     if (!user.savedOffers.includes(offerId)) {
       // Update local state first for responsiveness
       setUser(prevUser => ({
@@ -177,6 +179,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       // If user is authenticated, save to Supabase
       if (authSession && authSession.user) {
         try {
+          console.log('Saving to Supabase:', offerId);
           const { error } = await supabase
             .from('saved_offers')
             .insert({
@@ -209,11 +212,15 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         title: "Offer saved!",
         description: "The offer has been added to your saved items and you've earned 5 points!",
       });
+    } else {
+      console.log('Offer already saved:', offerId);
     }
   };
 
   // Function to remove an offer from user's favorites in Supabase
   const unsaveOffer = async (offerId: string) => {
+    console.log('Unsaving offer:', offerId);
+    
     // Update local state first for responsiveness
     setUser(prevUser => ({
       ...prevUser,
@@ -223,6 +230,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     // If user is authenticated, remove from Supabase
     if (authSession && authSession.user) {
       try {
+        console.log('Removing from Supabase:', offerId);
         const { error } = await supabase
           .from('saved_offers')
           .delete()
@@ -248,6 +256,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         console.error('Exception while unsaving offer:', error);
       }
     }
+    
+    toast({
+      title: "Offer removed",
+      description: "The offer has been removed from your saved items.",
+    });
   };
 
   const isOfferSaved = (offerId: string) => {

@@ -18,8 +18,49 @@ export async function fetchCategories(): Promise<Category[]> {
     
     console.log('Categories fetched:', data ? data.length : 0);
     
-    // If no categories found, throw an error to trigger fallback
+    // If no categories found, try to extract categories from Data table
     if (!data || data.length === 0) {
+      console.log('No categories found in categories table, attempting to extract from Data table');
+      
+      const { data: dataTable, error: dataError } = await supabase
+        .from('Data')
+        .select('categories')
+        .not('categories', 'is', null);
+        
+      if (dataError) {
+        console.error('Error fetching categories from Data table:', dataError);
+        return mockCategories;
+      }
+      
+      if (dataTable && dataTable.length > 0) {
+        // Extract unique categories from Data table
+        const categoryMap = new Map<string, Category>();
+        
+        dataTable.forEach(item => {
+          if (item.categories) {
+            const cats = item.categories.split(',').map(c => c.trim());
+            cats.forEach(catName => {
+              if (catName && !categoryMap.has(catName.toLowerCase())) {
+                const id = catName.toLowerCase().replace(/\s+/g, '-');
+                categoryMap.set(catName.toLowerCase(), {
+                  id,
+                  name: catName,
+                  icon: '🏷️', // Default icon
+                  subcategories: []
+                });
+              }
+            });
+          }
+        });
+        
+        const extractedCategories = Array.from(categoryMap.values());
+        console.log('Extracted categories from Data table:', extractedCategories.length);
+        
+        if (extractedCategories.length > 0) {
+          return extractedCategories;
+        }
+      }
+      
       console.log('No categories found in database, using mock data');
       return mockCategories;
     }
@@ -59,36 +100,73 @@ export async function fetchOffers(): Promise<Offer[]> {
     }
     
     // Transform the data to match our Offer type
-    return data.map((item, index) => ({
-      id: `data-${item.lmd_id || index}`,
-      title: item.title || "",
-      description: item.description || "",
-      imageUrl: item.image_url || "",
-      store: item.store || "",
-      category: item.categories || "",
-      // Use placeholder values for required fields that don't exist in Data table
-      price: 0, 
-      originalPrice: 0,
-      expiryDate: item.end_date || "",
-      isAmazon: false,
-      savings: "",
-      // Fields from the Data table
-      lmdId: Number(item.lmd_id) || 0,
-      merchantHomepage: item.merchant_homepage || "",
-      longOffer: item.long_offer || "",
-      code: item.code || "",
-      termsAndConditions: item.terms_and_conditions || "",
-      featured: item.featured === "true" || item.featured === "1",
-      publisherExclusive: item.publisher_exclusive === "true" || item.publisher_exclusive === "1",
-      url: item.url || "",
-      smartlink: item.smartlink || "",
-      offerType: item.type || "",
-      offerValue: item.offer_value || "",
-      status: item.status || "",
-      startDate: item.start_date || "",
-      endDate: item.end_date || "",
-      categories: item.categories || ""
-    }));
+    return data.map((item, index) => {
+      // Calculate price and savings
+      let price = 0;
+      let originalPrice = 0;
+      let savings = '';
+      
+      if (item.offer_value) {
+        const offerValue = item.offer_value;
+        if (offerValue.includes('%')) {
+          // Percentage discount
+          const percent = parseInt(offerValue.replace(/[^0-9]/g, ''));
+          originalPrice = Math.floor(1000 + Math.random() * 9000); // Random original price
+          price = Math.floor(originalPrice * (1 - percent / 100));
+          savings = `${percent}%`;
+        } else if (offerValue.match(/\d+/)) {
+          // Fixed amount discount
+          const amount = parseInt(offerValue.replace(/[^0-9]/g, ''));
+          price = amount;
+          originalPrice = price + Math.floor(Math.random() * 500) + 100;
+          savings = `₹${originalPrice - price}`;
+        } else {
+          // Default values
+          price = Math.floor(Math.random() * 1000) + 100;
+          originalPrice = price + Math.floor(Math.random() * 500) + 100;
+          savings = `₹${originalPrice - price}`;
+        }
+      } else {
+        // Default values
+        price = Math.floor(Math.random() * 1000) + 100;
+        originalPrice = price + Math.floor(Math.random() * 500) + 100;
+        savings = `₹${originalPrice - price}`;
+      }
+
+      // Determine if it's an Amazon offer
+      const isAmazon = (item.store && item.store.toLowerCase().includes('amazon')) || 
+                      (item.merchant_homepage && item.merchant_homepage.toLowerCase().includes('amazon'));
+      
+      return {
+        id: `data-${item.lmd_id || index}`,
+        title: item.title || "",
+        description: item.description || item.long_offer || "",
+        imageUrl: item.image_url || "",
+        store: item.store || "",
+        category: item.categories || "",
+        price: price,
+        originalPrice: originalPrice,
+        expiryDate: item.end_date || "",
+        isAmazon: isAmazon,
+        savings: savings,
+        // Fields from the Data table
+        lmdId: Number(item.lmd_id) || 0,
+        merchantHomepage: item.merchant_homepage || "",
+        longOffer: item.long_offer || "",
+        code: item.code || "",
+        termsAndConditions: item.terms_and_conditions || "",
+        featured: item.featured === "true" || item.featured === "1",
+        publisherExclusive: item.publisher_exclusive === "true" || item.publisher_exclusive === "1",
+        url: item.url || "",
+        smartlink: item.smartlink || "",
+        offerType: item.type || "",
+        offerValue: item.offer_value || "",
+        status: item.status || "",
+        startDate: item.start_date || "",
+        endDate: item.end_date || "",
+        categories: item.categories || ""
+      };
+    });
   } catch (error) {
     console.error('Error in fetchOffers, falling back to mock data:', error);
     return mockOffers;
@@ -225,4 +303,51 @@ export async function fetchUserPreferences(userId: string, preferenceType: strin
     console.error('Error in fetchUserPreferences:', error);
     return [];
   }
+}
+
+// Function to apply preferences to offers
+export function applyPreferencesToOffers(offers: Offer[], preferences: {[key: string]: string[]}): Offer[] {
+  if (!preferences || Object.keys(preferences).length === 0) {
+    return offers;
+  }
+  
+  return offers.filter(offer => {
+    // Check store preferences
+    if (preferences.stores && preferences.stores.length > 0 && offer.store) {
+      const storeMatch = preferences.stores.some(prefId => 
+        offer.store.toLowerCase().includes(prefId.toLowerCase()) ||
+        prefId.toLowerCase().includes(offer.store.toLowerCase())
+      );
+      
+      if (storeMatch) {
+        return true;
+      }
+    }
+    
+    // Check brand/category preferences
+    if (preferences.brands && preferences.brands.length > 0 && offer.category) {
+      const categoryMatch = preferences.brands.some(prefId => 
+        offer.category.toLowerCase().includes(prefId.toLowerCase()) ||
+        prefId.toLowerCase().includes(offer.category.toLowerCase())
+      );
+      
+      if (categoryMatch) {
+        return true;
+      }
+    }
+    
+    // Check bank preferences
+    if (preferences.banks && preferences.banks.length > 0 && offer.description) {
+      const bankMatch = preferences.banks.some(prefId => 
+        offer.description.toLowerCase().includes(prefId.toLowerCase())
+      );
+      
+      if (bankMatch) {
+        return true;
+      }
+    }
+    
+    // If no preferences match or if preferences array is empty, include the offer if we have no preferences
+    return Object.keys(preferences).every(key => preferences[key].length === 0);
+  });
 }

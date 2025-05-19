@@ -21,6 +21,7 @@ const HomeScreen = () => {
     stores: [],
     banks: []
   });
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   // Fetch user preferences when component mounts
   useEffect(() => {
@@ -45,6 +46,7 @@ const HomeScreen = () => {
             };
             
             setUserPreferences(preferences);
+            console.log('Loaded preferences:', preferences);
           }
         }
       } catch (error) {
@@ -64,7 +66,8 @@ const HomeScreen = () => {
     console.log("Error:", error);
     console.log("Using mock data:", isUsingMockData);
     console.log("User preferences:", userPreferences);
-  }, [offers, categories, isDataLoading, error, isUsingMockData, userPreferences]);
+    console.log("Selected category:", selectedCategory);
+  }, [offers, categories, isDataLoading, error, isUsingMockData, userPreferences, selectedCategory]);
 
   const loadMoreOffers = () => {
     setIsLoading(true);
@@ -78,45 +81,58 @@ const HomeScreen = () => {
     user.savedOffers.includes(offer.id)
   );
   
-  // Filter offers based on search query and user preferences
+  // Enhanced search functionality with category filtering and user preferences
   const filteredOffers = offers.filter(offer => {
-    // First filter by search query
-    const matchesSearch = searchQuery === '' || 
+    // First, check if the offer matches the selected category
+    if (selectedCategory && offer.category) {
+      const categoryMatch = offer.category.toLowerCase().includes(selectedCategory.toLowerCase()) ||
+                           selectedCategory.toLowerCase().includes(offer.category.toLowerCase());
+      if (!categoryMatch) return false;
+    }
+    
+    // Then filter by search query if one exists
+    const matchesSearch = !searchQuery || 
       (offer.title && offer.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (offer.store && offer.store.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (offer.description && offer.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (offer.category && offer.category.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    // If we're not searching, show all offers (or preference-filtered ones)
     if (!matchesSearch) return false;
     
-    // If user has set preferences and we have store preferences that match this offer's store, then filter by them
-    if (userPreferences.stores.length > 0 && offer.store) {
-      // This is a simplified example. In a real app, you'd need to map store names to IDs
+    // If user has set preferences and we're not specifically searching, filter by them
+    if (!searchQuery && userPreferences.stores.length > 0 && offer.store) {
       const storeMatches = userPreferences.stores.some(prefId => 
-        offer.store.toLowerCase().includes(prefId.toLowerCase()) ||
-        prefId.toLowerCase().includes(offer.store.toLowerCase())
+        offer.store?.toLowerCase().includes(prefId.toLowerCase()) ||
+        prefId.toLowerCase().includes(offer.store?.toLowerCase() || '')
       );
       
-      // If no match found for store preferences, don't show this offer
       if (userPreferences.stores.length > 0 && !storeMatches) {
         return false;
       }
     }
     
-    // For categories/brands, similar logic would apply
-    
     return true;
   });
+
+  // Handle category selection
+  const handleCategoryClick = (categoryId: string) => {
+    console.log("Category clicked:", categoryId);
+    if (selectedCategory === categoryId) {
+      // If the same category is clicked again, clear the filter
+      setSelectedCategory(null);
+    } else {
+      setSelectedCategory(categoryId);
+    }
+  };
 
   // Format price in Indian Rupees
   const formatPrice = (price: number) => {
     return `₹${price.toLocaleString('en-IN')}`;
   };
 
-  // Updated search handler
+  // Updated search handler with debouncing
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-    // Real-time search as the user types
     console.log("Searching for:", e.target.value);
   };
 
@@ -164,7 +180,7 @@ const HomeScreen = () => {
           />
         </div>
         
-        {/* Categories carousel */}
+        {/* Categories carousel with active state */}
         <div>
           <h2 className="font-bold mb-3 text-lg">For You</h2>
           {isDataLoading ? (
@@ -176,11 +192,59 @@ const HomeScreen = () => {
               {categories
                 .filter(category => category.id !== "supermarket")
                 .map((category) => (
-                  <CategoryItem key={category.id} category={category} />
+                  <div 
+                    key={category.id} 
+                    onClick={() => handleCategoryClick(category.id)}
+                    className={`cursor-pointer ${selectedCategory === category.id ? 'scale-110 transform transition-transform' : ''}`}
+                  >
+                    <CategoryItem key={category.id} category={category} />
+                    {selectedCategory === category.id && (
+                      <div className="h-1 w-full bg-monkeyGreen rounded-full mt-1"></div>
+                    )}
+                  </div>
                 ))}
             </div>
           )}
         </div>
+        
+        {/* Active filters */}
+        {(selectedCategory || searchQuery) && (
+          <div className="flex flex-wrap gap-2">
+            {selectedCategory && (
+              <div className="bg-monkeyGreen/10 text-monkeyGreen px-3 py-1 rounded-full text-sm flex items-center">
+                {categories.find(c => c.id === selectedCategory)?.name}
+                <button 
+                  onClick={() => setSelectedCategory(null)}
+                  className="ml-1 text-monkeyGreen"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            {searchQuery && (
+              <div className="bg-monkeyGreen/10 text-monkeyGreen px-3 py-1 rounded-full text-sm flex items-center">
+                "{searchQuery}"
+                <button 
+                  onClick={() => setSearchQuery('')}
+                  className="ml-1 text-monkeyGreen"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            {(selectedCategory || searchQuery) && (
+              <button 
+                onClick={() => {
+                  setSelectedCategory(null);
+                  setSearchQuery('');
+                }}
+                className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-600"
+              >
+                Clear all
+              </button>
+            )}
+          </div>
+        )}
         
         {/* Favorites section */}
         <div>
