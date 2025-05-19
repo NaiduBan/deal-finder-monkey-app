@@ -83,6 +83,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
             setUser(prevUser => ({
               ...prevUser,
               id: session.user.id,
+              // Use the session user email instead of accessing the User type email directly
               email: session.user.email || prevUser.email,
               location: profileData.location || 'India',
               savedOffers: savedOffers ? savedOffers.map(item => item.offer_id) : []
@@ -118,6 +119,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(prevUser => ({
           ...prevUser,
           id: session.user.id,
+          // Use the session user email instead of accessing the User type email directly
           email: session.user.email || prevUser.email,
           location: profileData?.location || 'India',
           savedOffers: savedOffers ? savedOffers.map(item => item.offer_id) : []
