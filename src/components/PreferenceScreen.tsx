@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Search, ShoppingBag, Store, CreditCard } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -7,26 +7,63 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { mockBrands, mockStores, mockBanks } from '@/mockData';
+import { supabase } from "@/integrations/supabase/client";
 
 const PreferenceScreen = () => {
   const { preferenceType = 'brands' } = useParams<{ preferenceType?: string }>();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Set default selected items based on preference type
-  const [selectedItems, setSelectedItems] = useState<string[]>(() => {
-    switch (preferenceType) {
-      case 'brands':
-        return ['b1', 'b3', 'b5'];
-      case 'stores':
-        return ['s2', 's4', 's8'];
-      case 'banks':
-        return ['bk2', 'bk5', 'bk6'];
-      default:
-        return [];
-    }
-  });
+  // Fetch user preferences from Supabase on component mount
+  useEffect(() => {
+    const fetchUserPreferences = async () => {
+      setIsLoading(true);
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          // If authenticated, fetch preferences from Supabase
+          const { data, error } = await supabase
+            .from('user_preferences')
+            .select('preference_id')
+            .eq('user_id', session.user.id)
+            .eq('preference_type', preferenceType);
+            
+          if (error) {
+            console.error('Error fetching preferences:', error);
+          } else if (data) {
+            // Set the selected items based on fetched preferences
+            setSelectedItems(data.map(pref => pref.preference_id));
+          }
+        } else {
+          // If not authenticated, use default selections based on preference type
+          switch (preferenceType) {
+            case 'brands':
+              setSelectedItems(['b1', 'b3', 'b5']);
+              break;
+            case 'stores':
+              setSelectedItems(['s2', 's4', 's8']);
+              break;
+            case 'banks':
+              setSelectedItems(['bk2', 'bk5', 'bk6']);
+              break;
+            default:
+              setSelectedItems([]);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading preferences:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchUserPreferences();
+  }, [preferenceType]);
   
   // Determine which data to use based on preference type
   const getDataAndTitle = (type: string) => {
@@ -63,12 +100,63 @@ const PreferenceScreen = () => {
     });
   };
   
-  const savePreferences = () => {
-    toast({
-      title: "Preferences saved",
-      description: `Your ${title.toLowerCase()} have been updated`,
-    });
-    // In a real app, this would send data to the backend
+  const savePreferences = async () => {
+    setIsLoading(true);
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        // First, delete existing preferences of this type for the user
+        const { error: deleteError } = await supabase
+          .from('user_preferences')
+          .delete()
+          .eq('user_id', session.user.id)
+          .eq('preference_type', preferenceType);
+          
+        if (deleteError) {
+          console.error('Error deleting existing preferences:', deleteError);
+          throw deleteError;
+        }
+        
+        // Then insert the new preferences
+        if (selectedItems.length > 0) {
+          const preferencesToInsert = selectedItems.map(preferenceId => ({
+            user_id: session.user.id,
+            preference_type: preferenceType,
+            preference_id: preferenceId
+          }));
+          
+          const { error: insertError } = await supabase
+            .from('user_preferences')
+            .insert(preferencesToInsert);
+            
+          if (insertError) {
+            console.error('Error inserting preferences:', insertError);
+            throw insertError;
+          }
+        }
+        
+        toast({
+          title: "Preferences saved",
+          description: `Your ${title.toLowerCase()} have been updated`,
+        });
+      } else {
+        // User not authenticated, just show a success message
+        toast({
+          title: "Preferences saved locally",
+          description: `Your ${title.toLowerCase()} have been updated locally`,
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error saving preferences",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   return (
@@ -82,8 +170,9 @@ const PreferenceScreen = () => {
         <button 
           onClick={savePreferences} 
           className="text-sm bg-monkeyYellow text-black px-3 py-1 rounded-full font-medium"
+          disabled={isLoading}
         >
-          Save
+          {isLoading ? 'Saving...' : 'Save'}
         </button>
       </div>
       
@@ -125,55 +214,63 @@ const PreferenceScreen = () => {
               </div>
             </div>
           
-            {/* Selected items as bubbles */}
-            <div className="px-4 py-3">
-              <h3 className="text-sm text-gray-600 mb-2">Selected {title}</h3>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {selectedItems.length > 0 ? (
-                  filteredData
-                    .filter(item => selectedItems.includes(item.id))
-                    .map(item => (
-                      <Badge 
-                        key={item.id}
-                        variant="outline" 
-                        className="bg-monkeyGreen/10 text-monkeyGreen border-monkeyGreen/30 px-3 py-1"
-                        onClick={() => toggleSelection(item.id)}
-                      >
-                        {item.logo} {item.name}
-                      </Badge>
-                    ))
-                ) : (
-                  <p className="text-sm text-gray-500">No {title.toLowerCase()} selected</p>
-                )}
+            {isLoading ? (
+              <div className="flex justify-center items-center h-40">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-monkeyGreen"></div>
               </div>
-            </div>
-            
-            {/* List of available items */}
-            <div className="px-4 space-y-2 mt-2">
-              <h3 className="text-sm text-gray-600 mb-2">Available {title}</h3>
-              
-              {filteredData.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {filteredData
-                    .filter(item => !selectedItems.includes(item.id))
-                    .map((item) => (
-                      <Badge 
-                        key={item.id}
-                        variant="outline" 
-                        className="bg-white hover:bg-gray-100 text-gray-800 cursor-pointer px-3 py-1"
-                        onClick={() => toggleSelection(item.id)}
-                      >
-                        {item.logo} {item.name}
-                      </Badge>
-                    ))
-                  }
+            ) : (
+              <>
+                {/* Selected items as bubbles */}
+                <div className="px-4 py-3">
+                  <h3 className="text-sm text-gray-600 mb-2">Selected {title}</h3>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {selectedItems.length > 0 ? (
+                      filteredData
+                        .filter(item => selectedItems.includes(item.id))
+                        .map(item => (
+                          <Badge 
+                            key={item.id}
+                            variant="outline" 
+                            className="bg-monkeyGreen/10 text-monkeyGreen border-monkeyGreen/30 px-3 py-1"
+                            onClick={() => toggleSelection(item.id)}
+                          >
+                            {item.logo} {item.name}
+                          </Badge>
+                        ))
+                    ) : (
+                      <p className="text-sm text-gray-500">No {title.toLowerCase()} selected</p>
+                    )}
+                  </div>
                 </div>
-              ) : (
-                <div className="text-center py-6 text-gray-500">
-                  No results found. Try a different search term.
+                
+                {/* List of available items */}
+                <div className="px-4 space-y-2 mt-2">
+                  <h3 className="text-sm text-gray-600 mb-2">Available {title}</h3>
+                  
+                  {filteredData.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {filteredData
+                        .filter(item => !selectedItems.includes(item.id))
+                        .map((item) => (
+                          <Badge 
+                            key={item.id}
+                            variant="outline" 
+                            className="bg-white hover:bg-gray-100 text-gray-800 cursor-pointer px-3 py-1"
+                            onClick={() => toggleSelection(item.id)}
+                          >
+                            {item.logo} {item.name}
+                          </Badge>
+                        ))
+                      }
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 text-gray-500">
+                      No results found. Try a different search term.
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
         </Tabs>
       </div>

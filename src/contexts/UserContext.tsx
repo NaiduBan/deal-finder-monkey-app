@@ -3,6 +3,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { User } from '@/types';
 import { mockUser } from '@/mockData';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from "@/integrations/supabase/client";
 
 interface UserContextType {
   user: User;
@@ -45,6 +46,95 @@ const getInitialUser = (): User => {
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User>(getInitialUser);
   const { toast } = useToast();
+  const [authSession, setAuthSession] = useState<any>(null);
+
+  // Check if user is authenticated with Supabase
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        // Get current session
+        const { data: { session } } = await supabase.auth.getSession();
+        setAuthSession(session);
+        
+        if (session) {
+          // If authenticated, fetch user profile from Supabase
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profileError) {
+            console.error('Error fetching user profile:', profileError);
+          }
+          
+          if (profileData) {
+            // Fetch saved offers for this user
+            const { data: savedOffers, error: savedOffersError } = await supabase
+              .from('saved_offers')
+              .select('offer_id')
+              .eq('user_id', session.user.id);
+            
+            if (savedOffersError) {
+              console.error('Error fetching saved offers:', savedOffersError);
+            }
+            
+            // Update the user state with data from Supabase
+            setUser(prevUser => ({
+              ...prevUser,
+              id: session.user.id,
+              email: session.user.email || prevUser.email,
+              location: profileData.location || 'India',
+              savedOffers: savedOffers ? savedOffers.map(item => item.offer_id) : []
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+      }
+    };
+
+    checkAuth();
+    
+    // Listen for auth changes
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setAuthSession(session);
+      
+      if (event === 'SIGNED_IN' && session) {
+        // User signed in, fetch their profile
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        
+        // Fetch saved offers for this user
+        const { data: savedOffers } = await supabase
+          .from('saved_offers')
+          .select('offer_id')
+          .eq('user_id', session.user.id);
+        
+        // Update user state
+        setUser(prevUser => ({
+          ...prevUser,
+          id: session.user.id,
+          email: session.user.email || prevUser.email,
+          location: profileData?.location || 'India',
+          savedOffers: savedOffers ? savedOffers.map(item => item.offer_id) : []
+        }));
+      } else if (event === 'SIGNED_OUT') {
+        // User signed out, revert to default user
+        setUser({
+          ...mockUser,
+          location: 'India'
+        });
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   // Save user to localStorage whenever it changes
   useEffect(() => {
@@ -55,6 +145,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [user]);
 
+  // Function to update user points
   const updatePoints = (amount: number) => {
     setUser(prevUser => {
       const newPoints = prevUser.points + amount;
@@ -71,13 +162,47 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     });
   };
 
-  const saveOffer = (offerId: string) => {
+  // Function to save an offer to user's favorites in Supabase
+  const saveOffer = async (offerId: string) => {
     if (!user.savedOffers.includes(offerId)) {
+      // Update local state first for responsiveness
       setUser(prevUser => ({
         ...prevUser,
         savedOffers: [...prevUser.savedOffers, offerId],
         points: prevUser.points + 5 // Add 5 points for saving an offer
       }));
+      
+      // If user is authenticated, save to Supabase
+      if (authSession && authSession.user) {
+        try {
+          const { error } = await supabase
+            .from('saved_offers')
+            .insert({
+              user_id: authSession.user.id,
+              offer_id: offerId
+            });
+            
+          if (error) {
+            console.error('Error saving offer to Supabase:', error);
+            // Revert local state if Supabase update fails
+            setUser(prevUser => ({
+              ...prevUser,
+              savedOffers: prevUser.savedOffers.filter(id => id !== offerId),
+              points: prevUser.points - 5
+            }));
+            
+            toast({
+              title: "Error saving offer",
+              description: "There was a problem saving this offer. Please try again.",
+              variant: "destructive"
+            });
+            return;
+          }
+        } catch (error) {
+          console.error('Exception while saving offer:', error);
+        }
+      }
+      
       toast({
         title: "Offer saved!",
         description: "The offer has been added to your saved items and you've earned 5 points!",
@@ -85,22 +210,73 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const unsaveOffer = (offerId: string) => {
+  // Function to remove an offer from user's favorites in Supabase
+  const unsaveOffer = async (offerId: string) => {
+    // Update local state first for responsiveness
     setUser(prevUser => ({
       ...prevUser,
       savedOffers: prevUser.savedOffers.filter(id => id !== offerId)
     }));
+    
+    // If user is authenticated, remove from Supabase
+    if (authSession && authSession.user) {
+      try {
+        const { error } = await supabase
+          .from('saved_offers')
+          .delete()
+          .eq('user_id', authSession.user.id)
+          .eq('offer_id', offerId);
+          
+        if (error) {
+          console.error('Error removing offer from Supabase:', error);
+          // Revert local state if Supabase update fails
+          setUser(prevUser => ({
+            ...prevUser,
+            savedOffers: [...prevUser.savedOffers, offerId]
+          }));
+          
+          toast({
+            title: "Error removing offer",
+            description: "There was a problem removing this offer. Please try again.",
+            variant: "destructive"
+          });
+          return;
+        }
+      } catch (error) {
+        console.error('Exception while unsaving offer:', error);
+      }
+    }
   };
 
   const isOfferSaved = (offerId: string) => {
     return user.savedOffers.includes(offerId);
   };
 
-  const updateLocation = (location: string) => {
+  // Function to update user location and save to Supabase
+  const updateLocation = async (location: string) => {
+    // Update local state first for responsiveness
     setUser(prevUser => ({
       ...prevUser,
       location
     }));
+    
+    // If user is authenticated, update location in Supabase
+    if (authSession && authSession.user) {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ location })
+          .eq('id', authSession.user.id);
+          
+        if (error) {
+          console.error('Error updating location in Supabase:', error);
+          // Don't revert local state as it's not critical
+        }
+      } catch (error) {
+        console.error('Exception while updating location:', error);
+      }
+    }
+    
     toast({
       title: "Location updated",
       description: `Your location has been updated to ${location}.`,

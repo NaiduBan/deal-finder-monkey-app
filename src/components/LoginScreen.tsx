@@ -1,21 +1,40 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MapPin, Check } from "lucide-react";
+import { MapPin, Check, Mail, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const LoginScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [location, setLocation] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [locationDetected, setLocationDetected] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPhoneNumber(e.target.value);
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate('/home');
+      }
+    };
+    
+    checkSession();
+  }, [navigate]);
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
   };
 
   const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,23 +46,32 @@ const LoginScreen = () => {
     
     // Simulate location detection
     setTimeout(() => {
-      setLocation('San Francisco, CA');
+      setLocation('India');
       setLocationDetected(true);
       setIsLoading(false);
       toast({
         title: "Location detected",
-        description: "We've detected your location as San Francisco, CA",
+        description: "We've detected your location as India",
       });
     }, 1500);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!phoneNumber || phoneNumber.length < 10) {
+    if (!email || !email.includes('@')) {
       toast({
-        title: "Invalid phone number",
-        description: "Please enter a valid phone number",
+        title: "Invalid email",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!password || password.length < 6) {
+      toast({
+        title: "Invalid password",
+        description: "Password must be at least 6 characters",
         variant: "destructive",
       });
       return;
@@ -60,11 +88,65 @@ const LoginScreen = () => {
     
     setIsLoading(true);
     
-    // Simulate login process
-    setTimeout(() => {
+    try {
+      if (isSignUp) {
+        // Sign up with Supabase
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              location,
+            }
+          }
+        });
+        
+        if (error) {
+          toast({
+            title: "Sign up failed",
+            description: error.message,
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+        
+        toast({
+          title: "Account created",
+          description: "Your account has been created successfully. Please check your email for verification.",
+        });
+        
+      } else {
+        // Sign in with Supabase
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        
+        if (error) {
+          toast({
+            title: "Login failed",
+            description: error.message,
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
+      
+      // If we get here, authentication was successful
       setIsLoading(false);
       navigate('/home');
-    }, 1500);
+      
+    } catch (error: any) {
+      console.error('Authentication error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "An error occurred during authentication",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    }
   };
 
   const handleSkipLogin = () => {
@@ -82,15 +164,33 @@ const LoginScreen = () => {
         
         <form onSubmit={handleSubmit} className="w-full max-w-md space-y-6">
           <div className="space-y-2">
-            <label htmlFor="phone" className="text-white">Phone Number</label>
-            <Input
-              id="phone"
-              type="tel"
-              placeholder="+1 (000) 000-0000"
-              value={phoneNumber}
-              onChange={handlePhoneChange}
-              className="bg-white/90 h-12"
-            />
+            <label htmlFor="email" className="text-white">Email Address</label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={handleEmailChange}
+                className="bg-white/90 h-12 pl-10"
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <label htmlFor="password" className="text-white">Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={handlePasswordChange}
+                className="bg-white/90 h-12 pl-10"
+              />
+            </div>
           </div>
           
           <div className="space-y-2">
@@ -124,8 +224,18 @@ const LoginScreen = () => {
             className="w-full h-12 monkey-button"
             disabled={isLoading}
           >
-            {isLoading ? 'Please wait...' : 'Continue'}
+            {isLoading ? 'Please wait...' : (isSignUp ? 'Sign Up' : 'Login')}
           </Button>
+          
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-white underline text-sm"
+            >
+              {isSignUp ? 'Already have an account? Login' : 'Need an account? Sign up'}
+            </button>
+          </div>
           
           <Button 
             type="button"

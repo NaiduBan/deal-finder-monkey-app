@@ -9,12 +9,51 @@ import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
 import OfferCard from './OfferCard';
 import CategoryItem from './CategoryItem';
+import { supabase } from '@/integrations/supabase/client';
 
 const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useUser();
   const { offers, categories, isLoading: isDataLoading, error, refetchOffers, isUsingMockData } = useData();
   const [searchQuery, setSearchQuery] = useState('');
+  const [userPreferences, setUserPreferences] = useState<{[key: string]: string[]}>({
+    brands: [],
+    stores: [],
+    banks: []
+  });
+
+  // Fetch user preferences when component mounts
+  useEffect(() => {
+    const fetchUserPreferences = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          const { data, error } = await supabase
+            .from('user_preferences')
+            .select('*')
+            .eq('user_id', session.user.id);
+            
+          if (error) {
+            console.error('Error fetching user preferences:', error);
+          } else if (data) {
+            // Organize preferences by type
+            const preferences: {[key: string]: string[]} = {
+              brands: data.filter(p => p.preference_type === 'brands').map(p => p.preference_id),
+              stores: data.filter(p => p.preference_type === 'stores').map(p => p.preference_id),
+              banks: data.filter(p => p.preference_type === 'banks').map(p => p.preference_id)
+            };
+            
+            setUserPreferences(preferences);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user preferences:', error);
+      }
+    };
+    
+    fetchUserPreferences();
+  }, []);
 
   useEffect(() => {
     // Log for debugging purposes
@@ -24,7 +63,8 @@ const HomeScreen = () => {
     console.log("Is loading:", isDataLoading);
     console.log("Error:", error);
     console.log("Using mock data:", isUsingMockData);
-  }, [offers, categories, isDataLoading, error, isUsingMockData]);
+    console.log("User preferences:", userPreferences);
+  }, [offers, categories, isDataLoading, error, isUsingMockData, userPreferences]);
 
   const loadMoreOffers = () => {
     setIsLoading(true);
@@ -38,17 +78,46 @@ const HomeScreen = () => {
     user.savedOffers.includes(offer.id)
   );
   
-  // Filter offers based on search query
-  const filteredOffers = offers.filter(offer => 
-    searchQuery === '' || 
-    (offer.title && offer.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (offer.store && offer.store.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (offer.category && offer.category.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Filter offers based on search query and user preferences
+  const filteredOffers = offers.filter(offer => {
+    // First filter by search query
+    const matchesSearch = searchQuery === '' || 
+      (offer.title && offer.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (offer.store && offer.store.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (offer.category && offer.category.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    // If we're not searching, show all offers (or preference-filtered ones)
+    if (!matchesSearch) return false;
+    
+    // If user has set preferences and we have store preferences that match this offer's store, then filter by them
+    if (userPreferences.stores.length > 0 && offer.store) {
+      // This is a simplified example. In a real app, you'd need to map store names to IDs
+      const storeMatches = userPreferences.stores.some(prefId => 
+        offer.store.toLowerCase().includes(prefId.toLowerCase()) ||
+        prefId.toLowerCase().includes(offer.store.toLowerCase())
+      );
+      
+      // If no match found for store preferences, don't show this offer
+      if (userPreferences.stores.length > 0 && !storeMatches) {
+        return false;
+      }
+    }
+    
+    // For categories/brands, similar logic would apply
+    
+    return true;
+  });
 
   // Format price in Indian Rupees
   const formatPrice = (price: number) => {
     return `₹${price.toLocaleString('en-IN')}`;
+  };
+
+  // Updated search handler
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    // Real-time search as the user types
+    console.log("Searching for:", e.target.value);
   };
 
   return (
@@ -91,7 +160,7 @@ const HomeScreen = () => {
             placeholder="Search for offers, stores, categories..."
             className="pl-10 pr-4 py-2 w-full border-gray-200"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleSearch}
           />
         </div>
         

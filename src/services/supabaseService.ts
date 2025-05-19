@@ -117,3 +117,112 @@ export async function uploadImage(file: File): Promise<string> {
     
   return publicUrl;
 }
+
+// Function to get user saved offers
+export async function fetchUserSavedOffers(userId: string): Promise<string[]> {
+  try {
+    if (!userId) {
+      throw new Error('User ID is required to fetch saved offers');
+    }
+    
+    const { data, error } = await supabase
+      .from('saved_offers')
+      .select('offer_id')
+      .eq('user_id', userId);
+      
+    if (error) {
+      console.error('Error fetching saved offers:', error);
+      throw error;
+    }
+    
+    return data ? data.map(item => item.offer_id) : [];
+  } catch (error) {
+    console.error('Error in fetchUserSavedOffers:', error);
+    return [];
+  }
+}
+
+// Function to save an offer for a user
+export async function saveOfferForUser(userId: string, offerId: string): Promise<boolean> {
+  try {
+    if (!userId || !offerId) {
+      throw new Error('User ID and Offer ID are required');
+    }
+    
+    const { error } = await supabase
+      .from('saved_offers')
+      .insert({
+        user_id: userId,
+        offer_id: offerId
+      });
+      
+    if (error) {
+      if (error.code === '23505') { // Unique constraint violation
+        console.log('Offer already saved for this user');
+        return true; // Already saved is still a success
+      }
+      console.error('Error saving offer:', error);
+      throw error;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in saveOfferForUser:', error);
+    return false;
+  }
+}
+
+// Function to unsave an offer for a user
+export async function unsaveOfferForUser(userId: string, offerId: string): Promise<boolean> {
+  try {
+    if (!userId || !offerId) {
+      throw new Error('User ID and Offer ID are required');
+    }
+    
+    const { error } = await supabase
+      .from('saved_offers')
+      .delete()
+      .eq('user_id', userId)
+      .eq('offer_id', offerId);
+      
+    if (error) {
+      console.error('Error removing saved offer:', error);
+      throw error;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in unsaveOfferForUser:', error);
+    return false;
+  }
+}
+
+// Function to fetch user preferences
+export async function fetchUserPreferences(userId: string, preferenceType: string = 'all'): Promise<any[]> {
+  try {
+    if (!userId) {
+      throw new Error('User ID is required to fetch preferences');
+    }
+    
+    let query = supabase
+      .from('user_preferences')
+      .select('*')
+      .eq('user_id', userId);
+      
+    if (preferenceType !== 'all') {
+      query = query.eq('preference_type', preferenceType);
+    }
+    
+    const { data, error } = await query;
+      
+    if (error) {
+      console.error('Error fetching user preferences:', error);
+      throw error;
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error in fetchUserPreferences:', error);
+    return [];
+  }
+}

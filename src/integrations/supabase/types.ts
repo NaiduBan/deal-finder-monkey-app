@@ -168,6 +168,94 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          location: string | null
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          location?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          location?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      saved_offers: {
+        Row: {
+          id: string
+          offer_id: string
+          saved_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          offer_id: string
+          saved_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          offer_id?: string
+          saved_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_offers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          preference_id: string
+          preference_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          preference_id: string
+          preference_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          preference_id?: string
+          preference_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
