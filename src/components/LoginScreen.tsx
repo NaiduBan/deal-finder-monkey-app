@@ -67,6 +67,10 @@ const LoginScreen = () => {
     }, 1500);
   };
 
+  const handleSkipLogin = () => {
+    navigate('/home');
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-monkeyGreen via-monkeyGreen-light to-monkeyBackground">
       <div className="flex-1 flex flex-col items-center justify-center p-8">
@@ -121,6 +125,15 @@ const LoginScreen = () => {
             disabled={isLoading}
           >
             {isLoading ? 'Please wait...' : 'Continue'}
+          </Button>
+          
+          <Button 
+            type="button"
+            variant="outline"
+            onClick={handleSkipLogin}
+            className="w-full h-12 bg-transparent border border-white text-white hover:bg-white/10"
+          >
+            Skip Login
           </Button>
         </form>
       </div>
