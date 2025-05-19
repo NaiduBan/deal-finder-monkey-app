@@ -248,7 +248,9 @@ const PreferenceScreen = () => {
     setIsLoading(true);
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      // Use await to resolve the Promise before accessing session
+      const sessionData = await supabase.auth.getSession();
+      const session = sessionData.data.session;
       
       if (session) {
         // First, delete existing preferences of this type for the user

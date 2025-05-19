@@ -19,18 +19,63 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
+// Try to get cached data from localStorage
+const getCachedData = (key: string) => {
+  try {
+    const cachedData = localStorage.getItem(key);
+    if (cachedData) {
+      const { data, timestamp } = JSON.parse(cachedData);
+      // Check if cache is less than 1 hour old
+      if (Date.now() - timestamp < 3600000) {
+        return data;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error(`Error retrieving ${key} from cache:`, error);
+    return null;
+  }
+};
+
+// Save data to localStorage with a timestamp
+const saveToCache = (key: string, data: any) => {
+  try {
+    localStorage.setItem(key, JSON.stringify({
+      data,
+      timestamp: Date.now()
+    }));
+  } catch (error) {
+    console.error(`Error saving ${key} to cache:`, error);
+  }
+};
+
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [offers, setOffers] = useState<Offer[]>([]);
-  const [filteredOffers, setFilteredOffers] = useState<Offer[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [offers, setOffers] = useState<Offer[]>(() => {
+    const cachedOffers = getCachedData('offers');
+    return cachedOffers || [];
+  });
+  
+  const [filteredOffers, setFilteredOffers] = useState<Offer[]>(() => {
+    const cachedFilteredOffers = getCachedData('filteredOffers');
+    return cachedFilteredOffers || [];
+  });
+  
+  const [categories, setCategories] = useState<Category[]>(() => {
+    const cachedCategories = getCachedData('categories');
+    return cachedCategories || [];
+  });
+  
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [isUsingMockData, setIsUsingMockData] = useState(false);
   const { user } = useUser();
-  const [userPreferences, setUserPreferences] = useState<{[key: string]: string[]}>({
-    brands: [],
-    stores: [],
-    banks: []
+  const [userPreferences, setUserPreferences] = useState<{[key: string]: string[]}>(() => {
+    const cachedPreferences = getCachedData('userPreferences');
+    return cachedPreferences || {
+      brands: [],
+      stores: [],
+      banks: []
+    };
   });
 
   // Function to fetch user preferences
@@ -63,11 +108,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       setUserPreferences(preferences);
+      saveToCache('userPreferences', preferences);
       
       // Filter offers based on preferences if we have offers
       if (offers.length > 0) {
         const filtered = applyPreferencesToOffers(offers, preferences);
         setFilteredOffers(filtered.length > 0 ? filtered : offers);
+        saveToCache('filteredOffers', filtered.length > 0 ? filtered : offers);
       }
     } catch (err) {
       console.error('Error getting user preferences:', err);
@@ -86,6 +133,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         banks: []
       });
       setFilteredOffers(offers);
+      saveToCache('filteredOffers', offers);
     }
   }, [user, user?.id]);
 
@@ -121,6 +169,38 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     let usingMockData = false;
     
+    // Check if we have recent cached data first
+    const cachedOffers = getCachedData('offers');
+    const cachedCategories = getCachedData('categories');
+    
+    if (cachedOffers && cachedCategories) {
+      console.log('Using cached data');
+      setOffers(cachedOffers);
+      setCategories(cachedCategories);
+      
+      // Apply user preferences for filtering if user is logged in
+      if (user && user.id) {
+        getUserPreferences(user.id);
+      } else {
+        setFilteredOffers(cachedOffers);
+        saveToCache('filteredOffers', cachedOffers);
+      }
+      
+      setIsLoading(false);
+      setIsUsingMockData(false);
+      
+      // Still fetch fresh data in the background
+      fetchFreshData();
+      return;
+    }
+    
+    // No valid cached data, fetch from Supabase
+    fetchFreshData(true);
+  };
+  
+  const fetchFreshData = async (updateLoadingState = false) => {
+    let usingMockData = false;
+    
     try {
       // Try to fetch data from Supabase (specifically the Data table)
       const [offersData, categoriesData] = await Promise.all([
@@ -134,12 +214,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (offersData.length > 0 && offersData[0].id.startsWith('data-')) {
         console.log('Using real data from Supabase Data table');
         setOffers(offersData);
+        saveToCache('offers', offersData);
         
         // Apply user preferences for filtering
         if (user && user.id) {
-          getUserPreferences(user.id);
+          const filtered = applyPreferencesToOffers(offersData, userPreferences);
+          setFilteredOffers(filtered.length > 0 ? filtered : offersData);
+          saveToCache('filteredOffers', filtered.length > 0 ? filtered : offersData);
         } else {
           setFilteredOffers(offersData);
+          saveToCache('filteredOffers', offersData);
         }
         
         setIsUsingMockData(false);
@@ -147,6 +231,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('No data from Supabase Data table, using mock offers');
         setOffers(mockOffers);
         setFilteredOffers(mockOffers);
+        saveToCache('offers', mockOffers);
+        saveToCache('filteredOffers', mockOffers);
         setIsUsingMockData(true);
         usingMockData = true;
       }
@@ -154,8 +240,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // For categories, use what we got or fall back to mock
       if (categoriesData && categoriesData.length > 0) {
         setCategories(categoriesData);
+        saveToCache('categories', categoriesData);
       } else {
         setCategories(mockCategories);
+        saveToCache('categories', mockCategories);
         usingMockData = true;
       }
       
@@ -175,7 +263,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Falling back to mock data due to error');
       setOffers(mockOffers);
       setFilteredOffers(mockOffers);
+      saveToCache('offers', mockOffers);
+      saveToCache('filteredOffers', mockOffers);
       setCategories(mockCategories);
+      saveToCache('categories', mockCategories);
       setIsUsingMockData(true);
       
       toast({
@@ -184,7 +275,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      if (updateLoadingState) {
+        setIsLoading(false);
+      }
       console.log('Data fetching complete');
     }
   };
@@ -198,8 +291,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (offers.length > 0 && (userPreferences.brands.length > 0 || userPreferences.stores.length > 0 || userPreferences.banks.length > 0)) {
       const filtered = applyPreferencesToOffers(offers, userPreferences);
       setFilteredOffers(filtered.length > 0 ? filtered : offers);
+      saveToCache('filteredOffers', filtered.length > 0 ? filtered : offers);
     } else {
       setFilteredOffers(offers);
+      saveToCache('filteredOffers', offers);
     }
   }, [offers, userPreferences]);
 
@@ -213,13 +308,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (offersData.length > 0 && offersData[0].id.startsWith('data-')) {
         console.log('Using real data from refetch');
         setOffers(offersData);
+        saveToCache('offers', offersData);
         
         // Apply user preferences for filtering
         if (user && user.id && (userPreferences.brands.length > 0 || userPreferences.stores.length > 0 || userPreferences.banks.length > 0)) {
           const filtered = applyPreferencesToOffers(offersData, userPreferences);
           setFilteredOffers(filtered.length > 0 ? filtered : offersData);
+          saveToCache('filteredOffers', filtered.length > 0 ? filtered : offersData);
         } else {
           setFilteredOffers(offersData);
+          saveToCache('filteredOffers', offersData);
         }
         
         setError(null);
@@ -235,6 +333,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('No real data found in Data table on refetch, keeping mock data');
         setOffers(mockOffers);
         setFilteredOffers(mockOffers);
+        saveToCache('offers', mockOffers);
+        saveToCache('filteredOffers', mockOffers);
         setIsUsingMockData(true);
         
         toast({

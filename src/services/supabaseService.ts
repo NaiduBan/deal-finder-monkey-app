@@ -429,86 +429,6 @@ export async function removeUserPreference(userId: string, preferenceType: strin
   }
 }
 
-// Function to apply preferences to offers
-export function applyPreferencesToOffers(offers: Offer[], preferences: {[key: string]: string[]}): Offer[] {
-  if (!preferences || Object.keys(preferences).length === 0 || 
-      (preferences.stores?.length === 0 && preferences.brands?.length === 0 && preferences.banks?.length === 0)) {
-    console.log('No preferences to filter by, returning all offers');
-    return offers;
-  }
-  
-  console.log('Filtering offers with preferences:', preferences);
-  
-  return offers.filter(offer => {
-    // Check store preferences
-    if (preferences.stores && preferences.stores.length > 0 && offer.store) {
-      for (const prefId of preferences.stores) {
-        const prefValue = extractPreferenceValue(prefId);
-        if (offer.store.toLowerCase().includes(prefValue.toLowerCase())) {
-          return true;
-        }
-      }
-    }
-    
-    // Check brand/category preferences
-    if (preferences.brands && preferences.brands.length > 0 && offer.category) {
-      for (const prefId of preferences.brands) {
-        const prefValue = extractPreferenceValue(prefId);
-        if (offer.category.toLowerCase().includes(prefValue.toLowerCase())) {
-          return true;
-        }
-      }
-    }
-    
-    // Check bank preferences
-    if (preferences.banks && preferences.banks.length > 0 && 
-       (offer.description || offer.termsAndConditions || offer.longOffer)) {
-      const fullText = `${offer.description || ''} ${offer.termsAndConditions || ''} ${offer.longOffer || ''}`.toLowerCase();
-      
-      for (const prefId of preferences.banks) {
-        const prefValue = extractPreferenceValue(prefId);
-        if (fullText.includes(prefValue.toLowerCase())) {
-          return true;
-        }
-      }
-    }
-    
-    // If no preferences match, don't include the offer
-    return false;
-  });
-}
-
-// Helper function to extract actual value from preference ID
-// This handles the case where preference IDs are like 'b1', 's2', etc.
-// but we need to match them against actual names in the offers
-function extractPreferenceValue(prefId: string): string {
-  // For IDs stored directly from Supabase data, they might be the actual values
-  if (prefId.length > 3 && !prefId.startsWith('b') && !prefId.startsWith('s') && !prefId.startsWith('bk')) {
-    return prefId;
-  }
-  
-  // Try to find the preference in the mock data first
-  const { mockBrands, mockStores, mockBanks } = require('@/mockData');
-  
-  if (prefId.startsWith('b')) {
-    const brand = mockBrands.find(b => b.id === prefId);
-    return brand ? brand.name : '';
-  }
-  
-  if (prefId.startsWith('s')) {
-    const store = mockStores.find(s => s.id === prefId);
-    return store ? store.name : '';
-  }
-  
-  if (prefId.startsWith('bk')) {
-    const bank = mockBanks.find(b => b.id === prefId);
-    return bank ? bank.name : '';
-  }
-  
-  // If we can't extract, just return the original ID
-  return prefId;
-}
-
 // Function to search offers
 export async function searchOffers(query: string): Promise<Offer[]> {
   try {
@@ -600,4 +520,84 @@ export async function searchOffers(query: string): Promise<Offer[]> {
     console.error('Error in searchOffers:', error);
     return [];
   }
+}
+
+// Helper function to extract actual value from preference ID
+// This handles the case where preference IDs are like 'b1', 's2', etc.
+// but we need to match them against actual names in the offers
+function extractPreferenceValue(prefId: string): string {
+  // For IDs stored directly from Supabase data, they might be the actual values
+  if (prefId.length > 3 && !prefId.startsWith('b') && !prefId.startsWith('s') && !prefId.startsWith('bk')) {
+    return prefId;
+  }
+  
+  // Try to find the preference in the mock data first
+  const { mockBrands, mockStores, mockBanks } = require('@/mockData');
+  
+  if (prefId.startsWith('b')) {
+    const brand = mockBrands.find(b => b.id === prefId);
+    return brand ? brand.name : '';
+  }
+  
+  if (prefId.startsWith('s')) {
+    const store = mockStores.find(s => s.id === prefId);
+    return store ? store.name : '';
+  }
+  
+  if (prefId.startsWith('bk')) {
+    const bank = mockBanks.find(b => b.id === prefId);
+    return bank ? bank.name : '';
+  }
+  
+  // If we can't extract, just return the original ID
+  return prefId;
+}
+
+// Function to apply preferences to offers
+export function applyPreferencesToOffers(offers: Offer[], preferences: {[key: string]: string[]}): Offer[] {
+  if (!preferences || Object.keys(preferences).length === 0 || 
+      (preferences.stores?.length === 0 && preferences.brands?.length === 0 && preferences.banks?.length === 0)) {
+    console.log('No preferences to filter by, returning all offers');
+    return offers;
+  }
+  
+  console.log('Filtering offers with preferences:', preferences);
+  
+  return offers.filter(offer => {
+    // Check store preferences
+    if (preferences.stores && preferences.stores.length > 0 && offer.store) {
+      for (const prefId of preferences.stores) {
+        const prefValue = extractPreferenceValue(prefId);
+        if (offer.store.toLowerCase().includes(prefValue.toLowerCase())) {
+          return true;
+        }
+      }
+    }
+    
+    // Check brand/category preferences
+    if (preferences.brands && preferences.brands.length > 0 && offer.category) {
+      for (const prefId of preferences.brands) {
+        const prefValue = extractPreferenceValue(prefId);
+        if (offer.category.toLowerCase().includes(prefValue.toLowerCase())) {
+          return true;
+        }
+      }
+    }
+    
+    // Check bank preferences
+    if (preferences.banks && preferences.banks.length > 0 && 
+       (offer.description || offer.termsAndConditions || offer.longOffer)) {
+      const fullText = `${offer.description || ''} ${offer.termsAndConditions || ''} ${offer.longOffer || ''}`.toLowerCase();
+      
+      for (const prefId of preferences.banks) {
+        const prefValue = extractPreferenceValue(prefId);
+        if (fullText.includes(prefValue.toLowerCase())) {
+          return true;
+        }
+      }
+    }
+    
+    // If no preferences match, don't include the offer
+    return false;
+  });
 }
