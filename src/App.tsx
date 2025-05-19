@@ -1,4 +1,5 @@
 
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -41,44 +42,46 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <UserProvider>
-        <DataProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route 
-                path="*" 
-                element={
-                  <AppLayout>
-                    <Routes>
-                      <Route path="/splash" element={<SplashScreen />} />
-                      <Route path="/login" element={<LoginScreen />} />
-                      <Route path="/home" element={<HomeScreen />} />
-                      <Route path="/saved" element={<SavedOffersScreen />} />
-                      <Route path="/preferences" element={<Navigate to="/preferences/brands" replace />} />
-                      <Route path="/preferences/:preferenceType" element={<PreferenceScreen />} />
-                      <Route path="/category/:categoryId" element={<CategoryScreen />} />
-                      <Route path="/offer/:offerId" element={<OfferDetailScreen />} />
-                      <Route path="/chatbot" element={<ChatbotScreen />} />
-                      <Route path="/profile" element={<ProfileScreen />} />
-                      <Route path="/settings" element={<SettingsScreen />} />
-                      <Route path="/points" element={<PointsHistoryScreen />} />
-                      <Route path="/notifications" element={<NotificationsScreen />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </AppLayout>
-                } 
-              />
-            </Routes>
-          </BrowserRouter>
-        </DataProvider>
-      </UserProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <UserProvider>
+          <DataProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route 
+                  path="*" 
+                  element={
+                    <AppLayout>
+                      <Routes>
+                        <Route path="/splash" element={<SplashScreen />} />
+                        <Route path="/login" element={<LoginScreen />} />
+                        <Route path="/home" element={<HomeScreen />} />
+                        <Route path="/saved" element={<SavedOffersScreen />} />
+                        <Route path="/preferences" element={<Navigate to="/preferences/brands" replace />} />
+                        <Route path="/preferences/:preferenceType" element={<PreferenceScreen />} />
+                        <Route path="/category/:categoryId" element={<CategoryScreen />} />
+                        <Route path="/offer/:offerId" element={<OfferDetailScreen />} />
+                        <Route path="/chatbot" element={<ChatbotScreen />} />
+                        <Route path="/profile" element={<ProfileScreen />} />
+                        <Route path="/settings" element={<SettingsScreen />} />
+                        <Route path="/points" element={<PointsHistoryScreen />} />
+                        <Route path="/notifications" element={<NotificationsScreen />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </AppLayout>
+                  } 
+                />
+              </Routes>
+            </BrowserRouter>
+          </DataProvider>
+        </UserProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </React.StrictMode>
 );
 
 export default App;
