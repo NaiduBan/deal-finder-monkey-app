@@ -62,6 +62,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
       
+      // Cache preferences in localStorage
+      localStorage.setItem('userPreferences', JSON.stringify(preferences));
+      
       setUserPreferences(preferences);
       
       // Filter offers based on preferences if we have offers
@@ -73,6 +76,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error getting user preferences:', err);
     }
   };
+
+  // Load cached preferences on initial load
+  useEffect(() => {
+    try {
+      const cachedPreferences = localStorage.getItem('userPreferences');
+      if (cachedPreferences) {
+        const parsedPreferences = JSON.parse(cachedPreferences);
+        setUserPreferences(parsedPreferences);
+      }
+    } catch (err) {
+      console.error('Error loading cached preferences:', err);
+    }
+  }, []);
 
   // Listen for auth changes to update preferences
   useEffect(() => {
@@ -115,6 +131,30 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [user?.id]);
 
+  // Listen for real-time updates to offers in the Data table
+  useEffect(() => {
+    const channel = supabase
+      .channel('public:Data')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'Data'
+        },
+        () => {
+          // Refresh offers when Data table changes
+          console.log('Data table updated, refreshing offers...');
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const fetchData = async () => {
     console.log('Starting to fetch data...');
     setIsLoading(true);
@@ -122,6 +162,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let usingMockData = false;
     
     try {
+      // Get cached data first for quick display
+      const cachedOffers = localStorage.getItem('cachedOffers');
+      const cachedCategories = localStorage.getItem('cachedCategories');
+      
+      if (cachedOffers) {
+        const parsedOffers = JSON.parse(cachedOffers);
+        setOffers(parsedOffers);
+        setFilteredOffers(parsedOffers);
+        console.log('Using cached offers while fetching fresh data...');
+      }
+      
+      if (cachedCategories) {
+        const parsedCategories = JSON.parse(cachedCategories);
+        setCategories(parsedCategories);
+        console.log('Using cached categories while fetching fresh data...');
+      }
+      
       // Try to fetch data from Supabase (specifically the Data table)
       const [offersData, categoriesData] = await Promise.all([
         fetchOffers(),
@@ -134,6 +191,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (offersData.length > 0 && offersData[0].id.startsWith('data-')) {
         console.log('Using real data from Supabase Data table');
         setOffers(offersData);
+        
+        // Cache the offers
+        localStorage.setItem('cachedOffers', JSON.stringify(offersData));
         
         // Apply user preferences for filtering
         if (user && user.id) {
@@ -154,6 +214,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // For categories, use what we got or fall back to mock
       if (categoriesData && categoriesData.length > 0) {
         setCategories(categoriesData);
+        // Cache the categories
+        localStorage.setItem('cachedCategories', JSON.stringify(categoriesData));
       } else {
         setCategories(mockCategories);
         usingMockData = true;
@@ -171,16 +233,35 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error fetching data:', err);
       setError(err instanceof Error ? err : new Error('Unknown error occurred'));
       
-      // Fall back to mock data if there's an error
-      console.log('Falling back to mock data due to error');
-      setOffers(mockOffers);
-      setFilteredOffers(mockOffers);
-      setCategories(mockCategories);
+      // Try to use cached data if available
+      const cachedOffers = localStorage.getItem('cachedOffers');
+      const cachedCategories = localStorage.getItem('cachedCategories');
+      
+      if (cachedOffers) {
+        const parsedOffers = JSON.parse(cachedOffers);
+        setOffers(parsedOffers);
+        setFilteredOffers(parsedOffers);
+        console.log('Using cached offers due to fetch error...');
+      } else {
+        // Fall back to mock data if there's an error and no cache
+        console.log('Falling back to mock data due to error');
+        setOffers(mockOffers);
+        setFilteredOffers(mockOffers);
+      }
+      
+      if (cachedCategories) {
+        const parsedCategories = JSON.parse(cachedCategories);
+        setCategories(parsedCategories);
+        console.log('Using cached categories due to fetch error...');
+      } else {
+        setCategories(mockCategories);
+      }
+      
       setIsUsingMockData(true);
       
       toast({
         title: "Connection Error",
-        description: "Could not fetch data from the Data table. Using sample data instead.",
+        description: "Could not fetch data from the Data table. Using cached or sample data instead.",
         variant: "destructive",
       });
     } finally {

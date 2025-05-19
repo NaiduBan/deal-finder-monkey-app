@@ -126,19 +126,29 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         console.log("Signed in - saved offers:", savedOffers);
         
         // Update user state
-        setUser(prevUser => ({
-          ...prevUser,
+        const updatedUser = {
+          ...user,
           id: session.user.id,
           email: session.user.email || '',
           location: profileData?.location || 'India',
           savedOffers: savedOffers ? savedOffers.map(item => item.offer_id) : []
-        }));
+        };
+        
+        setUser(updatedUser);
+        
+        // Cache the updated user
+        localStorage.setItem('user', JSON.stringify(updatedUser));
       } else if (event === 'SIGNED_OUT') {
         // User signed out, revert to default user
-        setUser({
+        const defaultUser = {
           ...mockUser,
           location: 'India'
-        });
+        };
+        
+        setUser(defaultUser);
+        
+        // Cache the default user
+        localStorage.setItem('user', JSON.stringify(defaultUser));
       }
     });
 
@@ -155,6 +165,58 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       console.error('Error saving user to localStorage:', error);
     }
   }, [user]);
+
+  // Set up real-time listener for saved_offers
+  useEffect(() => {
+    if (!authSession?.user?.id) return;
+    
+    const channel = supabase
+      .channel('public:saved_offers')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'saved_offers',
+          filter: `user_id=eq.${authSession.user.id}`
+        },
+        async () => {
+          // Refresh saved offers when changes occur
+          console.log('Saved offers changed, refreshing...');
+          
+          const { data: savedOffers, error } = await supabase
+            .from('saved_offers')
+            .select('offer_id')
+            .eq('user_id', authSession.user.id);
+            
+          if (error) {
+            console.error('Error refreshing saved offers:', error);
+            return;
+          }
+          
+          if (savedOffers) {
+            const updatedSavedOffers = savedOffers.map(item => item.offer_id);
+            
+            setUser(prevUser => {
+              const updatedUser = {
+                ...prevUser,
+                savedOffers: updatedSavedOffers
+              };
+              
+              // Cache the updated user
+              localStorage.setItem('user', JSON.stringify(updatedUser));
+              
+              return updatedUser;
+            });
+          }
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [authSession?.user?.id]);
 
   // Function to update user points
   const updatePoints = (amount: number) => {
@@ -179,11 +241,16 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     
     if (!user.savedOffers.includes(offerId)) {
       // Update local state first for responsiveness
-      setUser(prevUser => ({
-        ...prevUser,
-        savedOffers: [...prevUser.savedOffers, offerId],
-        points: prevUser.points + 5 // Add 5 points for saving an offer
-      }));
+      const updatedUser = {
+        ...user,
+        savedOffers: [...user.savedOffers, offerId],
+        points: user.points + 5 // Add 5 points for saving an offer
+      };
+      
+      setUser(updatedUser);
+      
+      // Cache the updated user immediately
+      localStorage.setItem('user', JSON.stringify(updatedUser));
       
       // If user is authenticated, save to Supabase
       if (authSession && authSession.user) {
@@ -199,11 +266,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           if (error) {
             console.error('Error saving offer to Supabase:', error);
             // Revert local state if Supabase update fails
-            setUser(prevUser => ({
-              ...prevUser,
-              savedOffers: prevUser.savedOffers.filter(id => id !== offerId),
-              points: prevUser.points - 5
-            }));
+            const revertedUser = {
+              ...user,
+              savedOffers: user.savedOffers.filter(id => id !== offerId),
+              points: user.points - 5
+            };
+            
+            setUser(revertedUser);
+            localStorage.setItem('user', JSON.stringify(revertedUser));
             
             toast({
               title: "Error saving offer",
@@ -231,10 +301,15 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     console.log('Unsaving offer:', offerId);
     
     // Update local state first for responsiveness
-    setUser(prevUser => ({
-      ...prevUser,
-      savedOffers: prevUser.savedOffers.filter(id => id !== offerId)
-    }));
+    const updatedUser = {
+      ...user,
+      savedOffers: user.savedOffers.filter(id => id !== offerId)
+    };
+    
+    setUser(updatedUser);
+    
+    // Cache the updated user immediately
+    localStorage.setItem('user', JSON.stringify(updatedUser));
     
     // If user is authenticated, remove from Supabase
     if (authSession && authSession.user) {
@@ -249,10 +324,13 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         if (error) {
           console.error('Error removing offer from Supabase:', error);
           // Revert local state if Supabase update fails
-          setUser(prevUser => ({
-            ...prevUser,
-            savedOffers: [...prevUser.savedOffers, offerId]
-          }));
+          const revertedUser = {
+            ...user,
+            savedOffers: [...user.savedOffers, offerId]
+          };
+          
+          setUser(revertedUser);
+          localStorage.setItem('user', JSON.stringify(revertedUser));
           
           toast({
             title: "Error removing offer",
