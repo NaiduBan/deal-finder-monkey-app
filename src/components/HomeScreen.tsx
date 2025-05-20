@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Bell, Search, AlertCircle } from 'lucide-react';
@@ -137,13 +136,13 @@ const HomeScreen = () => {
     // Log for debugging purposes
     console.log("Home Screen Rendered");
     console.log("Offers loaded:", offers ? offers.length : 0);
-    console.log("Categories loaded:", categories ? categories.length : 0);
+    console.log("Categories loaded:", dynamicCategories ? dynamicCategories.length : 0);
     console.log("Is loading:", isDataLoading);
     console.log("Error:", error);
     console.log("Using mock data:", isUsingMockData);
     console.log("User preferences:", userPreferences);
     console.log("Selected category:", selectedCategory);
-  }, [offers, categories, isDataLoading, error, isUsingMockData, userPreferences, selectedCategory]);
+  }, [offers, dynamicCategories, isDataLoading, error, isUsingMockData, userPreferences, selectedCategory]);
 
   const loadMoreOffers = () => {
     setIsLoading(true);
@@ -310,7 +309,7 @@ const HomeScreen = () => {
           <div className="flex flex-wrap gap-2">
             {selectedCategory && (
               <div className="bg-monkeyGreen/10 text-monkeyGreen px-3 py-1 rounded-full text-sm flex items-center">
-                {categories.find(c => c.id === selectedCategory)?.name}
+                {dynamicCategories.find(c => c.id === selectedCategory)?.name}
                 <button 
                   onClick={() => setSelectedCategory(null)}
                   className="ml-1 text-monkeyGreen"
