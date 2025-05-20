@@ -14,5 +14,18 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
+  },
+  db: {
+    schema: 'public'
+  },
+  global: {
+    headers: { 'x-my-custom-header': 'monkey-deals-app' },
+    // Increase timeout for larger data sets
+    fetch: (url, options) => {
+      return fetch(url, {
+        ...options,
+        signal: AbortSignal.timeout(30000), // 30 second timeout
+      });
+    }
   }
 });

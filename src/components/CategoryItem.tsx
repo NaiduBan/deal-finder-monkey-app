@@ -61,12 +61,14 @@ const CategoryItem = ({ category }: CategoryItemProps) => {
   };
 
   return (
-    <Link to={`/category/${category.id}`} className="flex-shrink-0">
-      <div className={`category-card w-20 h-20 flex flex-col items-center justify-center ${getBgColor()} rounded-lg p-2 border border-gray-100 shadow-sm`}>
+    <div className="flex-shrink-0">
+      <div 
+        className={`category-card w-20 h-20 flex flex-col items-center justify-center ${getBgColor()} rounded-lg p-2 border border-gray-100 shadow-sm`}
+      >
         {getIcon()}
         <span className="text-xs text-center mt-1 font-medium line-clamp-1">{category.name}</span>
       </div>
-    </Link>
+    </div>
   );
 };
 

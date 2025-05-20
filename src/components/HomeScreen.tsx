@@ -11,11 +11,12 @@ import OfferCard from './OfferCard';
 import CategoryItem from './CategoryItem';
 import { supabase } from '@/integrations/supabase/client';
 import { applyPreferencesToOffers } from '@/services/supabaseService';
+import { Category } from '@/types';
 
 const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useUser();
-  const { offers, categories, isLoading: isDataLoading, error, refetchOffers, isUsingMockData } = useData();
+  const { offers, categories: allCategories, isLoading: isDataLoading, error, refetchOffers, isUsingMockData } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [userPreferences, setUserPreferences] = useState<{[key: string]: string[]}>({
     brands: [],
@@ -24,6 +25,7 @@ const HomeScreen = () => {
   });
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [dynamicCategories, setDynamicCategories] = useState<Category[]>([]);
 
   // Debounce search input
   useEffect(() => {
@@ -35,6 +37,66 @@ const HomeScreen = () => {
       clearTimeout(timerId);
     };
   }, [searchQuery]);
+
+  // Extract categories from today's offers
+  useEffect(() => {
+    if (offers && offers.length > 0) {
+      // Get unique categories from the offers
+      const uniqueCategories = new Set<string>();
+      offers.forEach(offer => {
+        if (offer.category) {
+          // Some offers might have multiple categories separated by commas
+          const categories = offer.category.split(',').map(cat => cat.trim());
+          categories.forEach(cat => {
+            if (cat) uniqueCategories.add(cat);
+          });
+        }
+      });
+
+      // Map to the format expected by CategoryItem
+      const categoryObjects: Category[] = Array.from(uniqueCategories).map(categoryName => {
+        // Try to find a matching category in the allCategories array
+        const matchingCategory = allCategories.find(c => 
+          c.name.toLowerCase() === categoryName.toLowerCase() ||
+          c.id.toLowerCase() === categoryName.toLowerCase().replace(/\s+/g, '-')
+        );
+
+        if (matchingCategory) {
+          return matchingCategory;
+        }
+
+        // If no match is found, create a new category object with reasonable defaults
+        return {
+          id: categoryName.toLowerCase().replace(/\s+/g, '-'),
+          name: categoryName,
+          icon: getCategoryIcon(categoryName),
+        };
+      });
+
+      // Sort alphabetically by name for consistency
+      categoryObjects.sort((a, b) => a.name.localeCompare(b.name));
+      
+      console.log('Generated dynamic categories:', categoryObjects);
+      setDynamicCategories(categoryObjects);
+    }
+  }, [offers, allCategories]);
+
+  // Helper function to determine an appropriate icon based on the category name
+  const getCategoryIcon = (categoryName: string): string => {
+    const name = categoryName.toLowerCase();
+    
+    if (name.includes('electronics') || name.includes('tech')) return 'laptop';
+    if (name.includes('fashion') || name.includes('clothing') || name.includes('apparel')) return 'shirt';
+    if (name.includes('food') || name.includes('drink') || name.includes('restaurant')) return 'utensils';
+    if (name.includes('home') || name.includes('furniture')) return 'home';
+    if (name.includes('travel') || name.includes('flight')) return 'plane';
+    if (name.includes('beauty') || name.includes('cosmetic')) return 'sparkles';
+    if (name.includes('health') || name.includes('fitness')) return 'heart';
+    if (name.includes('toy') || name.includes('kid')) return 'gift';
+    
+    // Default icon
+    return 'shopping-bag';
+  };
 
   // Fetch user preferences when component mounts
   useEffect(() => {
@@ -214,7 +276,7 @@ const HomeScreen = () => {
           />
         </div>
         
-        {/* Categories carousel with active state */}
+        {/* Categories carousel with active state - NOW USING DYNAMIC CATEGORIES */}
         <div>
           <h2 className="font-bold mb-3 text-lg">For You</h2>
           {isDataLoading ? (
@@ -223,9 +285,8 @@ const HomeScreen = () => {
             </div>
           ) : (
             <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-hide">
-              {categories
-                .filter(category => category.id !== "supermarket")
-                .map((category) => (
+              {dynamicCategories.length > 0 ? (
+                dynamicCategories.map((category) => (
                   <div 
                     key={category.id} 
                     onClick={() => handleCategoryClick(category.id)}
@@ -236,7 +297,10 @@ const HomeScreen = () => {
                       <div className="h-1 w-full bg-monkeyGreen rounded-full mt-1"></div>
                     )}
                   </div>
-                ))}
+                ))
+              ) : (
+                <div className="text-gray-500 py-2">No categories available</div>
+              )}
             </div>
           )}
         </div>
