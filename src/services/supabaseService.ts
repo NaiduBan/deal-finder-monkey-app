@@ -676,17 +676,17 @@ export async function searchOffers(query: string): Promise<Offer[]> {
         merchantHomepage: item.merchant_homepage || "",
         longOffer: item.long_offer || "",
         code: item.code || "",
-        termsAndConditions: string | null,
+        termsAndConditions: item.terms_and_conditions || "",
         featured: item.featured === "true" || item.featured === "1",
         publisherExclusive: item.publisher_exclusive === "true" || item.publisher_exclusive === "1",
         url: item.url || "",
         smartlink: item.smartlink || "",
-        offerType: string | null,
-        offerValue: string | null,
-        status: string | null,
-        startDate: string | null,
-        endDate: string | null,
-        categories: string | null
+        offerType: item.type || "",
+        offerValue: item.offer_value || "",
+        status: item.status || "",
+        startDate: item.start_date || "",
+        endDate: item.end_date || "",
+        categories: item.categories || ""
       };
     });
   } catch (error) {
