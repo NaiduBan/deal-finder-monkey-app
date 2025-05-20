@@ -24,7 +24,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     fetch: (url, options) => {
       return fetch(url, {
         ...options,
-        signal: AbortSignal.timeout(120000), // Increase to 2 minute timeout for larger datasets
+        signal: AbortSignal.timeout(180000), // Increase to 3 minute timeout for larger datasets
       });
     }
   }
