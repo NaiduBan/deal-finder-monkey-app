@@ -41,11 +41,11 @@ export async function fetchCategories(): Promise<Category[]> {
             const cats = item.categories.split(',').map((c: string) => c.trim());
             cats.forEach((catName: string, index: number) => {
               if (catName && !categoryMap.has(catName.toLowerCase())) {
-                const id = `category-${categoryMap.size + index}`; // More descriptive ID format
+                const id = `b${categoryMap.size + index}`; // Use a more reliable ID format
                 categoryMap.set(catName.toLowerCase(), {
                   id,
                   name: catName,
-                  icon: getCategoryIcon(catName),
+                  icon: getCategoryIcon(catName), // Get appropriate icon based on category name
                   subcategories: []
                 });
               }
@@ -86,10 +86,10 @@ export async function fetchCategories(): Promise<Category[]> {
     
     // Transform the data to match our Category type
     return data.map(item => ({
-      id: item.id || `category-${item.name.toLowerCase().replace(/\s+/g, '-')}`,
+      id: item.id || `b${item.name.toLowerCase().replace(/\s+/g, '-')}`,
       name: item.name,
       icon: item.icon || getCategoryIcon(item.name),
-      subcategories: []
+      subcategories: []  // We don't have subcategories in the DB schema yet
     }));
   } catch (error) {
     console.error('Error in fetchCategories, falling back to mock data:', error);
@@ -221,110 +221,6 @@ export async function fetchOffers(): Promise<Offer[]> {
   }
 }
 
-// Function to extract unique stores from offers
-export async function fetchStoresFromOffers(): Promise<string[]> {
-  try {
-    const { data, error } = await supabase
-      .from('Data')
-      .select('store')
-      .not('store', 'is', null);
-      
-    if (error) {
-      throw error;
-    }
-    
-    const uniqueStores = new Set<string>();
-    
-    data?.forEach(item => {
-      if (item.store && item.store.trim()) {
-        uniqueStores.add(item.store.trim());
-      }
-    });
-    
-    return Array.from(uniqueStores).sort();
-  } catch (error) {
-    console.error('Error fetching stores:', error);
-    return [];
-  }
-}
-
-// Function to extract unique categories from offers
-export async function fetchCategoriesFromOffers(): Promise<string[]> {
-  try {
-    const { data, error } = await supabase
-      .from('Data')
-      .select('categories')
-      .not('categories', 'is', null);
-      
-    if (error) {
-      throw error;
-    }
-    
-    const uniqueCategories = new Set<string>();
-    
-    data?.forEach(item => {
-      if (item.categories) {
-        const categories = item.categories.split(',');
-        categories.forEach((cat: string) => {
-          const trimmedCat = cat.trim();
-          if (trimmedCat) {
-            uniqueCategories.add(trimmedCat);
-          }
-        });
-      }
-    });
-    
-    return Array.from(uniqueCategories).sort();
-  } catch (error) {
-    console.error('Error fetching categories:', error);
-    return [];
-  }
-}
-
-// Function to extract bank names from offers
-export async function fetchBanksFromOffers(): Promise<string[]> {
-  try {
-    // Common bank names to look for
-    const commonBanks = [
-      'HDFC', 'SBI', 'ICICI', 'Axis', 'RBL', 'Kotak', 
-      'Bank of Baroda', 'Punjab National', 'IDBI', 'Canara',
-      'Federal', 'IndusInd', 'Yes Bank', 'Union Bank',
-      'HSBC', 'Citi', 'Standard Chartered', 'American Express',
-      'Deutsche', 'DBS', 'IDFC', 'AU Small Finance'
-    ];
-    
-    const { data, error } = await supabase
-      .from('Data')
-      .select('description, long_offer, title, terms_and_conditions');
-      
-    if (error) {
-      throw error;
-    }
-    
-    const bankMentions: Record<string, number> = {};
-    
-    // Look for bank mentions in offer text
-    data?.forEach(item => {
-      const fullText = `${item.title || ''} ${item.description || ''} ${item.long_offer || ''} ${item.terms_and_conditions || ''}`.toLowerCase();
-      
-      commonBanks.forEach(bank => {
-        if (fullText.includes(bank.toLowerCase())) {
-          bankMentions[bank] = (bankMentions[bank] || 0) + 1;
-        }
-      });
-    });
-    
-    // Sort banks by frequency of mentions
-    const sortedBanks = Object.keys(bankMentions)
-      .sort((a, b) => bankMentions[b] - bankMentions[a]);
-    
-    return sortedBanks.length > 0 ? sortedBanks : commonBanks.slice(0, 6);
-  } catch (error) {
-    console.error('Error finding banks in offers:', error);
-    return ['HDFC', 'SBI', 'ICICI', 'Axis', 'Kotak', 'American Express'];
-  }
-}
-
 // Function to upload an image to Supabase storage
 export async function uploadImage(file: File): Promise<string> {
   const fileExt = file.name.split('.').pop();
@@ -431,21 +327,18 @@ export async function unsaveOfferForUser(userId: string, offerId: string): Promi
   }
 }
 
-// NEW PREFERENCE FUNCTIONS
-
-// Function to get user preferences by preference type
-export async function getUserPreferences(userId: string, preferenceType: string = 'all'): Promise<string[]> {
+// Enhanced function to fetch user preferences with improved logging
+export async function fetchUserPreferences(userId: string, preferenceType: string = 'all'): Promise<any[]> {
   try {
     if (!userId) {
-      console.log('No user ID provided for preference fetch');
-      return [];
+      throw new Error('User ID is required to fetch preferences');
     }
     
     console.log(`Fetching ${preferenceType} preferences for user ${userId}`);
     
     let query = supabase
       .from('user_preferences')
-      .select('preference_id')
+      .select('*')
       .eq('user_id', userId);
       
     if (preferenceType !== 'all') {
@@ -456,161 +349,132 @@ export async function getUserPreferences(userId: string, preferenceType: string 
       
     if (error) {
       console.error('Error fetching user preferences:', error);
-      return [];
+      throw error;
     }
     
     console.log(`Found ${data?.length || 0} preferences of type ${preferenceType}`);
-    return data ? data.map(pref => pref.preference_id) : [];
+    return data || [];
   } catch (error) {
-    console.error('Error in getUserPreferences:', error);
+    console.error('Error in fetchUserPreferences:', error);
     return [];
   }
 }
 
-// Function to save multiple preferences
-export async function saveUserPreferences(
-  userId: string, 
-  preferenceType: string, 
-  preferenceIds: string[]
-): Promise<boolean> {
+// Enhanced function to save user preferences with better error handling
+export async function saveUserPreference(userId: string, preferenceType: string, preferenceId: string): Promise<boolean> {
   try {
-    if (!userId || !preferenceType || !preferenceIds.length) {
-      console.log('Missing required data for saving preferences');
+    if (!userId || !preferenceType || !preferenceId) {
+      throw new Error('User ID, preference type, and preference ID are required');
+    }
+    
+    console.log(`Saving preference for user ${userId}: ${preferenceType} - ${preferenceId}`);
+    
+    // Check if preference already exists
+    const { data: existingPreference, error: checkError } = await supabase
+      .from('user_preferences')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('preference_type', preferenceType)
+      .eq('preference_id', preferenceId)
+      .single();
+      
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means not found, which is expected
+      console.error('Error checking existing preference:', checkError);
       return false;
     }
     
-    console.log(`Saving ${preferenceIds.length} ${preferenceType} preferences for user ${userId}`);
+    // If preference already exists, don't add it again
+    if (existingPreference) {
+      console.log('Preference already exists, skipping save operation');
+      return true;
+    }
     
-    // First delete existing preferences of this type
-    const { error: deleteError } = await supabase
+    // Insert the new preference
+    const { error } = await supabase
+      .from('user_preferences')
+      .insert({
+        user_id: userId,
+        preference_type: preferenceType,
+        preference_id: preferenceId
+      });
+      
+    if (error) {
+      console.error('Error saving user preference:', error);
+      return false;
+    }
+    
+    console.log('Preference saved successfully');
+    return true;
+  } catch (error) {
+    console.error('Error in saveUserPreference:', error);
+    return false;
+  }
+}
+
+// Enhanced function to remove user preference with better error handling and logging
+export async function removeUserPreference(userId: string, preferenceType: string, preferenceId: string): Promise<boolean> {
+  try {
+    if (!userId || !preferenceType || !preferenceId) {
+      throw new Error('User ID, preference type, and preference ID are required');
+    }
+    
+    console.log(`Removing preference for user ${userId}: ${preferenceType} - ${preferenceId}`);
+    
+    const { error } = await supabase
+      .from('user_preferences')
+      .delete()
+      .eq('user_id', userId)
+      .eq('preference_type', preferenceType)
+      .eq('preference_id', preferenceId);
+      
+    if (error) {
+      console.error('Error removing user preference:', error);
+      return false;
+    }
+    
+    console.log('Preference removed successfully');
+    return true;
+  } catch (error) {
+    console.error('Error in removeUserPreference:', error);
+    return false;
+  }
+}
+
+// Function to remove all preferences of a specific type for a user
+export async function removeAllUserPreferencesOfType(userId: string, preferenceType: string): Promise<boolean> {
+  try {
+    if (!userId || !preferenceType) {
+      throw new Error('User ID and preference type are required');
+    }
+    
+    console.log(`Removing all ${preferenceType} preferences for user ${userId}`);
+    
+    const { error } = await supabase
       .from('user_preferences')
       .delete()
       .eq('user_id', userId)
       .eq('preference_type', preferenceType);
       
-    if (deleteError) {
-      console.error('Error deleting existing preferences:', deleteError);
+    if (error) {
+      console.error(`Error removing all ${preferenceType} preferences:`, error);
       return false;
     }
     
-    // Then insert new preferences
-    const preferencesToInsert = preferenceIds.map(prefId => ({
-      user_id: userId,
-      preference_type: preferenceType,
-      preference_id: prefId
-    }));
-    
-    const { error: insertError } = await supabase
-      .from('user_preferences')
-      .insert(preferencesToInsert);
-      
-    if (insertError) {
-      console.error('Error inserting new preferences:', insertError);
-      return false;
-    }
-    
+    console.log(`All ${preferenceType} preferences removed successfully`);
     return true;
   } catch (error) {
-    console.error('Error in saveUserPreferences:', error);
+    console.error('Error in removeAllUserPreferencesOfType:', error);
     return false;
   }
-}
-
-// Function to filter offers based on user preferences
-export function applyPreferencesToOffers(
-  offers: Offer[],
-  preferences: { brands: string[], stores: string[], banks: string[] }
-): Offer[] {
-  // If no preferences are set, return all offers
-  if (!preferences || 
-      Object.keys(preferences).length === 0 || 
-      (preferences.brands.length === 0 && 
-       preferences.stores.length === 0 && 
-       preferences.banks.length === 0)) {
-    return offers;
-  }
-  
-  return offers.filter(offer => {
-    // Check stores
-    if (preferences.stores.length > 0 && offer.store) {
-      if (preferences.stores.some(store => 
-        offer.store?.toLowerCase().includes(store.toLowerCase()))) {
-        return true;
-      }
-    }
-    
-    // Check categories/brands
-    if (preferences.brands.length > 0 && offer.category) {
-      if (preferences.brands.some(brand => 
-        offer.category?.toLowerCase().includes(brand.toLowerCase()))) {
-        return true;
-      }
-    }
-    
-    // Check banks (look in description, terms, etc.)
-    if (preferences.banks.length > 0) {
-      const fullText = `${offer.title || ''} ${offer.description || ''} ${offer.termsAndConditions || ''} ${offer.longOffer || ''}`.toLowerCase();
-      
-      if (preferences.banks.some(bank => 
-        fullText.includes(bank.toLowerCase()))) {
-        return true;
-      }
-    }
-    
-    return false;
-  });
-}
-
-// Function to filter offers based on user preferences
-export function filterOffersByPreferences(
-  offers: Offer[],
-  preferences: { brands: string[], stores: string[], banks: string[] }
-): Offer[] {
-  // If no preferences are set, return all offers
-  if (!preferences || 
-      Object.keys(preferences).length === 0 || 
-      (preferences.brands.length === 0 && 
-       preferences.stores.length === 0 && 
-       preferences.banks.length === 0)) {
-    return offers;
-  }
-  
-  return offers.filter(offer => {
-    // Check stores
-    if (preferences.stores.length > 0 && offer.store) {
-      if (preferences.stores.some(store => 
-        offer.store?.toLowerCase().includes(store.toLowerCase()))) {
-        return true;
-      }
-    }
-    
-    // Check categories/brands
-    if (preferences.brands.length > 0 && offer.category) {
-      if (preferences.brands.some(brand => 
-        offer.category?.toLowerCase().includes(brand.toLowerCase()))) {
-        return true;
-      }
-    }
-    
-    // Check banks (look in description, terms, etc.)
-    if (preferences.banks.length > 0) {
-      const fullText = `${offer.title || ''} ${offer.description || ''} ${offer.termsAndConditions || ''} ${offer.longOffer || ''}`.toLowerCase();
-      
-      if (preferences.banks.some(bank => 
-        fullText.includes(bank.toLowerCase()))) {
-        return true;
-      }
-    }
-    
-    return false;
-  });
 }
 
 // Function to search offers
 export async function searchOffers(query: string): Promise<Offer[]> {
-  if (!query.trim()) return [];
-  
   try {
+    if (!query.trim()) {
+      return [];
+    }
+    
     console.log('Searching offers with query:', query);
     
     const searchTerm = `%${query}%`;
@@ -623,13 +487,18 @@ export async function searchOffers(query: string): Promise<Offer[]> {
       
     if (error) {
       console.error('Error searching offers:', error);
+      throw error;
+    }
+    
+    console.log('Search results:', data?.length || 0);
+    
+    if (!data || data.length === 0) {
       return [];
     }
     
-    if (!data || data.length === 0) return [];
-    
-    // Transform data to Offer type (using same transformation as fetchOffers)
+    // Transform data to Offer type (reuse the transformation logic from fetchOffers)
     return data.map((item, index) => {
+      // Calculate price and savings (same logic as in fetchOffers)
       let price = 0;
       let originalPrice = 0;
       let savings = '';
@@ -672,6 +541,7 @@ export async function searchOffers(query: string): Promise<Offer[]> {
         expiryDate: item.end_date || "",
         isAmazon: isAmazon,
         savings: savings,
+        // Fields from the Data table
         lmdId: Number(item.lmd_id) || 0,
         merchantHomepage: item.merchant_homepage || "",
         longOffer: item.long_offer || "",
@@ -695,7 +565,94 @@ export async function searchOffers(query: string): Promise<Offer[]> {
   }
 }
 
-// Function to manually trigger LinkMyDeals sync
+// Helper function to extract actual value from preference ID
+// This handles the case where preference IDs are like 'b1', 's2', etc.
+// but we need to match them against actual names in the offers
+function extractPreferenceValue(prefId: string): string {
+  // For IDs stored directly from Supabase data, they might be the actual values
+  if (prefId.length > 3 && !prefId.startsWith('b') && !prefId.startsWith('s') && !prefId.startsWith('bk')) {
+    return prefId;
+  }
+  
+  // Try to find the preference in the mock data first
+  const { mockBrands, mockStores, mockBanks } = require('@/mockData');
+  
+  if (prefId.startsWith('b')) {
+    const brand = mockBrands.find(b => b.id === prefId);
+    return brand ? brand.name : '';
+  }
+  
+  if (prefId.startsWith('s')) {
+    const store = mockStores.find(s => s.id === prefId);
+    return store ? store.name : '';
+  }
+  
+  if (prefId.startsWith('bk')) {
+    const bank = mockBanks.find(b => b.id === prefId);
+    return bank ? bank.name : '';
+  }
+  
+  // If we can't extract, just return the original ID
+  return prefId;
+}
+
+// Enhanced function to apply preferences to offers with better logging
+export function applyPreferencesToOffers(offers: Offer[], preferences: {[key: string]: string[]}): Offer[] {
+  if (!preferences || Object.keys(preferences).length === 0 || 
+      (preferences.stores?.length === 0 && preferences.brands?.length === 0 && preferences.banks?.length === 0)) {
+    console.log('No preferences to filter by, returning all offers');
+    return offers;
+  }
+  
+  console.log(`Filtering ${offers.length} offers with preferences:`, 
+    `stores: ${preferences.stores?.length || 0}, ` +
+    `brands: ${preferences.brands?.length || 0}, ` + 
+    `banks: ${preferences.banks?.length || 0}`
+  );
+  
+  const filteredOffers = offers.filter(offer => {
+    // Check store preferences
+    if (preferences.stores && preferences.stores.length > 0 && offer.store) {
+      for (const prefId of preferences.stores) {
+        const prefValue = extractPreferenceValue(prefId);
+        if (prefValue && offer.store.toLowerCase().includes(prefValue.toLowerCase())) {
+          return true;
+        }
+      }
+    }
+    
+    // Check brand/category preferences
+    if (preferences.brands && preferences.brands.length > 0 && offer.category) {
+      for (const prefId of preferences.brands) {
+        const prefValue = extractPreferenceValue(prefId);
+        if (prefValue && offer.category.toLowerCase().includes(prefValue.toLowerCase())) {
+          return true;
+        }
+      }
+    }
+    
+    // Check bank preferences
+    if (preferences.banks && preferences.banks.length > 0 && 
+       (offer.description || offer.termsAndConditions || offer.longOffer)) {
+      const fullText = `${offer.description || ''} ${offer.termsAndConditions || ''} ${offer.longOffer || ''}`.toLowerCase();
+      
+      for (const prefId of preferences.banks) {
+        const prefValue = extractPreferenceValue(prefId);
+        if (prefValue && fullText.includes(prefValue.toLowerCase())) {
+          return true;
+        }
+      }
+    }
+    
+    // If no preferences match, don't include the offer
+    return false;
+  });
+  
+  console.log(`Filtered down to ${filteredOffers.length} offers matching preferences`);
+  return filteredOffers;
+}
+
+// Function to manually trigger the LinkMyDeals sync
 export async function triggerLinkMyDealsSync(): Promise<boolean> {
   try {
     console.log('Manually triggering LinkMyDeals sync...');

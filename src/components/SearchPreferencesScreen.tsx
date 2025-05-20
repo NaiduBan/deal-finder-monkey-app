@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Search, SlidersHorizontal, X, Loader2 } from 'lucide-react';
+import { ChevronLeft, Search, SlidersHorizontal, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -10,14 +10,15 @@ import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
-import { searchOffers, getUserPreferences } from '@/services/supabaseService';
+import { searchOffers } from '@/services/supabaseService';
 
+// Define preference types to match those in PreferenceScreen
 type PreferenceType = 'brands' | 'stores' | 'banks';
 
 const SearchPreferencesScreen = () => {
   const navigate = useNavigate();
   const { user } = useUser();
-  const { offers, filteredOffers } = useData();
+  const { offers } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'search' | 'preferences'>('search');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -50,16 +51,15 @@ const SearchPreferencesScreen = () => {
       [key]: !prev[key]
     }));
     
+    // Show toast notification
     toast({
       title: "Preference updated",
       description: `${key} preference has been ${!preferences[key] ? 'enabled' : 'disabled'}.`,
     });
   };
 
-  const handleSearch = async (e?: React.FormEvent) => {
-    if (e) {
-      e.preventDefault();
-    }
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
     
     if (!searchQuery.trim()) return;
     
@@ -73,6 +73,7 @@ const SearchPreferencesScreen = () => {
       setIsSearching(true);
       console.log('Searching for:', searchQuery);
       
+      // Use the searchOffers function from supabaseService
       const results = await searchOffers(searchQuery);
       console.log('Search results:', results.length);
       setSearchResults(results);
@@ -114,6 +115,7 @@ const SearchPreferencesScreen = () => {
   // Extract unique categories from offers for popular categories section
   const getPopularCategories = () => {
     if (!offers || offers.length === 0) {
+      // Default categories if no offers available
       return [
         { name: 'Food & Drinks', id: 'food-drinks' },
         { name: 'Fashion', id: 'fashion' },
@@ -144,7 +146,7 @@ const SearchPreferencesScreen = () => {
   const popularCategories = getPopularCategories();
 
   return (
-    <div className="pb-16 bg-gray-50 min-h-screen">
+    <div className="pb-16 bg-monkeyBackground min-h-screen">
       {/* Header */}
       <div className="bg-monkeyGreen text-white p-4 flex items-center justify-between sticky top-0 z-10">
         <Link to="/home">
@@ -215,7 +217,7 @@ const SearchPreferencesScreen = () => {
                       onClick={() => {
                         setSearchQuery(search);
                         setTimeout(() => {
-                          handleSearch();
+                          handleSearch(new Event('submit') as any);
                         }, 100);
                       }}
                       className="flex items-center flex-grow text-left"
@@ -239,7 +241,7 @@ const SearchPreferencesScreen = () => {
               
               {isSearching ? (
                 <div className="flex justify-center my-8">
-                  <Loader2 className="w-8 h-8 text-monkeyGreen animate-spin" />
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-monkeyGreen"></div>
                 </div>
               ) : searchResults.length > 0 ? (
                 <div className="space-y-2">
@@ -269,44 +271,36 @@ const SearchPreferencesScreen = () => {
       ) : (
         <div className="p-4">
           {/* Preferences Navigation */}
-          <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+          <div className="bg-white rounded-lg p-4 mb-4">
             <h3 className="font-semibold mb-4 flex items-center">
               <SlidersHorizontal className="w-5 h-5 mr-2 text-monkeyGreen" />
               Preference Categories
             </h3>
             
-            <div className="w-full grid grid-cols-3 gap-2">
-              <Button 
-                variant="outline"
-                onClick={() => navigateToPreference('brands')}
-                className="flex flex-col items-center py-3"
-              >
-                <span className="text-2xl">🏷️</span>
-                <span className="text-xs mt-1">Brands</span>
-              </Button>
-              
-              <Button 
-                variant="outline"
-                onClick={() => navigateToPreference('stores')}
-                className="flex flex-col items-center py-3"
-              >
-                <span className="text-2xl">🏬</span>
-                <span className="text-xs mt-1">Stores</span>
-              </Button>
-              
-              <Button 
-                variant="outline"
-                onClick={() => navigateToPreference('banks')}
-                className="flex flex-col items-center py-3"
-              >
-                <span className="text-2xl">🏦</span>
-                <span className="text-xs mt-1">Banks</span>
-              </Button>
+            <div className="w-full flex justify-between">
+              <div className="flex-1">
+                <Link to="/preferences/brands" className="block w-full text-center py-2 px-1 hover:bg-gray-50 rounded">
+                  <span className="text-2xl">🏷️</span>
+                  <p className="text-xs mt-1">Brands</p>
+                </Link>
+              </div>
+              <div className="flex-1">
+                <Link to="/preferences/stores" className="block w-full text-center py-2 px-1 hover:bg-gray-50 rounded">
+                  <span className="text-2xl">🏬</span>
+                  <p className="text-xs mt-1">Stores</p>
+                </Link>
+              </div>
+              <div className="flex-1">
+                <Link to="/preferences/banks" className="block w-full text-center py-2 px-1 hover:bg-gray-50 rounded">
+                  <span className="text-2xl">🏦</span>
+                  <p className="text-xs mt-1">Banks</p>
+                </Link>
+              </div>
             </div>
           </div>
 
           {/* Quick Filters */}
-          <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+          <div className="bg-white rounded-lg p-4 mb-4">
             <h3 className="font-semibold mb-3">Quick Filters</h3>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
@@ -352,20 +346,49 @@ const SearchPreferencesScreen = () => {
           </div>
 
           {/* Popular Categories */}
-          <div className="bg-white rounded-lg p-4 shadow-sm">
+          <div className="bg-white rounded-lg p-4">
             <h3 className="font-semibold mb-3">Popular Categories</h3>
             <div className="flex flex-wrap gap-2">
-              {popularCategories.map((category, index) => (
-                <Button 
-                  key={`popular-${index}`}
-                  variant="outline" 
-                  size="sm" 
-                  className="rounded-full"
-                  onClick={() => navigate(`/category/${category.id}`)}
-                >
-                  {category.name}
-                </Button>
-              ))}
+              {popularCategories.length > 0 ? (
+                popularCategories.map((category, index) => (
+                  <Button 
+                    key={`popular-${index}`}
+                    variant="outline" 
+                    size="sm" 
+                    className="rounded-full"
+                    onClick={() => navigate(`/category/${category.id}`)}
+                  >
+                    {category.name}
+                  </Button>
+                ))
+              ) : (
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="rounded-full"
+                    onClick={() => navigate('/category/food-drinks')}
+                  >
+                    Food & Drinks
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="rounded-full"
+                    onClick={() => navigate('/category/fashion')}
+                  >
+                    Fashion
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="rounded-full"
+                    onClick={() => navigate('/category/electronics')}
+                  >
+                    Electronics
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
