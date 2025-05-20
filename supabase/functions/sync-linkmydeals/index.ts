@@ -23,7 +23,17 @@ serve(async (req) => {
   try {
     console.log("Starting LinkMyDeals API sync job...");
     
-    // Get the last extract timestamp
+    // Check if this is a manual trigger or scheduled
+    let isManualTrigger = false;
+    
+    try {
+      const body = await req.json();
+      isManualTrigger = body.manual === true;
+    } catch (e) {
+      // No body or invalid JSON, assume scheduled job
+    }
+    
+    // Get the current sync status
     let { data: syncStatus, error: getError } = await supabase
       .from("api_sync_status")
       .select("*")
@@ -35,6 +45,43 @@ serve(async (req) => {
       throw new Error(`Failed to get sync status: ${getError.message}`);
     }
 
+    // Check daily quota limit
+    const today = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
+    
+    // Extract the date part of the last extract
+    const lastExtractDate = syncStatus?.last_extract 
+      ? new Date(syncStatus.last_extract).toISOString().split('T')[0] 
+      : null;
+      
+    // If this is a manual trigger and we already had an extract today, check if we want to proceed
+    if (isManualTrigger && lastExtractDate === today) {
+      console.log("Warning: Already performed an extract today. Using one of the 24 daily quota.");
+      
+      // For manual triggers, we'll proceed but with a warning
+      // For automated/scheduled jobs, we'd skip if already run today
+    } else if (!isManualTrigger && lastExtractDate === today) {
+      // If this is a scheduled job and we already extracted today, skip
+      console.log("Scheduled job: Already performed an extract today. Skipping to preserve quota.");
+      
+      // Update sync status with skipped message
+      await supabase
+        .from("api_sync_status")
+        .update({
+          last_sync_status: "skipped",
+          last_sync_message: "Skipped additional extract to preserve daily quota",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", "linkmydeals");
+        
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "Skipped extract to preserve daily quota" 
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
     const lastExtract = syncStatus?.last_extract;
     console.log(`Last extract timestamp: ${lastExtract}`);
     
