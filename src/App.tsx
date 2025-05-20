@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { UserProvider } from "./contexts/UserContext";
 import { DataProvider } from "./contexts/DataContext";
+import { AuthProvider } from "./contexts/AuthContext";
 
 // Components
 import SplashScreen from "./components/SplashScreen";
@@ -42,11 +43,13 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
 // Providers wrapper component
 const ProvidersWrapper = ({ children }: { children: React.ReactNode }) => (
-  <UserProvider>
-    <DataProvider>
-      {children}
-    </DataProvider>
-  </UserProvider>
+  <AuthProvider>
+    <UserProvider>
+      <DataProvider>
+        {children}
+      </DataProvider>
+    </UserProvider>
+  </AuthProvider>
 );
 
 const App = () => (
