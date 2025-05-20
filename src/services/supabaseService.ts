@@ -326,12 +326,14 @@ export async function unsaveOfferForUser(userId: string, offerId: string): Promi
   }
 }
 
-// Function to fetch user preferences
+// Enhanced function to fetch user preferences with improved logging
 export async function fetchUserPreferences(userId: string, preferenceType: string = 'all'): Promise<any[]> {
   try {
     if (!userId) {
       throw new Error('User ID is required to fetch preferences');
     }
+    
+    console.log(`Fetching ${preferenceType} preferences for user ${userId}`);
     
     let query = supabase
       .from('user_preferences')
@@ -349,6 +351,7 @@ export async function fetchUserPreferences(userId: string, preferenceType: strin
       throw error;
     }
     
+    console.log(`Found ${data?.length || 0} preferences of type ${preferenceType}`);
     return data || [];
   } catch (error) {
     console.error('Error in fetchUserPreferences:', error);
@@ -356,12 +359,14 @@ export async function fetchUserPreferences(userId: string, preferenceType: strin
   }
 }
 
-// Function to save user preferences
+// Enhanced function to save user preferences with better error handling
 export async function saveUserPreference(userId: string, preferenceType: string, preferenceId: string): Promise<boolean> {
   try {
     if (!userId || !preferenceType || !preferenceId) {
       throw new Error('User ID, preference type, and preference ID are required');
     }
+    
+    console.log(`Saving preference for user ${userId}: ${preferenceType} - ${preferenceId}`);
     
     // Check if preference already exists
     const { data: existingPreference, error: checkError } = await supabase
@@ -379,6 +384,7 @@ export async function saveUserPreference(userId: string, preferenceType: string,
     
     // If preference already exists, don't add it again
     if (existingPreference) {
+      console.log('Preference already exists, skipping save operation');
       return true;
     }
     
@@ -396,6 +402,7 @@ export async function saveUserPreference(userId: string, preferenceType: string,
       return false;
     }
     
+    console.log('Preference saved successfully');
     return true;
   } catch (error) {
     console.error('Error in saveUserPreference:', error);
@@ -403,12 +410,14 @@ export async function saveUserPreference(userId: string, preferenceType: string,
   }
 }
 
-// Function to remove user preference
+// Enhanced function to remove user preference with better error handling and logging
 export async function removeUserPreference(userId: string, preferenceType: string, preferenceId: string): Promise<boolean> {
   try {
     if (!userId || !preferenceType || !preferenceId) {
       throw new Error('User ID, preference type, and preference ID are required');
     }
+    
+    console.log(`Removing preference for user ${userId}: ${preferenceType} - ${preferenceId}`);
     
     const { error } = await supabase
       .from('user_preferences')
@@ -422,9 +431,38 @@ export async function removeUserPreference(userId: string, preferenceType: strin
       return false;
     }
     
+    console.log('Preference removed successfully');
     return true;
   } catch (error) {
     console.error('Error in removeUserPreference:', error);
+    return false;
+  }
+}
+
+// Function to remove all preferences of a specific type for a user
+export async function removeAllUserPreferencesOfType(userId: string, preferenceType: string): Promise<boolean> {
+  try {
+    if (!userId || !preferenceType) {
+      throw new Error('User ID and preference type are required');
+    }
+    
+    console.log(`Removing all ${preferenceType} preferences for user ${userId}`);
+    
+    const { error } = await supabase
+      .from('user_preferences')
+      .delete()
+      .eq('user_id', userId)
+      .eq('preference_type', preferenceType);
+      
+    if (error) {
+      console.error(`Error removing all ${preferenceType} preferences:`, error);
+      return false;
+    }
+    
+    console.log(`All ${preferenceType} preferences removed successfully`);
+    return true;
+  } catch (error) {
+    console.error('Error in removeAllUserPreferencesOfType:', error);
     return false;
   }
 }
@@ -553,7 +591,7 @@ function extractPreferenceValue(prefId: string): string {
   return prefId;
 }
 
-// Function to apply preferences to offers
+// Enhanced function to apply preferences to offers with better logging
 export function applyPreferencesToOffers(offers: Offer[], preferences: {[key: string]: string[]}): Offer[] {
   if (!preferences || Object.keys(preferences).length === 0 || 
       (preferences.stores?.length === 0 && preferences.brands?.length === 0 && preferences.banks?.length === 0)) {
@@ -561,9 +599,13 @@ export function applyPreferencesToOffers(offers: Offer[], preferences: {[key: st
     return offers;
   }
   
-  console.log('Filtering offers with preferences:', preferences);
+  console.log(`Filtering ${offers.length} offers with preferences:`, 
+    `stores: ${preferences.stores?.length || 0}, ` +
+    `brands: ${preferences.brands?.length || 0}, ` + 
+    `banks: ${preferences.banks?.length || 0}`
+  );
   
-  return offers.filter(offer => {
+  const filteredOffers = offers.filter(offer => {
     // Check store preferences
     if (preferences.stores && preferences.stores.length > 0 && offer.store) {
       for (const prefId of preferences.stores) {
@@ -600,4 +642,7 @@ export function applyPreferencesToOffers(offers: Offer[], preferences: {[key: st
     // If no preferences match, don't include the offer
     return false;
   });
+  
+  console.log(`Filtered down to ${filteredOffers.length} offers matching preferences`);
+  return filteredOffers;
 }
