@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Offer, Category } from "@/types";
 import { mockCategories, mockOffers } from "@/mockData";
@@ -518,6 +517,51 @@ export async function saveUserPreferences(
 }
 
 // Function to filter offers based on user preferences
+export function applyPreferencesToOffers(
+  offers: Offer[],
+  preferences: { brands: string[], stores: string[], banks: string[] }
+): Offer[] {
+  // If no preferences are set, return all offers
+  if (!preferences || 
+      Object.keys(preferences).length === 0 || 
+      (preferences.brands.length === 0 && 
+       preferences.stores.length === 0 && 
+       preferences.banks.length === 0)) {
+    return offers;
+  }
+  
+  return offers.filter(offer => {
+    // Check stores
+    if (preferences.stores.length > 0 && offer.store) {
+      if (preferences.stores.some(store => 
+        offer.store?.toLowerCase().includes(store.toLowerCase()))) {
+        return true;
+      }
+    }
+    
+    // Check categories/brands
+    if (preferences.brands.length > 0 && offer.category) {
+      if (preferences.brands.some(brand => 
+        offer.category?.toLowerCase().includes(brand.toLowerCase()))) {
+        return true;
+      }
+    }
+    
+    // Check banks (look in description, terms, etc.)
+    if (preferences.banks.length > 0) {
+      const fullText = `${offer.title || ''} ${offer.description || ''} ${offer.termsAndConditions || ''} ${offer.longOffer || ''}`.toLowerCase();
+      
+      if (preferences.banks.some(bank => 
+        fullText.includes(bank.toLowerCase()))) {
+        return true;
+      }
+    }
+    
+    return false;
+  });
+}
+
+// Function to filter offers based on user preferences
 export function filterOffersByPreferences(
   offers: Offer[],
   preferences: { brands: string[], stores: string[], banks: string[] }
@@ -632,17 +676,17 @@ export async function searchOffers(query: string): Promise<Offer[]> {
         merchantHomepage: item.merchant_homepage || "",
         longOffer: item.long_offer || "",
         code: item.code || "",
-        termsAndConditions: item.terms_and_conditions || "",
+        termsAndConditions: string | null,
         featured: item.featured === "true" || item.featured === "1",
         publisherExclusive: item.publisher_exclusive === "true" || item.publisher_exclusive === "1",
         url: item.url || "",
         smartlink: item.smartlink || "",
-        offerType: item.type || "",
-        offerValue: item.offer_value || "",
-        status: item.status || "",
-        startDate: item.start_date || "",
-        endDate: item.end_date || "",
-        categories: item.categories || ""
+        offerType: string | null,
+        offerValue: string | null,
+        status: string | null,
+        startDate: string | null,
+        endDate: string | null,
+        categories: string | null
       };
     });
   } catch (error) {
