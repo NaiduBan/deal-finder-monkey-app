@@ -11,7 +11,7 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    storage: localStorage,
+    storage: typeof localStorage !== 'undefined' ? localStorage : undefined, 
     persistSession: true,
     autoRefreshToken: true,
   },
@@ -24,7 +24,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     fetch: (url, options) => {
       return fetch(url, {
         ...options,
-        signal: AbortSignal.timeout(45000), // 45 second timeout for larger datasets
+        signal: AbortSignal.timeout(60000), // 60 second timeout for larger datasets
       });
     }
   }

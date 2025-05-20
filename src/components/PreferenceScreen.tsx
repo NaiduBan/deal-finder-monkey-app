@@ -18,16 +18,21 @@ const PreferenceScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [items, setItems] = useState<Array<{id: string, name: string, logo?: string}>>([]);
   
+  // Log preferenceType to debug
+  console.log('Current preference type:', preferenceType);
+  
   // Fetch data from Supabase based on preference type
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
+      console.log('Fetching data for preference type:', preferenceType);
       
       try {
         let fetchedItems: Array<{id: string, name: string, logo?: string}> = [];
         
         switch (preferenceType) {
           case 'brands':
+            console.log('Fetching brands/categories data');
             // For brands, extract unique categories from Data table
             const { data: categoriesData, error: categoriesError } = await supabase
               .from('Data')
@@ -37,8 +42,10 @@ const PreferenceScreen = () => {
             if (categoriesError) {
               console.error('Error fetching categories:', categoriesError);
               // Fallback to mock data
+              console.log('Falling back to mock brands data');
               fetchedItems = mockBrands;
-            } else if (categoriesData) {
+            } else if (categoriesData && categoriesData.length > 0) {
+              console.log('Categories data found:', categoriesData.length);
               // Extract unique categories
               const uniqueCategories = new Set<string>();
               
@@ -52,16 +59,22 @@ const PreferenceScreen = () => {
                 }
               });
               
+              console.log('Unique categories extracted:', uniqueCategories.size);
+              
               // Convert to our format
               fetchedItems = Array.from(uniqueCategories).map((cat, index) => ({
                 id: `b${index}`,
                 name: cat,
                 logo: cat.charAt(0).toUpperCase()
               }));
+            } else {
+              console.log('No categories data found, using mock brands');
+              fetchedItems = mockBrands;
             }
             break;
             
           case 'stores':
+            console.log('Fetching stores data');
             // For stores, extract unique store names from Data table
             const { data: storesData, error: storesError } = await supabase
               .from('Data')
@@ -71,8 +84,10 @@ const PreferenceScreen = () => {
             if (storesError) {
               console.error('Error fetching stores:', storesError);
               // Fallback to mock data
+              console.log('Falling back to mock stores data');
               fetchedItems = mockStores;
-            } else if (storesData) {
+            } else if (storesData && storesData.length > 0) {
+              console.log('Stores data found:', storesData.length);
               // Extract unique stores
               const uniqueStores = new Set<string>();
               
@@ -83,16 +98,22 @@ const PreferenceScreen = () => {
                 }
               });
               
+              console.log('Unique stores extracted:', uniqueStores.size);
+              
               // Convert to our format
               fetchedItems = Array.from(uniqueStores).map((store, index) => ({
                 id: `s${index}`,
                 name: store,
                 logo: store.charAt(0).toUpperCase()
               }));
+            } else {
+              console.log('No stores data found, using mock stores');
+              fetchedItems = mockStores;
             }
             break;
             
           case 'banks':
+            console.log('Fetching banks data');
             // For banks, extract bank references from offer descriptions
             const { data: offersData, error: offersError } = await supabase
               .from('Data')
@@ -102,8 +123,10 @@ const PreferenceScreen = () => {
             if (offersError) {
               console.error('Error fetching offers for bank extraction:', offersError);
               // Fallback to mock data
+              console.log('Falling back to mock banks data');
               fetchedItems = mockBanks;
-            } else if (offersData) {
+            } else if (offersData && offersData.length > 0) {
+              console.log('Offers data found for bank extraction:', offersData.length);
               // Common bank names in India to look for
               const bankNames = [
                 'HDFC', 'SBI', 'ICICI', 'Axis', 'RBL', 'Kotak', 
@@ -123,6 +146,8 @@ const PreferenceScreen = () => {
                 });
               });
               
+              console.log('Bank references found:', Object.keys(bankReferences).length);
+              
               // Convert to our format, only include banks that were actually found
               fetchedItems = Object.keys(bankReferences).map((bank, index) => ({
                 id: `bk${index}`,
@@ -132,20 +157,27 @@ const PreferenceScreen = () => {
               
               // If no banks found, use mock data
               if (fetchedItems.length === 0) {
+                console.log('No bank references found, using mock banks');
                 fetchedItems = mockBanks;
               }
+            } else {
+              console.log('No offers data found for bank extraction, using mock banks');
+              fetchedItems = mockBanks;
             }
             break;
             
           default:
+            console.log('Unknown preference type, using empty array');
             fetchedItems = [];
         }
         
+        console.log('Final items list:', fetchedItems.length);
         setItems(fetchedItems);
       } catch (error) {
         console.error(`Error loading ${preferenceType}:`, error);
         
         // Set mock data as fallback
+        console.log('Exception occurred, falling back to mock data');
         switch (preferenceType) {
           case 'brands':
             setItems(mockBrands);
@@ -167,9 +199,11 @@ const PreferenceScreen = () => {
     
     const fetchUserPreferences = async () => {
       try {
+        console.log('Fetching user preferences');
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
+          console.log('User is authenticated, fetching preferences from Supabase');
           // If authenticated, fetch preferences from Supabase
           const { data, error } = await supabase
             .from('user_preferences')
@@ -179,30 +213,42 @@ const PreferenceScreen = () => {
             
           if (error) {
             console.error('Error fetching preferences:', error);
-          } else if (data) {
+          } else if (data && data.length > 0) {
+            console.log('User preferences found:', data.length);
             // Set the selected items based on fetched preferences
             setSelectedItems(data.map(pref => pref.preference_id));
+          } else {
+            console.log('No user preferences found in database');
+            // Set default selections
+            setDefaultSelections();
           }
         } else {
-          // If not authenticated, use default selections based on preference type
-          switch (preferenceType) {
-            case 'brands':
-              setSelectedItems(['b1', 'b3', 'b5']);
-              break;
-            case 'stores':
-              setSelectedItems(['s2', 's4', 's8']);
-              break;
-            case 'banks':
-              setSelectedItems(['bk2', 'bk5', 'bk6']);
-              break;
-            default:
-              setSelectedItems([]);
-          }
+          console.log('User not authenticated, using default selections');
+          // If not authenticated, use default selections
+          setDefaultSelections();
         }
       } catch (error) {
         console.error('Error loading preferences:', error);
+        setDefaultSelections();
       } finally {
         setIsLoading(false);
+      }
+    };
+    
+    const setDefaultSelections = () => {
+      console.log('Setting default selections for', preferenceType);
+      switch (preferenceType) {
+        case 'brands':
+          setSelectedItems(['b1', 'b3', 'b5']);
+          break;
+        case 'stores':
+          setSelectedItems(['s2', 's4', 's8']);
+          break;
+        case 'banks':
+          setSelectedItems(['bk2', 'bk5', 'bk6']);
+          break;
+        default:
+          setSelectedItems([]);
       }
     };
     
@@ -253,6 +299,7 @@ const PreferenceScreen = () => {
       const session = sessionData.data.session;
       
       if (session) {
+        console.log('Saving preferences for authenticated user');
         // First, delete existing preferences of this type for the user
         const { error: deleteError } = await supabase
           .from('user_preferences')
@@ -267,6 +314,7 @@ const PreferenceScreen = () => {
         
         // Then insert the new preferences
         if (selectedItems.length > 0) {
+          console.log(`Inserting ${selectedItems.length} new preferences`);
           const preferencesToInsert = selectedItems.map(preferenceId => ({
             user_id: session.user.id,
             preference_type: preferenceType,
@@ -280,7 +328,11 @@ const PreferenceScreen = () => {
           if (insertError) {
             console.error('Error inserting preferences:', insertError);
             throw insertError;
+          } else {
+            console.log('Preferences saved successfully');
           }
+        } else {
+          console.log('No preferences to save (empty selection)');
         }
         
         toast({
@@ -291,6 +343,7 @@ const PreferenceScreen = () => {
         // Redirect to home to see updated offers
         navigate('/home');
       } else {
+        console.log('User not authenticated, saving preferences locally');
         // User not authenticated, just show a success message
         toast({
           title: "Preferences saved locally",
@@ -301,6 +354,7 @@ const PreferenceScreen = () => {
         navigate('/home');
       }
     } catch (error: any) {
+      console.error('Error in savePreferences:', error);
       toast({
         title: "Error saving preferences",
         description: error.message || "Something went wrong",
@@ -431,3 +485,4 @@ const PreferenceScreen = () => {
 };
 
 export default PreferenceScreen;
+
