@@ -647,3 +647,46 @@ export function applyPreferencesToOffers(offers: Offer[], preferences: {[key: st
   console.log(`Filtered down to ${filteredOffers.length} offers matching preferences`);
   return filteredOffers;
 }
+
+// Function to manually trigger the LinkMyDeals sync
+export async function triggerLinkMyDealsSync(): Promise<boolean> {
+  try {
+    console.log('Manually triggering LinkMyDeals sync...');
+    
+    const { data, error } = await supabase.functions.invoke('sync-linkmydeals', {
+      body: { manual: true }
+    });
+    
+    if (error) {
+      console.error('Error triggering LinkMyDeals sync:', error);
+      return false;
+    }
+    
+    console.log('Sync trigger response:', data);
+    return data.success === true;
+  } catch (error) {
+    console.error('Error in triggerLinkMyDealsSync:', error);
+    return false;
+  }
+}
+
+// Function to get sync status
+export async function getLinkMyDealsSyncStatus(): Promise<any> {
+  try {
+    const { data, error } = await supabase
+      .from('api_sync_status')
+      .select('*')
+      .eq('id', 'linkmydeals')
+      .single();
+      
+    if (error) {
+      console.error('Error fetching sync status:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error in getLinkMyDealsSyncStatus:', error);
+    return null;
+  }
+}

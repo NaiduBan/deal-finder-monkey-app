@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      api_sync_status: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_extract: string | null
+          last_sync_message: string | null
+          last_sync_status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id: string
+          last_extract?: string | null
+          last_sync_message?: string | null
+          last_sync_status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_extract?: string | null
+          last_sync_message?: string | null
+          last_sync_status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string

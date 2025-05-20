@@ -22,9 +22,15 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     headers: { 'x-my-custom-header': 'monkey-deals-app' },
     // Increase timeout for larger data sets and improve reliability
     fetch: (url, options) => {
+      // Increase the timeout for the sync-linkmydeals function
+      let timeout = 180000; // Default 3 minutes
+      if (url.toString().includes('sync-linkmydeals')) {
+        timeout = 300000; // 5 minutes for LinkMyDeals sync function
+      }
+      
       return fetch(url, {
         ...options,
-        signal: AbortSignal.timeout(180000), // Increase to 3 minute timeout for larger datasets
+        signal: AbortSignal.timeout(timeout),
       });
     }
   }

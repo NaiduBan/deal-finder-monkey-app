@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Offer, Category } from '@/types';
-import { fetchCategories, fetchOffers, fetchUserPreferences, applyPreferencesToOffers } from '@/services/supabaseService';
+import { fetchCategories, fetchOffers, fetchUserPreferences, applyPreferencesToOffers, triggerLinkMyDealsSync, getLinkMyDealsSyncStatus } from '@/services/supabaseService';
 import { toast } from '@/components/ui/use-toast';
 import { mockOffers, mockCategories } from '@/mockData';
 import { useUser } from '@/contexts/UserContext';
@@ -14,6 +14,8 @@ interface DataContextType {
   refetchOffers: () => Promise<void>;
   isUsingMockData: boolean;
   filteredOffers: Offer[];
+  syncFromLinkMyDeals: () => Promise<void>;
+  lastSyncStatus: any;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -76,6 +78,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       banks: []
     };
   });
+  const [lastSyncStatus, setLastSyncStatus] = useState<any>(null);
 
   // Enhanced function to fetch user preferences
   const getUserPreferences = async (userId: string) => {
@@ -194,6 +197,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       supabase.removeChannel(channel);
     };
   }, [user?.id]);
+
+  // Get the sync status
+  const getSyncStatus = async () => {
+    const status = await getLinkMyDealsSyncStatus();
+    setLastSyncStatus(status);
+    return status;
+  };
 
   const fetchData = async () => {
     console.log('Starting to fetch data...');
@@ -328,6 +338,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     fetchData();
+    getSyncStatus(); // Get initial sync status
   }, []);
 
   // Update filtered offers when offers or preferences change
@@ -413,6 +424,49 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Function to manually trigger LinkMyDeals sync
+  const syncFromLinkMyDeals = async () => {
+    try {
+      setIsLoading(true);
+      toast({
+        title: "Syncing offers",
+        description: "Fetching latest offers from LinkMyDeals...",
+        variant: "default",
+      });
+      
+      const success = await triggerLinkMyDealsSync();
+      
+      if (success) {
+        toast({
+          title: "Sync completed",
+          description: "Successfully synchronized offers from LinkMyDeals",
+          variant: "default",
+        });
+        
+        // Update sync status
+        const status = await getSyncStatus();
+        
+        // Refetch offers to show the new data
+        await refetchOffers();
+      } else {
+        toast({
+          title: "Sync failed",
+          description: "Failed to synchronize offers from LinkMyDeals",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error('Error syncing from LinkMyDeals:', err);
+      toast({
+        title: "Error syncing",
+        description: "An error occurred while syncing offers",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <DataContext.Provider 
       value={{ 
@@ -422,7 +476,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         error,
         refetchOffers,
-        isUsingMockData
+        isUsingMockData,
+        syncFromLinkMyDeals,
+        lastSyncStatus
       }}
     >
       {children}
