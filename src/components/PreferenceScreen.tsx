@@ -37,7 +37,8 @@ const PreferenceScreen = () => {
             const { data: categoriesData, error: categoriesError } = await supabase
               .from('Data')
               .select('categories')
-              .not('categories', 'is', null);
+              .not('categories', 'is', null)
+              .limit(500); // Limit to ensure we get a response
             
             if (categoriesError) {
               console.error('Error fetching categories:', categoriesError);
@@ -62,11 +63,18 @@ const PreferenceScreen = () => {
               console.log('Unique categories extracted:', uniqueCategories.size);
               
               // Convert to our format
-              fetchedItems = Array.from(uniqueCategories).map((cat, index) => ({
-                id: `b${index}`,
+              let index = 0;
+              fetchedItems = Array.from(uniqueCategories).map(cat => ({
+                id: `b${index++}`,
                 name: cat,
                 logo: cat.charAt(0).toUpperCase()
               }));
+              
+              // If we somehow got no items, use mock data
+              if (fetchedItems.length === 0) {
+                console.log('No categories extracted, using mock brands');
+                fetchedItems = mockBrands;
+              }
             } else {
               console.log('No categories data found, using mock brands');
               fetchedItems = mockBrands;
@@ -79,7 +87,8 @@ const PreferenceScreen = () => {
             const { data: storesData, error: storesError } = await supabase
               .from('Data')
               .select('store')
-              .not('store', 'is', null);
+              .not('store', 'is', null)
+              .limit(500); // Limit to ensure we get a response
             
             if (storesError) {
               console.error('Error fetching stores:', storesError);
@@ -101,11 +110,18 @@ const PreferenceScreen = () => {
               console.log('Unique stores extracted:', uniqueStores.size);
               
               // Convert to our format
-              fetchedItems = Array.from(uniqueStores).map((store, index) => ({
-                id: `s${index}`,
+              let index = 0;
+              fetchedItems = Array.from(uniqueStores).map(store => ({
+                id: `s${index++}`,
                 name: store,
                 logo: store.charAt(0).toUpperCase()
               }));
+              
+              // If we somehow got no items, use mock data
+              if (fetchedItems.length === 0) {
+                console.log('No stores extracted, using mock stores');
+                fetchedItems = mockStores;
+              }
             } else {
               console.log('No stores data found, using mock stores');
               fetchedItems = mockStores;
@@ -118,7 +134,8 @@ const PreferenceScreen = () => {
             const { data: offersData, error: offersError } = await supabase
               .from('Data')
               .select('description, long_offer')
-              .not('description', 'is', null);
+              .not('description', 'is', null)
+              .limit(500); // Limit to ensure we get a response
             
             if (offersError) {
               console.error('Error fetching offers for bank extraction:', offersError);
@@ -131,16 +148,18 @@ const PreferenceScreen = () => {
               const bankNames = [
                 'HDFC', 'SBI', 'ICICI', 'Axis', 'RBL', 'Kotak', 
                 'Bank of Baroda', 'Punjab National', 'IDBI', 'Canara',
-                'Federal', 'IndusInd', 'Yes Bank', 'Union Bank'
+                'Federal', 'IndusInd', 'Yes Bank', 'Union Bank',
+                'HSBC', 'Citi', 'Standard Chartered', 'American Express',
+                'Deutsche', 'DBS', 'IDFC'
               ];
               
               const bankReferences: {[key: string]: number} = {};
               
               offersData.forEach(item => {
-                const fullText = `${item.description || ''} ${item.long_offer || ''}`;
+                const fullText = `${item.description || ''} ${item.long_offer || ''}`.toLowerCase();
                 
                 bankNames.forEach(bank => {
-                  if (fullText.includes(bank)) {
+                  if (fullText.toLowerCase().includes(bank.toLowerCase())) {
                     bankReferences[bank] = (bankReferences[bank] || 0) + 1;
                   }
                 });
@@ -149,8 +168,9 @@ const PreferenceScreen = () => {
               console.log('Bank references found:', Object.keys(bankReferences).length);
               
               // Convert to our format, only include banks that were actually found
-              fetchedItems = Object.keys(bankReferences).map((bank, index) => ({
-                id: `bk${index}`,
+              let index = 0;
+              fetchedItems = Object.keys(bankReferences).map(bank => ({
+                id: `bk${index++}`,
                 name: bank,
                 logo: '🏦'
               }));
@@ -169,6 +189,22 @@ const PreferenceScreen = () => {
           default:
             console.log('Unknown preference type, using empty array');
             fetchedItems = [];
+        }
+        
+        // Always ensure we have at least some items
+        if (fetchedItems.length === 0) {
+          console.log('No items fetched, using appropriate mock data');
+          switch (preferenceType) {
+            case 'brands':
+              fetchedItems = mockBrands;
+              break;
+            case 'stores':
+              fetchedItems = mockStores;
+              break;
+            case 'banks':
+              fetchedItems = mockBanks;
+              break;
+          }
         }
         
         console.log('Final items list:', fetchedItems.length);
@@ -485,4 +521,3 @@ const PreferenceScreen = () => {
 };
 
 export default PreferenceScreen;
-

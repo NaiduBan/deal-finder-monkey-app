@@ -20,11 +20,11 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   },
   global: {
     headers: { 'x-my-custom-header': 'monkey-deals-app' },
-    // Increase timeout for larger data sets
+    // Increase timeout for larger data sets and improve reliability
     fetch: (url, options) => {
       return fetch(url, {
         ...options,
-        signal: AbortSignal.timeout(60000), // 60 second timeout for larger datasets
+        signal: AbortSignal.timeout(120000), // Increase to 2 minute timeout for larger datasets
       });
     }
   }

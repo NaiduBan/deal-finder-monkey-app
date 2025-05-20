@@ -6,6 +6,7 @@ import { mockCategories, mockOffers } from "@/mockData";
 export async function fetchCategories(): Promise<Category[]> {
   try {
     console.log('Fetching categories from Supabase...');
+    // First try to get categories from dedicated categories table
     const { data, error } = await supabase
       .from('categories')
       .select('*');
@@ -38,9 +39,9 @@ export async function fetchCategories(): Promise<Category[]> {
         dataTable.forEach(item => {
           if (item.categories) {
             const cats = item.categories.split(',').map((c: string) => c.trim());
-            cats.forEach((catName: string) => {
+            cats.forEach((catName: string, index: number) => {
               if (catName && !categoryMap.has(catName.toLowerCase())) {
-                const id = catName.toLowerCase().replace(/\s+/g, '-');
+                const id = `b${categoryMap.size + index}`; // Use a more reliable ID format
                 categoryMap.set(catName.toLowerCase(), {
                   id,
                   name: catName,
@@ -85,7 +86,7 @@ export async function fetchCategories(): Promise<Category[]> {
     
     // Transform the data to match our Category type
     return data.map(item => ({
-      id: item.id,
+      id: item.id || `b${item.name.toLowerCase().replace(/\s+/g, '-')}`,
       name: item.name,
       icon: item.icon || getCategoryIcon(item.name),
       subcategories: []  // We don't have subcategories in the DB schema yet
@@ -610,7 +611,7 @@ export function applyPreferencesToOffers(offers: Offer[], preferences: {[key: st
     if (preferences.stores && preferences.stores.length > 0 && offer.store) {
       for (const prefId of preferences.stores) {
         const prefValue = extractPreferenceValue(prefId);
-        if (offer.store.toLowerCase().includes(prefValue.toLowerCase())) {
+        if (prefValue && offer.store.toLowerCase().includes(prefValue.toLowerCase())) {
           return true;
         }
       }
@@ -620,7 +621,7 @@ export function applyPreferencesToOffers(offers: Offer[], preferences: {[key: st
     if (preferences.brands && preferences.brands.length > 0 && offer.category) {
       for (const prefId of preferences.brands) {
         const prefValue = extractPreferenceValue(prefId);
-        if (offer.category.toLowerCase().includes(prefValue.toLowerCase())) {
+        if (prefValue && offer.category.toLowerCase().includes(prefValue.toLowerCase())) {
           return true;
         }
       }
@@ -633,7 +634,7 @@ export function applyPreferencesToOffers(offers: Offer[], preferences: {[key: st
       
       for (const prefId of preferences.banks) {
         const prefValue = extractPreferenceValue(prefId);
-        if (fullText.includes(prefValue.toLowerCase())) {
+        if (prefValue && fullText.includes(prefValue.toLowerCase())) {
           return true;
         }
       }
