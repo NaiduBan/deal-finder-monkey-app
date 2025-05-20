@@ -475,6 +475,8 @@ export async function searchOffers(query: string): Promise<Offer[]> {
       return [];
     }
     
+    console.log('Searching offers with query:', query);
+    
     const searchTerm = `%${query}%`;
     
     const { data, error } = await supabase
@@ -487,6 +489,8 @@ export async function searchOffers(query: string): Promise<Offer[]> {
       console.error('Error searching offers:', error);
       throw error;
     }
+    
+    console.log('Search results:', data?.length || 0);
     
     if (!data || data.length === 0) {
       return [];

@@ -47,37 +47,42 @@ const PreferenceScreen = () => {
               } else if (categoriesData && categoriesData.length > 0) {
                 console.log('Categories data found:', categoriesData.length);
                 // Extract unique categories
-                const uniqueCategories = new Set<string>();
+                const uniqueCategories = new Map<string, boolean>();
                 
                 categoriesData.forEach(item => {
                   if (item.categories) {
                     const categories = item.categories.split(',');
                     categories.forEach((cat: string) => {
                       const trimmedCat = cat.trim();
-                      if (trimmedCat) uniqueCategories.add(trimmedCat);
+                      if (trimmedCat) uniqueCategories.set(trimmedCat.toLowerCase(), true);
                     });
                   }
                 });
                 
                 console.log('Unique categories extracted:', uniqueCategories.size);
                 
-                // Convert to our format
-                let index = 0;
-                fetchedItems = Array.from(uniqueCategories).map(cat => ({
-                  id: `b${index++}`,
-                  name: cat,
+                // Convert to our format and ensure unique IDs
+                fetchedItems = Array.from(uniqueCategories.keys()).map((cat, index) => ({
+                  id: `brand-${index}`, // Use index-based IDs to ensure uniqueness
+                  name: cat.charAt(0).toUpperCase() + cat.slice(1), // Capitalize first letter
                   logo: '🏷️'
                 }));
                 
                 console.log('Fetched categories:', fetchedItems.length);
               } else {
                 console.log('No categories data found, using mock brands');
-                fetchedItems = mockBrands;
+                fetchedItems = mockBrands.map((brand, index) => ({
+                  ...brand,
+                  id: `brand-${index}` // Ensure unique IDs
+                }));
               }
             } catch (err) {
               console.error('Error processing categories:', err);
               console.log('Using mock brands due to error');
-              fetchedItems = mockBrands;
+              fetchedItems = mockBrands.map((brand, index) => ({
+                ...brand,
+                id: `brand-${index}` // Ensure unique IDs
+              }));
             }
             break;
             
@@ -97,34 +102,39 @@ const PreferenceScreen = () => {
               } else if (storesData && storesData.length > 0) {
                 console.log('Stores data found:', storesData.length);
                 // Extract unique stores
-                const uniqueStores = new Set<string>();
+                const uniqueStores = new Map<string, boolean>();
                 
                 storesData.forEach(item => {
                   if (item.store) {
                     const store = item.store.trim();
-                    if (store) uniqueStores.add(store);
+                    if (store) uniqueStores.set(store.toLowerCase(), true);
                   }
                 });
                 
                 console.log('Unique stores extracted:', uniqueStores.size);
                 
-                // Convert to our format
-                let index = 0;
-                fetchedItems = Array.from(uniqueStores).map(store => ({
-                  id: `s${index++}`,
-                  name: store,
+                // Convert to our format with unique IDs
+                fetchedItems = Array.from(uniqueStores.keys()).map((store, index) => ({
+                  id: `store-${index}`, // Use index-based IDs to ensure uniqueness
+                  name: store.charAt(0).toUpperCase() + store.slice(1), // Capitalize first letter
                   logo: '🏬'
                 }));
                 
                 console.log('Fetched stores:', fetchedItems.length);
               } else {
                 console.log('No stores data found, using mock stores');
-                fetchedItems = mockStores;
+                fetchedItems = mockStores.map((store, index) => ({
+                  ...store,
+                  id: `store-${index}` // Ensure unique IDs
+                }));
               }
             } catch (err) {
               console.error('Error processing stores:', err);
               console.log('Using mock stores due to error');
-              fetchedItems = mockStores;
+              fetchedItems = mockStores.map((store, index) => ({
+                ...store,
+                id: `store-${index}` // Ensure unique IDs
+              }));
             }
             break;
             
@@ -168,11 +178,10 @@ const PreferenceScreen = () => {
                 console.log('Bank references found:', Object.keys(bankReferences).length);
                 
                 // Convert to our format, only include banks that were actually found
-                let index = 0;
                 fetchedItems = Object.keys(bankReferences)
                   .sort((a, b) => bankReferences[b] - bankReferences[a]) // Sort by frequency
-                  .map(bank => ({
-                    id: `bk${index++}`,
+                  .map((bank, index) => ({
+                    id: `bank-${index}`, // Use index-based IDs to ensure uniqueness
                     name: bank,
                     logo: '🏦'
                   }));
@@ -181,16 +190,25 @@ const PreferenceScreen = () => {
                 
                 if (fetchedItems.length === 0) {
                   console.log('No bank references found, using mock banks');
-                  fetchedItems = mockBanks;
+                  fetchedItems = mockBanks.map((bank, index) => ({
+                    ...bank,
+                    id: `bank-${index}` // Ensure unique IDs
+                  }));
                 }
               } else {
                 console.log('No offers data found for bank extraction, using mock banks');
-                fetchedItems = mockBanks;
+                fetchedItems = mockBanks.map((bank, index) => ({
+                  ...bank,
+                  id: `bank-${index}` // Ensure unique IDs
+                }));
               }
             } catch (err) {
               console.error('Error processing banks:', err);
               console.log('Using mock banks due to error');
-              fetchedItems = mockBanks;
+              fetchedItems = mockBanks.map((bank, index) => ({
+                ...bank,
+                id: `bank-${index}` // Ensure unique IDs
+              }));
             }
             break;
             
@@ -204,13 +222,22 @@ const PreferenceScreen = () => {
           console.log('No items fetched, using appropriate mock data');
           switch (preferenceType) {
             case 'brands':
-              fetchedItems = mockBrands;
+              fetchedItems = mockBrands.map((brand, index) => ({
+                ...brand,
+                id: `brand-${index}` // Ensure unique IDs
+              }));
               break;
             case 'stores':
-              fetchedItems = mockStores;
+              fetchedItems = mockStores.map((store, index) => ({
+                ...store,
+                id: `store-${index}` // Ensure unique IDs
+              }));
               break;
             case 'banks':
-              fetchedItems = mockBanks;
+              fetchedItems = mockBanks.map((bank, index) => ({
+                ...bank,
+                id: `bank-${index}` // Ensure unique IDs
+              }));
               break;
           }
         }
@@ -225,13 +252,22 @@ const PreferenceScreen = () => {
         console.log('Exception occurred, falling back to mock data');
         switch (preferenceType) {
           case 'brands':
-            setItems(mockBrands);
+            setItems(mockBrands.map((brand, index) => ({
+              ...brand,
+              id: `brand-${index}` // Ensure unique IDs
+            })));
             break;
           case 'stores':
-            setItems(mockStores);
+            setItems(mockStores.map((store, index) => ({
+              ...store,
+              id: `store-${index}` // Ensure unique IDs
+            })));
             break;
           case 'banks':
-            setItems(mockBanks);
+            setItems(mockBanks.map((bank, index) => ({
+              ...bank,
+              id: `bank-${index}` // Ensure unique IDs
+            })));
             break;
           default:
             setItems([]);
@@ -283,23 +319,30 @@ const PreferenceScreen = () => {
     
     const setDefaultSelections = () => {
       console.log('Setting default selections for', preferenceType);
-      switch (preferenceType) {
-        case 'brands':
-          setSelectedItems(['b1', 'b3', 'b5']);
-          break;
-        case 'stores':
-          setSelectedItems(['s2', 's4', 's8']);
-          break;
-        case 'banks':
-          setSelectedItems(['bk2', 'bk5', 'bk6']);
-          break;
-        default:
-          setSelectedItems([]);
-      }
+      // Use a few items from the mock data as default selections
+      // We'll select these properly once items are loaded
+      setSelectedItems([]);
     };
     
     fetchData();
   }, [preferenceType]);
+
+  // Set some default selections after items are loaded
+  useEffect(() => {
+    if (items.length > 0 && selectedItems.length === 0) {
+      console.log('Setting some default selections from loaded items');
+      // Select 3-5 random items as default
+      const numberOfDefaultSelections = Math.min(3, items.length);
+      const randomSelections = [];
+      
+      for (let i = 0; i < numberOfDefaultSelections; i++) {
+        const randomIndex = Math.floor(Math.random() * items.length);
+        randomSelections.push(items[randomIndex].id);
+      }
+      
+      setSelectedItems(randomSelections);
+    }
+  }, [items]);
   
   // Determine which data to use based on preference type
   const getDataAndTitle = (type: string) => {
@@ -488,7 +531,7 @@ const PreferenceScreen = () => {
                         .filter(item => selectedItems.includes(item.id))
                         .map(item => (
                           <Badge 
-                            key={item.id}
+                            key={`selected-${item.id}`}
                             variant="outline" 
                             className="bg-monkeyGreen/10 text-monkeyGreen border-monkeyGreen/30 px-3 py-1"
                             onClick={() => toggleSelection(item.id)}
@@ -512,7 +555,7 @@ const PreferenceScreen = () => {
                         .filter(item => !selectedItems.includes(item.id))
                         .map((item) => (
                           <Badge 
-                            key={item.id}
+                            key={`available-${item.id}`}
                             variant="outline" 
                             className="bg-white hover:bg-gray-100 text-gray-800 cursor-pointer px-3 py-1"
                             onClick={() => toggleSelection(item.id)}
