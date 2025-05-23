@@ -14,7 +14,7 @@ interface DataContextType {
   refetchOffers: () => Promise<void>;
   isUsingMockData: boolean;
   filteredOffers: Offer[];
-  syncFromLinkMyDeals: () => Promise<void>;
+  syncFromLinkMyDeals: (clearOldData?: boolean) => Promise<void>;
   lastSyncStatus: any;
 }
 
@@ -424,22 +424,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Function to manually trigger LinkMyDeals sync
-  const syncFromLinkMyDeals = async () => {
+  // Function to manually trigger LinkMyDeals sync with option to clear old data
+  const syncFromLinkMyDeals = async (clearOldData: boolean = false) => {
     try {
       setIsLoading(true);
       toast({
-        title: "Syncing offers",
-        description: "Fetching latest offers from LinkMyDeals...",
+        title: clearOldData ? "Replacing all data" : "Syncing offers",
+        description: clearOldData 
+          ? "Removing old data and fetching all offers from LinkMyDeals..." 
+          : "Fetching latest offers from LinkMyDeals...",
         variant: "default",
       });
       
-      const success = await triggerLinkMyDealsSync();
+      const success = await triggerLinkMyDealsSync(clearOldData);
       
       if (success) {
         toast({
           title: "Sync completed",
-          description: "Successfully synchronized offers from LinkMyDeals",
+          description: clearOldData 
+            ? "Successfully replaced all data with fresh offers from LinkMyDeals"
+            : "Successfully synchronized offers from LinkMyDeals",
           variant: "default",
         });
         

@@ -25,10 +25,12 @@ serve(async (req) => {
     
     // Check if this is a manual trigger or scheduled
     let isManualTrigger = false;
+    let clearOldData = false;
     
     try {
       const body = await req.json();
       isManualTrigger = body.manual === true;
+      clearOldData = body.clearOldData === true;
     } catch (e) {
       // No body or invalid JSON, assume scheduled job
     }
@@ -46,9 +48,7 @@ serve(async (req) => {
     }
 
     // Check daily quota limit
-    const today = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
-    
-    // Extract the date part of the last extract
+    const today = new Date().toISOString().split('T')[0];
     const lastExtractDate = syncStatus?.last_extract 
       ? new Date(syncStatus.last_extract).toISOString().split('T')[0] 
       : null;
@@ -56,14 +56,9 @@ serve(async (req) => {
     // If this is a manual trigger and we already had an extract today, check if we want to proceed
     if (isManualTrigger && lastExtractDate === today) {
       console.log("Warning: Already performed an extract today. Using one of the 24 daily quota.");
-      
-      // For manual triggers, we'll proceed but with a warning
-      // For automated/scheduled jobs, we'd skip if already run today
     } else if (!isManualTrigger && lastExtractDate === today) {
-      // If this is a scheduled job and we already extracted today, skip
       console.log("Scheduled job: Already performed an extract today. Skipping to preserve quota.");
       
-      // Update sync status with skipped message
       await supabase
         .from("api_sync_status")
         .update({
@@ -81,12 +76,26 @@ serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Clear old data if requested
+    if (clearOldData) {
+      console.log("Clearing old data from Data table...");
+      const { error: deleteError } = await supabase
+        .from("Data")
+        .delete()
+        .neq("lmd_id", 0); // Delete all records (lmd_id is never 0)
+
+      if (deleteError) {
+        console.error("Error clearing old data:", deleteError);
+        throw new Error(`Failed to clear old data: ${deleteError.message}`);
+      }
+      console.log("Old data cleared successfully");
+    }
     
-    const lastExtract = syncStatus?.last_extract;
-    console.log(`Last extract timestamp: ${lastExtract}`);
-    
-    // Build API URL with incremental=1 to only get new/updated offers
-    const apiUrl = `https://feed.linkmydeals.com/getOffers/?API_KEY=${LINKMYDEALS_API_KEY}&format=json&incremental=1`;
+    // Build API URL - remove incremental=1 to get all offers when clearing old data
+    const apiUrl = clearOldData 
+      ? `https://feed.linkmydeals.com/getOffers/?API_KEY=${LINKMYDEALS_API_KEY}&format=json`
+      : `https://feed.linkmydeals.com/getOffers/?API_KEY=${LINKMYDEALS_API_KEY}&format=json&incremental=1`;
 
     console.log(`Fetching data from API: ${apiUrl}`);
     const response = await fetch(apiUrl);
@@ -100,18 +109,20 @@ serve(async (req) => {
 
     // Handle the case where no offers are returned
     if (!data.metadata || data.metadata.totalOffersReturned === 0) {
-      // Update sync status with success but no data
       await supabase
         .from("api_sync_status")
         .update({
           last_sync_status: "success",
-          last_sync_message: "No new offers to sync",
+          last_sync_message: clearOldData ? "Old data cleared, no new offers to sync" : "No new offers to sync",
           updated_at: new Date().toISOString(),
         })
         .eq("id", "linkmydeals");
         
       return new Response(
-        JSON.stringify({ success: true, message: "No new offers to sync" }),
+        JSON.stringify({ 
+          success: true, 
+          message: clearOldData ? "Old data cleared, no new offers to sync" : "No new offers to sync"
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -142,7 +153,7 @@ serve(async (req) => {
 
     console.log(`Processing ${offers.length} offers...`);
 
-    // Update existing records and insert new ones based on lmd_id
+    // Insert new offers
     const { error: upsertError } = await supabase.from("Data").upsert(offers, {
       onConflict: "lmd_id",
       ignoreDuplicates: false
@@ -153,7 +164,7 @@ serve(async (req) => {
       throw new Error(`Failed to upsert offers: ${upsertError.message}`);
     }
 
-    // Optional: Remove expired offers 
+    // Remove expired offers 
     const today = new Date();
     const { error: deleteError } = await supabase
       .from("Data")
@@ -166,12 +177,16 @@ serve(async (req) => {
     }
 
     // Update sync status with success
+    const successMessage = clearOldData 
+      ? `Successfully cleared old data and synced ${offers.length} new offers`
+      : `Successfully synced ${offers.length} offers`;
+
     await supabase
       .from("api_sync_status")
       .update({
         last_extract: new Date().toISOString(),
         last_sync_status: "success",
-        last_sync_message: `Successfully synced ${offers.length} offers`,
+        last_sync_message: successMessage,
         updated_at: new Date().toISOString(),
       })
       .eq("id", "linkmydeals");
@@ -180,7 +195,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Successfully synced ${offers.length} offers` 
+        message: successMessage
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

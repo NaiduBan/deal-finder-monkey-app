@@ -12,6 +12,8 @@ export type Database = {
       api_sync_status: {
         Row: {
           created_at: string | null
+          daily_extracts: number | null
+          daily_extracts_reset_date: string | null
           id: string
           last_extract: string | null
           last_sync_message: string | null
@@ -20,6 +22,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          daily_extracts?: number | null
+          daily_extracts_reset_date?: string | null
           id: string
           last_extract?: string | null
           last_sync_message?: string | null
@@ -28,6 +32,8 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          daily_extracts?: number | null
+          daily_extracts_reset_date?: string | null
           id?: string
           last_extract?: string | null
           last_sync_message?: string | null

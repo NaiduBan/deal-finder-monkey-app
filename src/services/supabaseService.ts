@@ -648,13 +648,13 @@ export function applyPreferencesToOffers(offers: Offer[], preferences: {[key: st
   return filteredOffers;
 }
 
-// Function to manually trigger the LinkMyDeals sync
-export async function triggerLinkMyDealsSync(): Promise<boolean> {
+// Function to manually trigger the LinkMyDeals sync with option to clear old data
+export async function triggerLinkMyDealsSync(clearOldData: boolean = false): Promise<boolean> {
   try {
-    console.log('Manually triggering LinkMyDeals sync...');
+    console.log('Manually triggering LinkMyDeals sync...', clearOldData ? '(clearing old data)' : '');
     
     const { data, error } = await supabase.functions.invoke('sync-linkmydeals', {
-      body: { manual: true }
+      body: { manual: true, clearOldData }
     });
     
     if (error) {
