@@ -18,14 +18,14 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-// Try to get cached data from localStorage
+// Try to get cached data from localStorage with a shorter expiration time (15 minutes)
 const getCachedData = (key: string) => {
   try {
     const cachedData = localStorage.getItem(key);
     if (cachedData) {
       const { data, timestamp } = JSON.parse(cachedData);
-      // Check if cache is less than 1 hour old
-      if (Date.now() - timestamp < 3600000) {
+      // Check if cache is less than 15 minutes old
+      if (Date.now() - timestamp < 900000) {  // 15 minutes in milliseconds
         return data;
       }
     }
@@ -196,38 +196,52 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user?.id]);
 
   const fetchData = async () => {
-    console.log('Starting to fetch data...');
+    console.log('Starting to fetch fresh data...');
     setIsLoading(true);
     setError(null);
     let usingMockData = false;
     
-    // Check if we have recent cached data first
-    const cachedOffers = getCachedData('offers');
-    const cachedCategories = getCachedData('categories');
-    
-    if (cachedOffers && cachedCategories) {
-      console.log('Using cached data');
-      setOffers(cachedOffers);
-      setCategories(cachedCategories);
+    // Always fetch fresh data first, and only use cache as fallback
+    try {
+      await fetchFreshData(true);
+    } catch (error) {
+      console.error('Error fetching fresh data, trying cached data:', error);
       
-      // Apply user preferences for filtering if user is logged in
-      if (user && user.id) {
-        getUserPreferences(user.id);
+      // Check if we have recent cached data as fallback
+      const cachedOffers = getCachedData('offers');
+      const cachedCategories = getCachedData('categories');
+      
+      if (cachedOffers && cachedCategories) {
+        console.log('Using cached data as fallback');
+        setOffers(cachedOffers);
+        setCategories(cachedCategories);
+        
+        // Apply user preferences for filtering if user is logged in
+        if (user && user.id) {
+          getUserPreferences(user.id);
+        } else {
+          setFilteredOffers(cachedOffers);
+          saveToCache('filteredOffers', cachedOffers);
+        }
+        
+        setIsLoading(false);
+        setIsUsingMockData(false);
       } else {
-        setFilteredOffers(cachedOffers);
-        saveToCache('filteredOffers', cachedOffers);
+        // No valid cached data, use mock data
+        console.log('No valid cached data, using mock data');
+        setOffers(mockOffers);
+        setFilteredOffers(mockOffers);
+        setCategories(mockCategories);
+        setIsUsingMockData(true);
+        setIsLoading(false);
+        
+        toast({
+          title: "Using sample data",
+          description: "Could not find data in the Linkmydeals_Offers table. Showing sample offers instead.",
+          variant: "default",
+        });
       }
-      
-      setIsLoading(false);
-      setIsUsingMockData(false);
-      
-      // Still fetch fresh data in the background
-      fetchFreshData();
-      return;
     }
-    
-    // No valid cached data, fetch from Supabase
-    fetchFreshData(true);
   };
   
   const fetchFreshData = async (updateLoadingState = false) => {
@@ -326,8 +340,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Initialize and load data
   useEffect(() => {
     fetchData();
+    
+    // Also set up a refresh interval to get new data every 30 minutes
+    const refreshInterval = setInterval(() => {
+      console.log('Automatic refresh triggered');
+      fetchFreshData(false);
+    }, 30 * 60 * 1000); // 30 minutes
+    
+    return () => clearInterval(refreshInterval);
   }, []);
 
   // Update filtered offers when offers or preferences change
@@ -353,6 +376,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refetchOffers = async () => {
     console.log('Refetching offers...');
     setIsLoading(true);
+    
+    // Always clear cache before refetching to ensure fresh data
+    try {
+      localStorage.removeItem('offers');
+      localStorage.removeItem('filteredOffers');
+      console.log('Cache cleared for refresh');
+    } catch (err) {
+      console.warn('Error clearing cache:', err);
+    }
+    
     try {
       const offersData = await fetchOffers();
       console.log('Refetch successful:', offersData.length, 'offers');

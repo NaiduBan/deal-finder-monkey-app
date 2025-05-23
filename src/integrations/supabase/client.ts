@@ -20,12 +20,30 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   },
   global: {
     headers: { 'x-my-custom-header': 'monkey-deals-app' },
-    // Increase timeout for larger data sets and improve reliability
+    // Optimize for data freshness with appropriate caching
     fetch: (url, options) => {
-      return fetch(url, {
+      const fetchOptions = {
         ...options,
-        signal: AbortSignal.timeout(180000), // Increase to 3 minute timeout for larger datasets
-      });
+        // Skip cache for POST requests and GET that include certain paths
+        cache: url.includes('Linkmydeals_Offers') ? 'no-cache' : 'default',
+        // Add a cache buster to URLs fetching offers data
+        ...(url.includes('Linkmydeals_Offers') ? {
+          headers: {
+            ...options?.headers,
+            'Cache-Control': 'no-cache, no-store, max-age=0',
+            'Pragma': 'no-cache',
+          }
+        } : {}),
+        signal: AbortSignal.timeout(180000), // Maintain 3 minute timeout for larger datasets
+      };
+      
+      // For offer queries, append a timestamp to force cache bypass
+      if (url.includes('Linkmydeals_Offers') && !url.includes('timestamp=')) {
+        const separator = url.includes('?') ? '&' : '?';
+        url = `${url}${separator}timestamp=${Date.now()}`;
+      }
+      
+      return fetch(url, fetchOptions);
     }
   }
 });

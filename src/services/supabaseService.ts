@@ -130,10 +130,12 @@ function getCategoryIcon(categoryName: string): string {
 // Function to fetch all offers from the Linkmydeals_Offers table
 export async function fetchOffers(): Promise<Offer[]> {
   try {
-    console.log('Fetching offers from Linkmydeals_Offers table...');
+    console.log('Fetching fresh offers from Linkmydeals_Offers table...');
     const { data, error } = await supabase
       .from('Linkmydeals_Offers')
-      .select('*');
+      .select('*')
+      .order('lmd_id', { ascending: false }) // Get newest offers first
+      .limit(200); // Limit to a reasonable number for better performance
     
     if (error) {
       console.error('Error fetching offers from Linkmydeals_Offers table:', error);
