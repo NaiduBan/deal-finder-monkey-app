@@ -201,6 +201,84 @@ export type Database = {
         }
         Relationships: []
       }
+      offersdata: {
+        Row: {
+          categories: string | null
+          category_array: Json | null
+          code: string | null
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          featured: string | null
+          image_url: string | null
+          lmd_id: string
+          merchant_homepage: string | null
+          offer: string | null
+          offer_text: string | null
+          offer_value: string | null
+          publisher_exclusive: string | null
+          smartlink: string | null
+          start_date: string | null
+          status: string | null
+          store: string | null
+          terms_and_conditions: string | null
+          title: string | null
+          type: string | null
+          updated_at: string | null
+          url: string | null
+        }
+        Insert: {
+          categories?: string | null
+          category_array?: Json | null
+          code?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          featured?: string | null
+          image_url?: string | null
+          lmd_id: string
+          merchant_homepage?: string | null
+          offer?: string | null
+          offer_text?: string | null
+          offer_value?: string | null
+          publisher_exclusive?: string | null
+          smartlink?: string | null
+          start_date?: string | null
+          status?: string | null
+          store?: string | null
+          terms_and_conditions?: string | null
+          title?: string | null
+          type?: string | null
+          updated_at?: string | null
+          url?: string | null
+        }
+        Update: {
+          categories?: string | null
+          category_array?: Json | null
+          code?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          featured?: string | null
+          image_url?: string | null
+          lmd_id?: string
+          merchant_homepage?: string | null
+          offer?: string | null
+          offer_text?: string | null
+          offer_value?: string | null
+          publisher_exclusive?: string | null
+          smartlink?: string | null
+          start_date?: string | null
+          status?: string | null
+          store?: string | null
+          terms_and_conditions?: string | null
+          title?: string | null
+          type?: string | null
+          updated_at?: string | null
+          url?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
