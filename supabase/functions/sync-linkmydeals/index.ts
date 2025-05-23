@@ -116,28 +116,28 @@ serve(async (req) => {
       );
     }
 
-    // Process offers - prepare for upsert
+    // Process offers - prepare for upsert with proper data validation
     const offers = data.offers.map((offer: any) => ({
       lmd_id: parseInt(offer.lmd_id),
-      title: offer.title,
-      description: offer.description,
-      offer: offer.offer,
-      code: offer.code,
-      terms_and_conditions: offer.terms,
-      categories: offer.categories,
-      featured: offer.featured,
-      publisher_exclusive: offer.publisher_exclusive,
-      url: offer.url,
-      image_url: offer.image_url,
-      type: offer.type,
-      status: offer.status,
-      offer_value: offer.offer_value,
-      store: offer.store,
-      long_offer: offer.long_offer,
-      merchant_homepage: offer.merchant_homepage,
-      smartlink: offer.aff_link,
-      end_date: offer.end_date,
-      start_date: offer.start_date
+      title: offer.title || "",
+      description: offer.description || "",
+      offer: offer.offer || "",
+      code: offer.code || "",
+      terms_and_conditions: offer.terms || "",
+      categories: offer.categories || "",
+      featured: offer.featured || "No",
+      publisher_exclusive: offer.publisher_exclusive || "N",
+      url: offer.url || "",
+      image_url: offer.image_url || "",
+      type: offer.type || "",
+      status: offer.status || "active",
+      offer_value: offer.offer_value || "",
+      store: offer.store || "",
+      long_offer: offer.long_offer || "",
+      merchant_homepage: offer.merchant_homepage || "",
+      smartlink: offer.aff_link || "",
+      end_date: offer.end_date || "",
+      start_date: offer.start_date || ""
     }));
 
     console.log(`Processing ${offers.length} offers...`);
@@ -154,11 +154,11 @@ serve(async (req) => {
     }
 
     // Optional: Remove expired offers 
-    const today = new Date();
+    const today_date = new Date();
     const { error: deleteError } = await supabase
       .from("Data")
       .delete()
-      .lt("end_date", today.toISOString().split('T')[0]);
+      .lt("end_date", today_date.toISOString().split('T')[0]);
 
     if (deleteError) {
       console.error("Error removing expired offers:", deleteError);
