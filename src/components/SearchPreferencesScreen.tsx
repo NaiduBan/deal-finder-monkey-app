@@ -68,9 +68,9 @@ const SearchPreferencesScreen = () => {
     }
     
     try {
-      // Search in the Data table
+      // Search in the Linkmydeals_Offers table
       const { data: searchData, error } = await supabase
-        .from('Data')
+        .from('Linkmydeals_Offers')
         .select('*')
         .or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,store.ilike.%${searchQuery}%,categories.ilike.%${searchQuery}%`)
         .limit(10);

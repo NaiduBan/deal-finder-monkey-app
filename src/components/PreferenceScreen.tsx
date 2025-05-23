@@ -34,9 +34,9 @@ const PreferenceScreen = () => {
           case 'brands':
             console.log('Fetching brands/categories data');
             try {
-              // For brands, extract unique categories from Data table
+              // For brands, extract unique categories from Linkmydeals_Offers table
               const { data: categoriesData, error: categoriesError } = await supabase
-                .from('Data')
+                .from('Linkmydeals_Offers')
                 .select('categories')
                 .not('categories', 'is', null)
                 .limit(1000); // Increased limit for more comprehensive data
@@ -84,9 +84,9 @@ const PreferenceScreen = () => {
           case 'stores':
             console.log('Fetching stores data');
             try {
-              // For stores, extract unique store names from Data table
+              // For stores, extract unique store names from Linkmydeals_Offers table
               const { data: storesData, error: storesError } = await supabase
-                .from('Data')
+                .from('Linkmydeals_Offers')
                 .select('store')
                 .not('store', 'is', null)
                 .limit(1000); // Increased limit
@@ -133,7 +133,7 @@ const PreferenceScreen = () => {
             try {
               // For banks, extract bank references from offer descriptions
               const { data: offersData, error: offersError } = await supabase
-                .from('Data')
+                .from('Linkmydeals_Offers')
                 .select('description, long_offer, title, terms_and_conditions')
                 .limit(1000); // Increased limit
               
