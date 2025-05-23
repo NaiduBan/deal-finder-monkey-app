@@ -11,7 +11,8 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-my-custom-header",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
 
 serve(async (req) => {
@@ -116,7 +117,7 @@ serve(async (req) => {
       featured: offer.featured,
       publisher_exclusive: offer.publisher_exclusive,
       url: offer.url,
-      smartLink: offer.aff_link,
+      smartlink: offer.aff_link,
       image_url: offer.image_url,
       type: offer.type,
       offer: offer.offer,
@@ -129,7 +130,7 @@ serve(async (req) => {
     console.log(`Processing ${offers.length} offers for database upsert...`);
 
     // Upsert offers into OffersData table (insert new, update existing based on lmd_id)
-    const { error: upsertError } = await supabase.from("OffersData").upsert(offers, {
+    const { error: upsertError } = await supabase.from("offersdata").upsert(offers, {
       onConflict: "lmd_id",
       ignoreDuplicates: false
     });
@@ -144,7 +145,7 @@ serve(async (req) => {
     console.log(`Removing expired offers (current date: ${currentDate})...`);
     
     const { error: deleteError } = await supabase
-      .from("OffersData")
+      .from("offersdata")
       .delete()
       .lt("end_date", currentDate);
 
