@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
 const SUPABASE_URL = "https://mmqkvjxsxufozfgqjoxz.supabase.co";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-const LINKMYDEALS_API_KEY = "s291177d82720f6ba86a97869a17c310";
+const LINKMYDEALS_API_KEY = "c291177d82720f6ba86a97869a17c310";
 
 // Initialize the Supabase client with the service role key for admin privileges
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -55,7 +55,9 @@ serve(async (req) => {
           last_sync_status: "pending",
           last_sync_message: "Initial sync pending",
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          daily_extracts: 0,
+          daily_extracts_reset_date: new Date().toISOString().split('T')[0]
         });
       
       if (createError) {
@@ -67,47 +69,58 @@ serve(async (req) => {
         id: "linkmydeals",
         last_extract: null,
         last_sync_status: "pending",
-        last_sync_message: "Initial sync pending"
+        last_sync_message: "Initial sync pending",
+        daily_extracts: 0,
+        daily_extracts_reset_date: new Date().toISOString().split('T')[0]
       };
     }
 
-    // Check daily quota limit
+    // Check daily quota limit - 25 extracts per day
     const today = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
     
-    // Extract the date part of the last extract
-    const lastExtractDate = syncStatus?.last_extract 
-      ? new Date(syncStatus.last_extract).toISOString().split('T')[0] 
-      : null;
+    // Reset counter if it's a new day
+    if (syncStatus.daily_extracts_reset_date !== today) {
+      console.log("New day detected, resetting daily extract counter");
+      await supabase
+        .from("api_sync_status")
+        .update({
+          daily_extracts: 0,
+          daily_extracts_reset_date: today
+        })
+        .eq("id", "linkmydeals");
       
-    // If this is a manual trigger and we already had an extract today, check if we want to proceed
-    if (isManualTrigger && lastExtractDate === today) {
-      console.log("Warning: Already performed an extract today. Using one of the 24 daily quota.");
+      // Update our local copy too
+      syncStatus.daily_extracts = 0;
+      syncStatus.daily_extracts_reset_date = today;
+    }
+    
+    // Check if we've hit the daily limit (25 extracts)
+    if (syncStatus.daily_extracts >= 25 && !isManualTrigger) {
+      console.log("Daily extract limit of 25 reached. Skipping scheduled sync.");
       
-      // For manual triggers, we'll proceed but with a warning
-      // For automated/scheduled jobs, we'd skip if already run today
-    } else if (!isManualTrigger && lastExtractDate === today) {
-      // If this is a scheduled job and we already extracted today, skip
-      console.log("Scheduled job: Already performed an extract today. Skipping to preserve quota.");
-      
-      // Update sync status with skipped message
       await supabase
         .from("api_sync_status")
         .update({
           last_sync_status: "skipped",
-          last_sync_message: "Skipped additional extract to preserve daily quota",
-          updated_at: new Date().toISOString(),
+          last_sync_message: "Daily extract limit reached (25/25 used today)",
+          updated_at: new Date().toISOString()
         })
         .eq("id", "linkmydeals");
         
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: "Skipped extract to preserve daily quota" 
+          message: "Skipped extract due to daily limit (25/25)" 
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
     
+    // For manual triggers, warn but proceed if we're at the limit
+    if (syncStatus.daily_extracts >= 25 && isManualTrigger) {
+      console.log("WARNING: Daily extract limit reached, but proceeding due to manual trigger");
+    }
+      
     const lastExtract = syncStatus?.last_extract;
     console.log(`Last extract timestamp: ${lastExtract}`);
     
@@ -171,6 +184,7 @@ serve(async (req) => {
           last_sync_status: "success",
           last_sync_message: "No new offers to sync",
           updated_at: new Date().toISOString(),
+          daily_extracts: syncStatus.daily_extracts + 1
         })
         .eq("id", "linkmydeals");
         
@@ -217,8 +231,18 @@ serve(async (req) => {
       throw new Error(`Failed to upsert offers: ${upsertError.message}`);
     }
 
-    // Optional: Remove expired offers 
+    // Remove expired offers - use the current date to find and remove expired offers
     const today_date = new Date();
+    console.log(`Removing offers expired before: ${today_date.toISOString().split('T')[0]}`);
+    
+    const { data: expiredData, error: countError } = await supabase
+      .from("Data")
+      .select("count()")
+      .lt("end_date", today_date.toISOString().split('T')[0]);
+      
+    const expiredCount = expiredData?.[0]?.count || 0;
+    console.log(`Found ${expiredCount} expired offers to remove`);
+    
     const { error: deleteError } = await supabase
       .from("Data")
       .delete()
@@ -229,22 +253,25 @@ serve(async (req) => {
       // Don't throw here, just log the error
     }
 
-    // Update sync status with success
+    // Update sync status with success and increment daily extract counter
     await supabase
       .from("api_sync_status")
       .update({
         last_extract: new Date().toISOString(),
         last_sync_status: "success",
-        last_sync_message: `Successfully synced ${offers.length} offers`,
+        last_sync_message: `Successfully synced ${offers.length} offers and removed ${expiredCount} expired offers`,
         updated_at: new Date().toISOString(),
+        daily_extracts: syncStatus.daily_extracts + 1
       })
       .eq("id", "linkmydeals");
 
-    console.log("LinkMyDeals sync completed successfully");
+    console.log(`LinkMyDeals sync completed successfully. Daily extracts used: ${syncStatus.daily_extracts + 1}/25`);
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Successfully synced ${offers.length} offers` 
+        message: `Successfully synced ${offers.length} offers and removed ${expiredCount} expired offers`,
+        daily_extracts_used: syncStatus.daily_extracts + 1,
+        daily_extracts_remaining: 25 - (syncStatus.daily_extracts + 1)
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

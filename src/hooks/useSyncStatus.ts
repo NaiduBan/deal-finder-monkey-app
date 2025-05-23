@@ -21,11 +21,24 @@ export const useSyncStatus = () => {
   const syncFromLinkMyDeals = async (): Promise<boolean> => {
     try {
       setIsSyncing(true);
-      toast({
-        title: "Syncing offers",
-        description: "Fetching latest offers from LinkMyDeals...",
-        variant: "default",
-      });
+      
+      // Check if we've hit the daily API limit
+      const currentStatus = await getSyncStatus();
+      
+      if (currentStatus?.daily_extracts >= 25) {
+        toast({
+          title: "API Limit Warning",
+          description: "You've reached the daily API extract limit (25/25). Proceeding will count toward tomorrow's quota.",
+          variant: "destructive",
+          duration: 8000,
+        });
+      } else {
+        toast({
+          title: "Syncing offers",
+          description: `Fetching latest offers from LinkMyDeals (${currentStatus?.daily_extracts || 0}/25 daily extracts used)...`,
+          variant: "default",
+        });
+      }
       
       const success = await triggerLinkMyDealsSync();
       
@@ -48,7 +61,7 @@ export const useSyncStatus = () => {
             clearInterval(pollInterval);
             toast({
               title: "Sync completed",
-              description: "Successfully synchronized offers from LinkMyDeals",
+              description: status.last_sync_message || "Successfully synchronized offers from LinkMyDeals",
               variant: "default",
             });
             setIsSyncing(false);

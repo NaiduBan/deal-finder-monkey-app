@@ -17,6 +17,11 @@ interface DataContextType {
   filteredOffers: Offer[];
   syncFromLinkMyDeals: () => Promise<boolean>; // Updated return type to match implementation
   lastSyncStatus: any;
+  dailyApiLimitInfo?: {
+    used: number;
+    remaining: number;
+    resetDate: string;
+  };
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -42,6 +47,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Use preferences hook to filter offers based on user preferences
   usePreferences(user?.id, offers, setFilteredOffers);
 
+  // Calculate API limit information
+  const dailyApiLimitInfo = lastSyncStatus ? {
+    used: lastSyncStatus.daily_extracts || 0,
+    remaining: 25 - (lastSyncStatus.daily_extracts || 0),
+    resetDate: lastSyncStatus.daily_extracts_reset_date || new Date().toISOString().split('T')[0]
+  } : undefined;
+
   return (
     <DataContext.Provider 
       value={{ 
@@ -53,7 +65,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         refetchOffers,
         isUsingMockData,
         syncFromLinkMyDeals,
-        lastSyncStatus
+        lastSyncStatus,
+        dailyApiLimitInfo
       }}
     >
       {children}
