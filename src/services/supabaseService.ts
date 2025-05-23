@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Offer, Category } from "@/types";
 import { mockCategories, mockOffers } from "@/mockData";
@@ -18,25 +19,25 @@ export async function fetchCategories(): Promise<Category[]> {
     
     console.log('Categories fetched from categories table:', data ? data.length : 0);
     
-    // If no categories found, try to extract categories from Data table
+    // If no categories found, try to extract categories from Linkmydeals_Offers table
     if (!data || data.length === 0) {
-      console.log('No categories found in categories table, attempting to extract from Data table');
+      console.log('No categories found in categories table, attempting to extract from Linkmydeals_Offers table');
       
-      const { data: dataTable, error: dataError } = await supabase
-        .from('Data')
+      const { data: offersData, error: offersError } = await supabase
+        .from('Linkmydeals_Offers')
         .select('categories')
         .not('categories', 'is', null);
         
-      if (dataError) {
-        console.error('Error fetching categories from Data table:', dataError);
+      if (offersError) {
+        console.error('Error fetching categories from Linkmydeals_Offers table:', offersError);
         return mockCategories;
       }
       
-      if (dataTable && dataTable.length > 0) {
-        // Extract unique categories from Data table
+      if (offersData && offersData.length > 0) {
+        // Extract unique categories from Linkmydeals_Offers table
         const categoryMap = new Map<string, Category>();
         
-        dataTable.forEach(item => {
+        offersData.forEach(item => {
           if (item.categories) {
             const cats = item.categories.split(',').map((c: string) => c.trim());
             cats.forEach((catName: string, index: number) => {
@@ -54,7 +55,7 @@ export async function fetchCategories(): Promise<Category[]> {
         });
         
         const extractedCategories = Array.from(categoryMap.values());
-        console.log('Extracted categories from Data table:', extractedCategories.length);
+        console.log('Extracted categories from Linkmydeals_Offers table:', extractedCategories.length);
         
         // Store the extracted categories in the categories table for future use
         if (extractedCategories.length > 0) {
@@ -126,24 +127,24 @@ function getCategoryIcon(categoryName: string): string {
   }
 }
 
-// Function to fetch all offers from the Data table
+// Function to fetch all offers from the Linkmydeals_Offers table
 export async function fetchOffers(): Promise<Offer[]> {
   try {
-    console.log('Fetching offers from Data table...');
+    console.log('Fetching offers from Linkmydeals_Offers table...');
     const { data, error } = await supabase
-      .from('Data')
+      .from('Linkmydeals_Offers')
       .select('*');
     
     if (error) {
-      console.error('Error fetching offers from Data table:', error);
+      console.error('Error fetching offers from Linkmydeals_Offers table:', error);
       throw error;
     }
     
-    console.log('Data table results:', data ? data.length : 0, 'records found');
+    console.log('Linkmydeals_Offers table results:', data ? data.length : 0, 'records found');
     
-    // If no data is found in the Data table, use mock data
+    // If no data is found in the Linkmydeals_Offers table, use mock data
     if (!data || data.length === 0) {
-      console.log('No data found in Data table, falling back to mock data');
+      console.log('No data found in Linkmydeals_Offers table, falling back to mock data');
       return mockOffers;
     }
     
@@ -186,7 +187,7 @@ export async function fetchOffers(): Promise<Offer[]> {
                       (item.merchant_homepage && item.merchant_homepage.toLowerCase().includes('amazon'));
       
       return {
-        id: `data-${item.lmd_id || index}`,
+        id: `lmd-${item.lmd_id || index}`,
         title: item.title || "",
         description: item.description || item.long_offer || "",
         imageUrl: item.image_url || "",
@@ -197,7 +198,7 @@ export async function fetchOffers(): Promise<Offer[]> {
         expiryDate: item.end_date || "",
         isAmazon: isAmazon,
         savings: savings,
-        // Fields from the Data table
+        // Fields from the Linkmydeals_Offers table
         lmdId: Number(item.lmd_id) || 0,
         merchantHomepage: item.merchant_homepage || "",
         longOffer: item.long_offer || "",
@@ -478,7 +479,7 @@ export async function searchOffers(query: string): Promise<Offer[]> {
     const searchTerm = `%${query}%`;
     
     const { data, error } = await supabase
-      .from('Data')
+      .from('Linkmydeals_Offers')
       .select('*')
       .or(`title.ilike.${searchTerm},description.ilike.${searchTerm},store.ilike.${searchTerm},categories.ilike.${searchTerm}`)
       .limit(20);
@@ -526,7 +527,7 @@ export async function searchOffers(query: string): Promise<Offer[]> {
                       (item.merchant_homepage && item.merchant_homepage.toLowerCase().includes('amazon'));
       
       return {
-        id: `data-${item.lmd_id || index}`,
+        id: `lmd-${item.lmd_id || index}`,
         title: item.title || "",
         description: item.description || item.long_offer || "",
         imageUrl: item.image_url || "",
@@ -537,7 +538,7 @@ export async function searchOffers(query: string): Promise<Offer[]> {
         expiryDate: item.end_date || "",
         isAmazon: isAmazon,
         savings: savings,
-        // Fields from the Data table
+        // Fields from the Linkmydeals_Offers table
         lmdId: Number(item.lmd_id) || 0,
         merchantHomepage: item.merchant_homepage || "",
         longOffer: item.long_offer || "",

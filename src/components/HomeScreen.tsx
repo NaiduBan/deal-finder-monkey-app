@@ -218,11 +218,6 @@ const HomeScreen = () => {
     console.log("Searching for:", e.target.value);
   };
 
-  // Navigate to preferences screen
-  const goToPreferences = () => {
-    console.log("Navigating to preferences screen");
-  };
-
   return (
     <div className="pb-16 bg-monkeyBackground min-h-screen">
       {/* Header with location */}

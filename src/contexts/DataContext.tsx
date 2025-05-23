@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Offer, Category } from '@/types';
-import { fetchCategories, fetchOffers, fetchUserPreferences, applyPreferencesToOffers } from '@/services/supabaseService';
+import { fetchCategories, fetchOffers, applyPreferencesToOffers } from '@/services/supabaseService';
 import { toast } from '@/components/ui/use-toast';
 import { mockOffers, mockCategories } from '@/mockData';
 import { useUser } from '@/contexts/UserContext';
@@ -234,7 +234,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let usingMockData = false;
     
     try {
-      // Try to fetch data from Supabase (specifically the Data table)
+      // Try to fetch data from Supabase (specifically the Linkmydeals_Offers table)
       const [offersData, categoriesData] = await Promise.all([
         fetchOffers(),
         fetchCategories()
@@ -242,9 +242,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('Fetch successful:', offersData.length, 'offers,', categoriesData.length, 'categories');
       
-      // Check if we got real data from the Data table
-      if (offersData.length > 0 && offersData[0].id.startsWith('data-')) {
-        console.log('Using real data from Supabase Data table');
+      // Check if we got real data from the Linkmydeals_Offers table
+      if (offersData.length > 0 && offersData[0].id.startsWith('lmd-')) {
+        console.log('Using real data from Supabase Linkmydeals_Offers table');
         setOffers(offersData);
         saveToCache('offers', offersData);
         
@@ -272,7 +272,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         setIsUsingMockData(false);
       } else {
-        console.log('No data from Supabase Data table, using mock offers');
+        console.log('No data from Supabase Linkmydeals_Offers table, using mock offers');
         setOffers(mockOffers);
         setFilteredOffers(mockOffers);
         saveToCache('offers', mockOffers);
@@ -295,7 +295,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (usingMockData) {
         toast({
           title: "Using sample data",
-          description: "Could not find data in the Data table. Showing sample offers instead.",
+          description: "Could not find data in the Linkmydeals_Offers table. Showing sample offers instead.",
           variant: "default",
         });
       }
@@ -315,7 +315,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       toast({
         title: "Connection Error",
-        description: "Could not fetch data from the Data table. Using sample data instead.",
+        description: "Could not fetch data from the Linkmydeals_Offers table. Using sample data instead.",
         variant: "destructive",
       });
     } finally {
@@ -357,7 +357,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const offersData = await fetchOffers();
       console.log('Refetch successful:', offersData.length, 'offers');
       
-      if (offersData.length > 0 && offersData[0].id.startsWith('data-')) {
+      if (offersData.length > 0 && offersData[0].id.startsWith('lmd-')) {
         console.log('Using real data from refetch');
         setOffers(offersData);
         saveToCache('offers', offersData);
@@ -381,12 +381,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         toast({
           title: "Data refreshed",
-          description: "Successfully loaded offers from the Data table.",
+          description: "Successfully loaded offers from the Linkmydeals_Offers table.",
           variant: "default",
         });
       } else {
         // If no real data was found, keep using mock data
-        console.log('No real data found in Data table on refetch, keeping mock data');
+        console.log('No real data found in Linkmydeals_Offers table on refetch, keeping mock data');
         setOffers(mockOffers);
         setFilteredOffers(mockOffers);
         saveToCache('offers', mockOffers);
@@ -395,7 +395,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         toast({
           title: "No offers found",
-          description: "Could not find any offers in the Data table.",
+          description: "Could not find any offers in the Linkmydeals_Offers table.",
           variant: "default",
         });
       }
@@ -405,7 +405,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       toast({
         title: "Error refreshing",
-        description: "Could not refresh offers from the Data table. Please try again later.",
+        description: "Could not refresh offers from the Linkmydeals_Offers table. Please try again later.",
         variant: "destructive",
       });
     } finally {

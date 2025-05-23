@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      api_sync_status: {
+        Row: {
+          created_at: string | null
+          daily_extracts: number | null
+          daily_extracts_reset_date: string | null
+          id: string
+          last_extract: string | null
+          last_sync_message: string | null
+          last_sync_status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          daily_extracts?: number | null
+          daily_extracts_reset_date?: string | null
+          id: string
+          last_extract?: string | null
+          last_sync_message?: string | null
+          last_sync_status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          daily_extracts?: number | null
+          daily_extracts_reset_date?: string | null
+          id?: string
+          last_extract?: string | null
+          last_sync_message?: string | null
+          last_sync_status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -99,6 +132,75 @@ export type Database = {
         }
         Relationships: []
       }
+      Linkmydeals_Offers: {
+        Row: {
+          categories: string | null
+          code: string | null
+          description: string | null
+          end_date: string | null
+          featured: string | null
+          image_url: string | null
+          lmd_id: number | null
+          long_offer: string | null
+          merchant_homepage: string | null
+          offer: string | null
+          offer_value: string | null
+          publisher_exclusive: string | null
+          smartlink: string | null
+          start_date: string | null
+          status: string | null
+          store: string | null
+          terms_and_conditions: string | null
+          title: string | null
+          type: string | null
+          url: string | null
+        }
+        Insert: {
+          categories?: string | null
+          code?: string | null
+          description?: string | null
+          end_date?: string | null
+          featured?: string | null
+          image_url?: string | null
+          lmd_id?: number | null
+          long_offer?: string | null
+          merchant_homepage?: string | null
+          offer?: string | null
+          offer_value?: string | null
+          publisher_exclusive?: string | null
+          smartlink?: string | null
+          start_date?: string | null
+          status?: string | null
+          store?: string | null
+          terms_and_conditions?: string | null
+          title?: string | null
+          type?: string | null
+          url?: string | null
+        }
+        Update: {
+          categories?: string | null
+          code?: string | null
+          description?: string | null
+          end_date?: string | null
+          featured?: string | null
+          image_url?: string | null
+          lmd_id?: number | null
+          long_offer?: string | null
+          merchant_homepage?: string | null
+          offer?: string | null
+          offer_value?: string | null
+          publisher_exclusive?: string | null
+          smartlink?: string | null
+          start_date?: string | null
+          status?: string | null
+          store?: string | null
+          terms_and_conditions?: string | null
+          title?: string | null
+          type?: string | null
+          url?: string | null
+        }
+        Relationships: []
+      }
       offers: {
         Row: {
           categories: string | null
@@ -164,6 +266,84 @@ export type Database = {
           terms_and_conditions?: string | null
           title?: string | null
           type?: string | null
+          url?: string | null
+        }
+        Relationships: []
+      }
+      offersdata: {
+        Row: {
+          categories: string | null
+          category_array: Json | null
+          code: string | null
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          featured: string | null
+          image_url: string | null
+          lmd_id: string
+          merchant_homepage: string | null
+          offer: string | null
+          offer_text: string | null
+          offer_value: string | null
+          publisher_exclusive: string | null
+          smartlink: string | null
+          start_date: string | null
+          status: string | null
+          store: string | null
+          terms_and_conditions: string | null
+          title: string | null
+          type: string | null
+          updated_at: string | null
+          url: string | null
+        }
+        Insert: {
+          categories?: string | null
+          category_array?: Json | null
+          code?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          featured?: string | null
+          image_url?: string | null
+          lmd_id: string
+          merchant_homepage?: string | null
+          offer?: string | null
+          offer_text?: string | null
+          offer_value?: string | null
+          publisher_exclusive?: string | null
+          smartlink?: string | null
+          start_date?: string | null
+          status?: string | null
+          store?: string | null
+          terms_and_conditions?: string | null
+          title?: string | null
+          type?: string | null
+          updated_at?: string | null
+          url?: string | null
+        }
+        Update: {
+          categories?: string | null
+          category_array?: Json | null
+          code?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          featured?: string | null
+          image_url?: string | null
+          lmd_id?: string
+          merchant_homepage?: string | null
+          offer?: string | null
+          offer_text?: string | null
+          offer_value?: string | null
+          publisher_exclusive?: string | null
+          smartlink?: string | null
+          start_date?: string | null
+          status?: string | null
+          store?: string | null
+          terms_and_conditions?: string | null
+          title?: string | null
+          type?: string | null
+          updated_at?: string | null
           url?: string | null
         }
         Relationships: []
