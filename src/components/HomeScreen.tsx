@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
 import OfferCard from './OfferCard';
 import CategoryItem from './CategoryItem';
@@ -7,6 +7,8 @@ import BannerCarousel from './BannerCarousel';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Download } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import { getBanners } from '@/services/api';
+import { BannerItem } from '@/types';
 
 const HomeScreen = () => {
   const { 
@@ -22,6 +24,22 @@ const HomeScreen = () => {
   
   const [isSyncing, setIsSyncing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [banners, setBanners] = useState<BannerItem[]>([]);
+
+  // Fetch banners on component mount
+  useEffect(() => {
+    const fetchBannersData = async () => {
+      try {
+        const bannersData = await getBanners();
+        setBanners(bannersData);
+      } catch (error) {
+        console.error('Error fetching banners:', error);
+        setBanners([]); // Set empty array as fallback
+      }
+    };
+
+    fetchBannersData();
+  }, []);
 
   // Handle manual sync from LinkMyDeals API
   const handleSyncData = async () => {
@@ -62,6 +80,7 @@ const HomeScreen = () => {
   console.log('Error:', error);
   console.log('Using mock data:', isUsingMockData);
   console.log('Daily API Limit Info:', dailyApiLimitInfo);
+  console.log('Banners loaded:', banners.length);
 
   if (isLoading) {
     return (
@@ -137,7 +156,7 @@ const HomeScreen = () => {
       </div>
 
       {/* Banner Carousel */}
-      <BannerCarousel />
+      <BannerCarousel banners={banners} />
 
       {/* Categories Section */}
       <div className="p-4">
