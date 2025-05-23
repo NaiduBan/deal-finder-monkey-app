@@ -339,6 +339,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     fetchData();
     getSyncStatus(); // Get initial sync status
+    
+    // Set up interval to check for sync status changes
+    const statusInterval = setInterval(() => {
+      getSyncStatus();
+    }, 60000); // Check every minute
+    
+    return () => {
+      clearInterval(statusInterval);
+    };
   }, []);
 
   // Update filtered offers when offers or preferences change
@@ -438,22 +447,54 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (success) {
         toast({
-          title: "Sync completed",
-          description: "Successfully synchronized offers from LinkMyDeals",
+          title: "Sync initiated",
+          description: "LinkMyDeals sync job has been started. This may take a few minutes.",
           variant: "default",
         });
         
-        // Update sync status
-        const status = await getSyncStatus();
+        // Start polling for status changes
+        const maxPolls = 20; // Maximum number of polls (10 minutes)
+        let polls = 0;
         
-        // Refetch offers to show the new data
-        await refetchOffers();
+        const pollInterval = setInterval(async () => {
+          polls++;
+          const status = await getSyncStatus();
+          
+          if (status && status.last_sync_status === "success" && polls > 1) {
+            clearInterval(pollInterval);
+            toast({
+              title: "Sync completed",
+              description: "Successfully synchronized offers from LinkMyDeals",
+              variant: "default",
+            });
+            
+            // Refetch offers to show the new data
+            await refetchOffers();
+          } else if (status && status.last_sync_status === "error") {
+            clearInterval(pollInterval);
+            toast({
+              title: "Sync failed",
+              description: status.last_sync_message || "Failed to synchronize offers from LinkMyDeals",
+              variant: "destructive",
+            });
+            setIsLoading(false);
+          } else if (polls >= maxPolls) {
+            clearInterval(pollInterval);
+            toast({
+              title: "Sync timeout",
+              description: "Sync is taking longer than expected. Check status later.",
+              variant: "default",
+            });
+            setIsLoading(false);
+          }
+        }, 30000); // Poll every 30 seconds
       } else {
         toast({
           title: "Sync failed",
-          description: "Failed to synchronize offers from LinkMyDeals",
+          description: "Failed to start LinkMyDeals sync",
           variant: "destructive",
         });
+        setIsLoading(false);
       }
     } catch (err) {
       console.error('Error syncing from LinkMyDeals:', err);
@@ -462,7 +503,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "An error occurred while syncing offers",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };

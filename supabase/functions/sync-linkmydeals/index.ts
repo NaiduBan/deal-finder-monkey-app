@@ -45,6 +45,32 @@ serve(async (req) => {
       throw new Error(`Failed to get sync status: ${getError.message}`);
     }
 
+    // Create status record if it doesn't exist
+    if (!syncStatus) {
+      console.log("No sync status found, creating initial record");
+      const { error: createError } = await supabase
+        .from("api_sync_status")
+        .insert({
+          id: "linkmydeals",
+          last_sync_status: "pending",
+          last_sync_message: "Initial sync pending",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+      
+      if (createError) {
+        console.error("Error creating sync status:", createError);
+        throw new Error(`Failed to create sync status: ${createError.message}`);
+      }
+      
+      syncStatus = {
+        id: "linkmydeals",
+        last_extract: null,
+        last_sync_status: "pending",
+        last_sync_message: "Initial sync pending"
+      };
+    }
+
     // Check daily quota limit
     const today = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
     
@@ -85,21 +111,59 @@ serve(async (req) => {
     const lastExtract = syncStatus?.last_extract;
     console.log(`Last extract timestamp: ${lastExtract}`);
     
-    // Build API URL with incremental=1 to only get new/updated offers
-    const apiUrl = `https://feed.linkmydeals.com/getOffers/?API_KEY=${LINKMYDEALS_API_KEY}&format=json&incremental=1`;
+    // Update sync status to indicate we're starting the sync
+    await supabase
+      .from("api_sync_status")
+      .update({
+        last_sync_status: "in_progress",
+        last_sync_message: "Sync in progress",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", "linkmydeals");
+    
+    // Build API URL - use full data fetch for first load or manual triggers
+    // Use incremental for automatic updates after the first load
+    let apiUrl;
+    
+    if (!lastExtract || isManualTrigger) {
+      apiUrl = `https://feed.linkmydeals.com/getOffers/?API_KEY=${LINKMYDEALS_API_KEY}&format=json`;
+      console.log("Using full data fetch mode");
+    } else {
+      apiUrl = `https://feed.linkmydeals.com/getOffers/?API_KEY=${LINKMYDEALS_API_KEY}&format=json&incremental=1`;
+      console.log("Using incremental fetch mode");
+    }
 
     console.log(`Fetching data from API: ${apiUrl}`);
-    const response = await fetch(apiUrl);
+    
+    // Add timeout to fetch to avoid hanging indefinitely
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+    
+    const response = await fetch(apiUrl, { 
+      signal: controller.signal,
+      headers: {
+        "User-Agent": "MonkeyDeals/1.0 (+https://monkeydeals.app)"
+      }
+    }).finally(() => clearTimeout(timeoutId));
     
     if (!response.ok) {
+      const responseText = await response.text();
+      console.error(`API response not OK: ${response.status} - ${responseText}`);
       throw new Error(`API responded with status: ${response.status}`);
     }
     
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch (e) {
+      console.error("Error parsing API response as JSON:", e);
+      throw new Error(`Failed to parse API response: ${e.message}`);
+    }
+    
     console.log(`Fetched ${data.metadata?.totalOffersReturned || 0} offers`);
 
     // Handle the case where no offers are returned
-    if (!data.metadata || data.metadata.totalOffersReturned === 0) {
+    if (!data.metadata || !data.offers || data.metadata.totalOffersReturned === 0) {
       // Update sync status with success but no data
       await supabase
         .from("api_sync_status")

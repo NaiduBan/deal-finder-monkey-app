@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Offer, Category } from "@/types";
 import { mockCategories, mockOffers } from "@/mockData";
@@ -48,7 +47,7 @@ export async function fetchCategories(): Promise<Category[]> {
           }
         });
         
-        const extractedCategories = Array.from(categorySet).map((catName, index) => ({
+        const extractedCategories = Array.from(categorySet).map((catName) => ({
           id: crypto.randomUUID(), // Generate proper UUID for categories
           name: catName,
           icon: getCategoryIcon(catName),
