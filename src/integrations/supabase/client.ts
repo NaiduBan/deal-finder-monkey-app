@@ -22,42 +22,15 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     headers: { 'x-my-custom-header': 'monkey-deals-app' },
     // Increase timeout for larger data sets and improve reliability
     fetch: (url, options) => {
-      // Set appropriate timeouts based on endpoint
+      // Increase the timeout for the sync-linkmydeals function
       let timeout = 180000; // Default 3 minutes
-      
-      // Check URL to assign different timeouts for different operations
-      const urlString = url.toString();
-      
-      if (urlString.includes('sync-linkmydeals')) {
+      if (url.toString().includes('sync-linkmydeals')) {
         timeout = 300000; // 5 minutes for LinkMyDeals sync function
-      } else if (urlString.includes('user_preferences')) {
-        timeout = 60000; // 1 minute for preferences operations
-      } else if (urlString.includes('auth')) {
-        timeout = 30000; // 30 seconds for auth operations
       }
       
-      // Create an AbortController with the appropriate timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-      }, timeout);
-      
-      // Make the fetch request with the AbortController's signal
       return fetch(url, {
         ...options,
-        signal: controller.signal,
-      }).then(response => {
-        clearTimeout(timeoutId);
-        return response;
-      }).catch(error => {
-        clearTimeout(timeoutId);
-        
-        if (error.name === 'AbortError') {
-          console.error(`Request to ${urlString} timed out after ${timeout}ms`);
-          throw new Error(`Request timeout after ${timeout / 1000} seconds`);
-        }
-        
-        throw error;
+        signal: AbortSignal.timeout(timeout),
       });
     }
   }

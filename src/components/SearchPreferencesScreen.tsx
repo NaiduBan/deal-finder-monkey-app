@@ -10,7 +10,6 @@ import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
-import { searchOffers } from '@/services/supabaseService';
 
 // Define preference types to match those in PreferenceScreen
 type PreferenceType = 'brands' | 'stores' | 'banks';
@@ -23,7 +22,6 @@ const SearchPreferencesScreen = () => {
   const [activeTab, setActiveTab] = useState<'search' | 'preferences'>('search');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
 
   // Preferences settings
   const [preferences, setPreferences] = useState({
@@ -70,24 +68,23 @@ const SearchPreferencesScreen = () => {
     }
     
     try {
-      setIsSearching(true);
-      console.log('Searching for:', searchQuery);
-      
-      // Use the searchOffers function from supabaseService
-      const results = await searchOffers(searchQuery);
-      console.log('Search results:', results.length);
-      setSearchResults(results);
+      // Search in the Data table
+      const { data: searchData, error } = await supabase
+        .from('Data')
+        .select('*')
+        .or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,store.ilike.%${searchQuery}%,categories.ilike.%${searchQuery}%`)
+        .limit(10);
+        
+      if (error) {
+        console.error('Error searching offers:', error);
+        setSearchResults([]);
+      } else {
+        console.log('Search results:', searchData);
+        setSearchResults(searchData || []);
+      }
     } catch (err) {
       console.error('Error during search:', err);
       setSearchResults([]);
-      
-      toast({
-        title: "Search Error",
-        description: "Something went wrong with your search. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSearching(false);
     }
   };
 
@@ -102,10 +99,6 @@ const SearchPreferencesScreen = () => {
 
   const clearAllRecentSearches = () => {
     setRecentSearches([]);
-    toast({
-      title: "Recent searches cleared",
-      description: "All your recent searches have been removed.",
-    });
   };
 
   const navigateToPreference = (type: PreferenceType) => {
@@ -114,18 +107,6 @@ const SearchPreferencesScreen = () => {
 
   // Extract unique categories from offers for popular categories section
   const getPopularCategories = () => {
-    if (!offers || offers.length === 0) {
-      // Default categories if no offers available
-      return [
-        { name: 'Food & Drinks', id: 'food-drinks' },
-        { name: 'Fashion', id: 'fashion' },
-        { name: 'Electronics', id: 'electronics' },
-        { name: 'Travel', id: 'travel' },
-        { name: 'Home', id: 'home' }
-      ];
-    }
-    
-    // Extract categories from actual offers
     const categories = new Set<string>();
     offers.forEach(offer => {
       if (offer.category) {
@@ -137,7 +118,7 @@ const SearchPreferencesScreen = () => {
       }
     });
     
-    return Array.from(categories).slice(0, 6).map(cat => ({
+    return Array.from(categories).slice(0, 5).map(cat => ({
       name: cat,
       id: cat.toLowerCase().replace(/\s+/g, '-')
     }));
@@ -212,13 +193,11 @@ const SearchPreferencesScreen = () => {
               </div>
               <div className="space-y-2">
                 {recentSearches.map((search, index) => (
-                  <div key={`recent-${index}`} className="flex items-center justify-between p-3 bg-white rounded-lg">
+                  <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg">
                     <button 
                       onClick={() => {
                         setSearchQuery(search);
-                        setTimeout(() => {
-                          handleSearch(new Event('submit') as any);
-                        }, 100);
+                        handleSearch(new Event('submit') as any);
                       }}
                       className="flex items-center flex-grow text-left"
                     >
@@ -238,23 +217,18 @@ const SearchPreferencesScreen = () => {
           {searchQuery && (
             <div className="space-y-2">
               <h3 className="text-sm font-medium text-gray-500 mb-2">Results for "{searchQuery}"</h3>
-              
-              {isSearching ? (
-                <div className="flex justify-center my-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-monkeyGreen"></div>
-                </div>
-              ) : searchResults.length > 0 ? (
+              {searchResults.length > 0 ? (
                 <div className="space-y-2">
                   {searchResults.map((result) => (
                     <Link 
-                      key={`result-${result.id}`} 
-                      to={`/offer/${result.id}`} 
+                      key={`data-${result.lmd_id}`} 
+                      to={`/offer/data-${result.lmd_id}`} 
                       className="block p-3 bg-white rounded-lg"
                     >
                       <div className="font-medium">{result.title || "Untitled Offer"}</div>
                       <div className="text-sm text-gray-500">
                         {result.store ? `${result.store} • ` : ""}
-                        {result.expiryDate ? `Valid until ${result.expiryDate}` : "Limited time offer"}
+                        {result.end_date ? `Valid until ${result.end_date}` : "Limited time offer"}
                       </div>
                     </Link>
                   ))}
@@ -350,9 +324,9 @@ const SearchPreferencesScreen = () => {
             <h3 className="font-semibold mb-3">Popular Categories</h3>
             <div className="flex flex-wrap gap-2">
               {popularCategories.length > 0 ? (
-                popularCategories.map((category, index) => (
+                popularCategories.map((category) => (
                   <Button 
-                    key={`popular-${index}`}
+                    key={category.id}
                     variant="outline" 
                     size="sm" 
                     className="rounded-full"

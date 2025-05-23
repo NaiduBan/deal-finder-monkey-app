@@ -34,26 +34,26 @@ export async function fetchCategories(): Promise<Category[]> {
       
       if (dataTable && dataTable.length > 0) {
         // Extract unique categories from Data table
-        const categorySet = new Set<string>();
+        const categoryMap = new Map<string, Category>();
         
         dataTable.forEach(item => {
           if (item.categories) {
             const cats = item.categories.split(',').map((c: string) => c.trim());
-            cats.forEach((catName: string) => {
-              if (catName) {
-                categorySet.add(catName);
+            cats.forEach((catName: string, index: number) => {
+              if (catName && !categoryMap.has(catName.toLowerCase())) {
+                const id = `b${categoryMap.size + index}`; // Use a more reliable ID format
+                categoryMap.set(catName.toLowerCase(), {
+                  id,
+                  name: catName,
+                  icon: getCategoryIcon(catName), // Get appropriate icon based on category name
+                  subcategories: []
+                });
               }
             });
           }
         });
         
-        const extractedCategories = Array.from(categorySet).map((catName) => ({
-          id: crypto.randomUUID(), // Generate proper UUID for categories
-          name: catName,
-          icon: getCategoryIcon(catName),
-          subcategories: []
-        }));
-        
+        const extractedCategories = Array.from(categoryMap.values());
         console.log('Extracted categories from Data table:', extractedCategories.length);
         
         // Store the extracted categories in the categories table for future use
@@ -86,7 +86,7 @@ export async function fetchCategories(): Promise<Category[]> {
     
     // Transform the data to match our Category type
     return data.map(item => ({
-      id: item.id || crypto.randomUUID(),
+      id: item.id || `b${item.name.toLowerCase().replace(/\s+/g, '-')}`,
       name: item.name,
       icon: item.icon || getCategoryIcon(item.name),
       subcategories: []  // We don't have subcategories in the DB schema yet
@@ -475,8 +475,6 @@ export async function searchOffers(query: string): Promise<Offer[]> {
       return [];
     }
     
-    console.log('Searching offers with query:', query);
-    
     const searchTerm = `%${query}%`;
     
     const { data, error } = await supabase
@@ -489,8 +487,6 @@ export async function searchOffers(query: string): Promise<Offer[]> {
       console.error('Error searching offers:', error);
       throw error;
     }
-    
-    console.log('Search results:', data?.length || 0);
     
     if (!data || data.length === 0) {
       return [];
