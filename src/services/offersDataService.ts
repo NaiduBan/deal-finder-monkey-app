@@ -8,7 +8,7 @@ export async function fetchOffersFromOffersData(): Promise<Offer[]> {
   try {
     console.log('Fetching offers from OffersData table...');
     const { data, error } = await supabase
-      .from('OffersData')
+      .from('offersdata')
       .select('*')
       .order('created_at', { ascending: false });
     
@@ -84,7 +84,7 @@ export async function fetchOffersFromOffersData(): Promise<Offer[]> {
         featured: item.featured === "true" || item.featured === "1",
         publisherExclusive: item.publisher_exclusive === "true" || item.publisher_exclusive === "1",
         url: item.url || "",
-        smartlink: item.smartLink || "",
+        smartlink: item.smartlink || "",
         offerType: item.type || "",
         offerValue: item.offer_value || "",
         status: item.status || "",
@@ -109,7 +109,7 @@ export async function searchOffersInOffersData(query: string): Promise<Offer[]> 
     const searchTerm = `%${query}%`;
     
     const { data, error } = await supabase
-      .from('OffersData')
+      .from('offersdata')
       .select('*')
       .or(`title.ilike.${searchTerm},description.ilike.${searchTerm},store.ilike.${searchTerm},categories.ilike.${searchTerm}`)
       .limit(20);
@@ -177,7 +177,7 @@ export async function searchOffersInOffersData(query: string): Promise<Offer[]> 
         featured: item.featured === "true" || item.featured === "1",
         publisherExclusive: item.publisher_exclusive === "true" || item.publisher_exclusive === "1",
         url: item.url || "",
-        smartlink: item.smartLink || "",
+        smartlink: item.smartlink || "",
         offerType: item.type || "",
         offerValue: item.offer_value || "",
         status: item.status || "",
