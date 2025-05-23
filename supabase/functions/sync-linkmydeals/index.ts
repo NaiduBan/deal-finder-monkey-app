@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
@@ -176,12 +177,14 @@ serve(async (req) => {
       throw new Error(`Failed to upsert offers: ${upsertError.message}`);
     }
 
-    // Clean up expired offers to keep data fresh
-    const today_date = new Date();
+    // Clean up expired offers using the current date
+    const currentDate = new Date().toISOString().split('T')[0];
+    console.log(`Removing expired offers (current date: ${currentDate})...`);
+    
     const { error: deleteError } = await supabase
       .from("Data")
       .delete()
-      .lt("end_date", today_date.toISOString().split('T')[0]);
+      .lt("end_date", currentDate);
 
     if (deleteError) {
       console.error("Error removing expired offers:", deleteError);
