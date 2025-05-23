@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Offer, Category } from '@/types';
 import { fetchCategories, fetchOffers, fetchUserPreferences, applyPreferencesToOffers, triggerLinkMyDealsSync, getLinkMyDealsSyncStatus } from '@/services/supabaseService';
@@ -339,6 +340,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     fetchData();
     getSyncStatus(); // Get initial sync status
+    
+    // Trigger immediate sync on component mount
+    console.log('Triggering immediate LinkMyDeals sync...');
+    syncFromLinkMyDeals();
   }, []);
 
   // Update filtered offers when offers or preferences change
