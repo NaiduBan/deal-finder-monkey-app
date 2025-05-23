@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Offer, Category } from '@/types';
-import { fetchCategories, fetchUserPreferences, applyPreferencesToOffers } from '@/services/supabaseService';
-import { fetchOffersFromOffersData, triggerDailyOffersSync, getDailySyncStatus } from '@/services/offersDataService';
+import { fetchCategories, fetchOffers, fetchUserPreferences, applyPreferencesToOffers } from '@/services/supabaseService';
 import { toast } from '@/components/ui/use-toast';
 import { mockOffers, mockCategories } from '@/mockData';
 import { useUser } from '@/contexts/UserContext';
@@ -15,8 +14,6 @@ interface DataContextType {
   refetchOffers: () => Promise<void>;
   isUsingMockData: boolean;
   filteredOffers: Offer[];
-  syncDailyOffers: () => Promise<void>;
-  lastSyncStatus: any;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -53,12 +50,12 @@ const saveToCache = (key: string, data: any) => {
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [offers, setOffers] = useState<Offer[]>(() => {
-    const cachedOffers = getCachedData('offersData');
+    const cachedOffers = getCachedData('offers');
     return cachedOffers || [];
   });
   
   const [filteredOffers, setFilteredOffers] = useState<Offer[]>(() => {
-    const cachedFilteredOffers = getCachedData('filteredOffersData');
+    const cachedFilteredOffers = getCachedData('filteredOffers');
     return cachedFilteredOffers || [];
   });
   
@@ -79,7 +76,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       banks: []
     };
   });
-  const [lastSyncStatus, setLastSyncStatus] = useState<any>(null);
 
   // Enhanced function to fetch user preferences
   const getUserPreferences = async (userId: string) => {
@@ -139,11 +135,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('Applying preferences to filter offers');
           const filtered = applyPreferencesToOffers(offers, preferences);
           setFilteredOffers(filtered.length > 0 ? filtered : offers);
-          saveToCache('filteredOffersData', filtered.length > 0 ? filtered : offers);
+          saveToCache('filteredOffers', filtered.length > 0 ? filtered : offers);
         } else {
           console.log('No preferences to apply, showing all offers');
           setFilteredOffers(offers);
-          saveToCache('filteredOffersData', offers);
+          saveToCache('filteredOffers', offers);
         }
       }
     } catch (err) {
@@ -165,7 +161,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         banks: []
       });
       setFilteredOffers(offers);
-      saveToCache('filteredOffersData', offers);
+      saveToCache('filteredOffers', offers);
     }
   }, [user, user?.id]);
 
@@ -199,21 +195,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [user?.id]);
 
-  // Get the sync status
-  const getSyncStatus = async () => {
-    const status = await getDailySyncStatus();
-    setLastSyncStatus(status);
-    return status;
-  };
-
   const fetchData = async () => {
-    console.log('Starting to fetch data from OffersData...');
+    console.log('Starting to fetch data...');
     setIsLoading(true);
     setError(null);
     let usingMockData = false;
     
     // Check if we have recent cached data first
-    const cachedOffers = getCachedData('offersData');
+    const cachedOffers = getCachedData('offers');
     const cachedCategories = getCachedData('categories');
     
     if (cachedOffers && cachedCategories) {
@@ -226,7 +215,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         getUserPreferences(user.id);
       } else {
         setFilteredOffers(cachedOffers);
-        saveToCache('filteredOffersData', cachedOffers);
+        saveToCache('filteredOffers', cachedOffers);
       }
       
       setIsLoading(false);
@@ -237,7 +226,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     
-    // No valid cached data, fetch from OffersData table
+    // No valid cached data, fetch from Supabase
     fetchFreshData(true);
   };
   
@@ -245,19 +234,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let usingMockData = false;
     
     try {
-      // Try to fetch data from OffersData table
+      // Try to fetch data from Supabase (specifically the Data table)
       const [offersData, categoriesData] = await Promise.all([
-        fetchOffersFromOffersData(),
+        fetchOffers(),
         fetchCategories()
       ]);
       
       console.log('Fetch successful:', offersData.length, 'offers,', categoriesData.length, 'categories');
       
-      // Check if we got real data from the OffersData table
-      if (offersData.length > 0 && offersData[0].id.startsWith('offersdata-')) {
-        console.log('Using real data from OffersData table');
+      // Check if we got real data from the Data table
+      if (offersData.length > 0 && offersData[0].id.startsWith('data-')) {
+        console.log('Using real data from Supabase Data table');
         setOffers(offersData);
-        saveToCache('offersData', offersData);
+        saveToCache('offers', offersData);
         
         // Apply user preferences for filtering
         if (user && user.id) {
@@ -270,24 +259,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const filtered = applyPreferencesToOffers(offersData, userPreferences);
             console.log(`Filtered ${offersData.length} offers down to ${filtered.length} based on preferences`);
             setFilteredOffers(filtered.length > 0 ? filtered : offersData);
-            saveToCache('filteredOffersData', filtered.length > 0 ? filtered : offersData);
+            saveToCache('filteredOffers', filtered.length > 0 ? filtered : offersData);
           } else {
             console.log('No preferences set, showing all offers');
             setFilteredOffers(offersData);
-            saveToCache('filteredOffersData', offersData);
+            saveToCache('filteredOffers', offersData);
           }
         } else {
           setFilteredOffers(offersData);
-          saveToCache('filteredOffersData', offersData);
+          saveToCache('filteredOffers', offersData);
         }
         
         setIsUsingMockData(false);
       } else {
-        console.log('No data from OffersData table, using mock offers');
+        console.log('No data from Supabase Data table, using mock offers');
         setOffers(mockOffers);
         setFilteredOffers(mockOffers);
-        saveToCache('offersData', mockOffers);
-        saveToCache('filteredOffersData', mockOffers);
+        saveToCache('offers', mockOffers);
+        saveToCache('filteredOffers', mockOffers);
         setIsUsingMockData(true);
         usingMockData = true;
       }
@@ -306,7 +295,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (usingMockData) {
         toast({
           title: "Using sample data",
-          description: "Could not find data in the OffersData table. Showing sample offers instead.",
+          description: "Could not find data in the Data table. Showing sample offers instead.",
           variant: "default",
         });
       }
@@ -318,15 +307,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Falling back to mock data due to error');
       setOffers(mockOffers);
       setFilteredOffers(mockOffers);
-      saveToCache('offersData', mockOffers);
-      saveToCache('filteredOffersData', mockOffers);
+      saveToCache('offers', mockOffers);
+      saveToCache('filteredOffers', mockOffers);
       setCategories(mockCategories);
       saveToCache('categories', mockCategories);
       setIsUsingMockData(true);
       
       toast({
         title: "Connection Error",
-        description: "Could not fetch data from the OffersData table. Using sample data instead.",
+        description: "Could not fetch data from the Data table. Using sample data instead.",
         variant: "destructive",
       });
     } finally {
@@ -339,11 +328,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     fetchData();
-    getSyncStatus(); // Get initial sync status
-    
-    // Trigger daily sync on component mount (only once per day will execute)
-    console.log('Triggering daily offers sync...');
-    syncDailyOffers();
   }, []);
 
   // Update filtered offers when offers or preferences change
@@ -357,26 +341,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('Preferences changed, refiltering offers');
         const filtered = applyPreferencesToOffers(offers, userPreferences);
         setFilteredOffers(filtered.length > 0 ? filtered : offers);
-        saveToCache('filteredOffersData', filtered.length > 0 ? filtered : offers);
+        saveToCache('filteredOffers', filtered.length > 0 ? filtered : offers);
       } else {
         console.log('No filtering preferences, showing all offers');
         setFilteredOffers(offers);
-        saveToCache('filteredOffersData', offers);
+        saveToCache('filteredOffers', offers);
       }
     }
   }, [offers, userPreferences]);
 
   const refetchOffers = async () => {
-    console.log('Refetching offers from OffersData...');
+    console.log('Refetching offers...');
     setIsLoading(true);
     try {
-      const offersData = await fetchOffersFromOffersData();
+      const offersData = await fetchOffers();
       console.log('Refetch successful:', offersData.length, 'offers');
       
-      if (offersData.length > 0 && offersData[0].id.startsWith('offersdata-')) {
+      if (offersData.length > 0 && offersData[0].id.startsWith('data-')) {
         console.log('Using real data from refetch');
         setOffers(offersData);
-        saveToCache('offersData', offersData);
+        saveToCache('offers', offersData);
         
         // Apply user preferences for filtering
         const hasPreferences = userPreferences.brands.length > 0 || 
@@ -386,10 +370,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (user && user.id && hasPreferences) {
           const filtered = applyPreferencesToOffers(offersData, userPreferences);
           setFilteredOffers(filtered.length > 0 ? filtered : offersData);
-          saveToCache('filteredOffersData', filtered.length > 0 ? filtered : offersData);
+          saveToCache('filteredOffers', filtered.length > 0 ? filtered : offersData);
         } else {
           setFilteredOffers(offersData);
-          saveToCache('filteredOffersData', offersData);
+          saveToCache('filteredOffers', offersData);
         }
         
         setError(null);
@@ -397,21 +381,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         toast({
           title: "Data refreshed",
-          description: "Successfully loaded offers from the OffersData table.",
+          description: "Successfully loaded offers from the Data table.",
           variant: "default",
         });
       } else {
         // If no real data was found, keep using mock data
-        console.log('No real data found in OffersData table on refetch, keeping mock data');
+        console.log('No real data found in Data table on refetch, keeping mock data');
         setOffers(mockOffers);
         setFilteredOffers(mockOffers);
-        saveToCache('offersData', mockOffers);
-        saveToCache('filteredOffersData', mockOffers);
+        saveToCache('offers', mockOffers);
+        saveToCache('filteredOffers', mockOffers);
         setIsUsingMockData(true);
         
         toast({
           title: "No offers found",
-          description: "Could not find any offers in the OffersData table.",
+          description: "Could not find any offers in the Data table.",
           variant: "default",
         });
       }
@@ -421,50 +405,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       toast({
         title: "Error refreshing",
-        description: "Could not refresh offers from the OffersData table. Please try again later.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Function to manually trigger daily offers sync
-  const syncDailyOffers = async () => {
-    try {
-      setIsLoading(true);
-      toast({
-        title: "Syncing offers",
-        description: "Fetching latest offers from LinkMyDeals (once per day)...",
-        variant: "default",
-      });
-      
-      const success = await triggerDailyOffersSync();
-      
-      if (success) {
-        toast({
-          title: "Sync completed",
-          description: "Successfully synchronized offers from LinkMyDeals",
-          variant: "default",
-        });
-        
-        // Update sync status
-        const status = await getSyncStatus();
-        
-        // Refetch offers to show the new data
-        await refetchOffers();
-      } else {
-        toast({
-          title: "Sync info",
-          description: "Daily sync limit reached or no new offers available",
-          variant: "default",
-        });
-      }
-    } catch (err) {
-      console.error('Error syncing daily offers:', err);
-      toast({
-        title: "Error syncing",
-        description: "An error occurred while syncing offers",
+        description: "Could not refresh offers from the Data table. Please try again later.",
         variant: "destructive",
       });
     } finally {
@@ -481,9 +422,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         error,
         refetchOffers,
-        isUsingMockData,
-        syncDailyOffers,
-        lastSyncStatus
+        isUsingMockData
       }}
     >
       {children}
