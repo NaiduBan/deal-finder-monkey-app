@@ -18,7 +18,7 @@ export const useSyncStatus = () => {
   };
 
   // Function to manually trigger LinkMyDeals sync
-  const syncFromLinkMyDeals = async () => {
+  const syncFromLinkMyDeals = async (): Promise<boolean> => {
     try {
       setIsSyncing(true);
       toast({

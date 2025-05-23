@@ -12,10 +12,10 @@ interface DataContextType {
   categories: Category[];
   isLoading: boolean;
   error: Error | null;
-  refetchOffers: () => Promise<void>;
+  refetchOffers: () => Promise<Offer[]>; // Updated return type to match implementation
   isUsingMockData: boolean;
   filteredOffers: Offer[];
-  syncFromLinkMyDeals: () => Promise<void>;
+  syncFromLinkMyDeals: () => Promise<boolean>; // Updated return type to match implementation
   lastSyncStatus: any;
 }
 

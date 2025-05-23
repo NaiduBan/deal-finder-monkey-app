@@ -80,7 +80,7 @@ export const useOffersData = () => {
   };
 
   // Function to manually refetch offers
-  const refetchOffers = async () => {
+  const refetchOffers = async (): Promise<Offer[]> => {
     console.log('Refetching offers...');
     setIsLoading(true);
 
@@ -100,6 +100,8 @@ export const useOffersData = () => {
           description: "Successfully loaded offers from the Data table.",
           variant: "default",
         });
+        
+        return offersData;
       } else {
         setOffers(mockOffers);
         setFilteredOffers(mockOffers);
@@ -112,6 +114,8 @@ export const useOffersData = () => {
           description: "Could not find any offers in the Data table.",
           variant: "default",
         });
+        
+        return mockOffers;
       }
     } catch (err) {
       console.error('Error refetching offers:', err);
@@ -122,11 +126,11 @@ export const useOffersData = () => {
         description: "Could not refresh offers from the Data table. Please try again later.",
         variant: "destructive",
       });
+      
+      return offers;
     } finally {
       setIsLoading(false);
     }
-
-    return offers;
   };
 
   // Initialize by fetching data
