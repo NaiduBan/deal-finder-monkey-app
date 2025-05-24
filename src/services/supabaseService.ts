@@ -1,13 +1,11 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Offer, Category } from "@/types";
-import { mockCategories, mockOffers } from "@/mockData";
 
 // Function to fetch all categories
 export async function fetchCategories(): Promise<Category[]> {
   try {
     console.log('Fetching categories from Supabase...');
-    // Use type assertion to handle missing types
     const { data, error } = await (supabase as any)
       .from('categories')
       .select('*');
@@ -19,22 +17,22 @@ export async function fetchCategories(): Promise<Category[]> {
     
     console.log('Categories fetched from categories table:', data ? data.length : 0);
     
-    // If no categories found, try to extract categories from Linkmydeals_Offers table
+    // If no categories found, try to extract categories from Offers_data table
     if (!data || data.length === 0) {
-      console.log('No categories found in categories table, attempting to extract from Linkmydeals_Offers table');
+      console.log('No categories found in categories table, attempting to extract from Offers_data table');
       
       const { data: offersData, error: offersError } = await (supabase as any)
-        .from('Linkmydeals_Offers')
+        .from('Offers_data')
         .select('categories')
         .not('categories', 'is', null);
         
       if (offersError) {
-        console.error('Error fetching categories from Linkmydeals_Offers table:', offersError);
-        return mockCategories;
+        console.error('Error fetching categories from Offers_data table:', offersError);
+        return [];
       }
       
       if (offersData && offersData.length > 0) {
-        // Extract unique categories from Linkmydeals_Offers table
+        // Extract unique categories from Offers_data table
         const categoryMap = new Map<string, Category>();
         
         offersData.forEach((item: any) => {
@@ -42,11 +40,11 @@ export async function fetchCategories(): Promise<Category[]> {
             const cats = item.categories.split(',').map((c: string) => c.trim());
             cats.forEach((catName: string, index: number) => {
               if (catName && !categoryMap.has(catName.toLowerCase())) {
-                const id = `b${categoryMap.size + index}`; // Use a more reliable ID format
+                const id = `cat-${categoryMap.size + index}`;
                 categoryMap.set(catName.toLowerCase(), {
                   id,
                   name: catName,
-                  icon: getCategoryIcon(catName), // Get appropriate icon based on category name
+                  icon: getCategoryIcon(catName),
                   subcategories: []
                 });
               }
@@ -55,7 +53,7 @@ export async function fetchCategories(): Promise<Category[]> {
         });
         
         const extractedCategories = Array.from(categoryMap.values());
-        console.log('Extracted categories from Linkmydeals_Offers table:', extractedCategories.length);
+        console.log('Extracted categories from Offers_data table:', extractedCategories.length);
         
         // Store the extracted categories in the categories table for future use
         if (extractedCategories.length > 0) {
@@ -81,20 +79,20 @@ export async function fetchCategories(): Promise<Category[]> {
         }
       }
       
-      console.log('No categories found in database, using mock data');
-      return mockCategories;
+      console.log('No categories found in database');
+      return [];
     }
     
     // Transform the data to match our Category type
     return data.map((item: any) => ({
-      id: item.id || `b${item.name.toLowerCase().replace(/\s+/g, '-')}`,
+      id: item.id || `cat-${item.name.toLowerCase().replace(/\s+/g, '-')}`,
       name: item.name,
       icon: item.icon || getCategoryIcon(item.name),
-      subcategories: []  // We don't have subcategories in the DB schema yet
+      subcategories: []
     }));
   } catch (error) {
-    console.error('Error in fetchCategories, falling back to mock data:', error);
-    return mockCategories;
+    console.error('Error in fetchCategories:', error);
+    return [];
   }
 }
 
@@ -123,31 +121,30 @@ function getCategoryIcon(categoryName: string): string {
   } else if (nameLower.includes('coffee') || nameLower.includes('cafe')) {
     return 'coffee';
   } else {
-    return 'shopping-bag';  // Default icon
+    return 'shopping-bag';
   }
 }
 
-// Function to fetch all offers from the Linkmydeals_Offers table
+// Function to fetch all offers from the Offers_data table
 export async function fetchOffers(): Promise<Offer[]> {
   try {
-    console.log('Fetching fresh offers from Linkmydeals_Offers table...');
+    console.log('Fetching fresh offers from Offers_data table...');
     const { data, error } = await (supabase as any)
-      .from('Linkmydeals_Offers')
+      .from('Offers_data')
       .select('*')
-      .order('lmd_id', { ascending: false }) // Get newest offers first
-      .limit(200); // Limit to a reasonable number for better performance
+      .order('lmd_id', { ascending: false })
+      .limit(200);
     
     if (error) {
-      console.error('Error fetching offers from Linkmydeals_Offers table:', error);
+      console.error('Error fetching offers from Offers_data table:', error);
       throw error;
     }
     
-    console.log('Linkmydeals_Offers table results:', data ? data.length : 0, 'records found');
+    console.log('Offers_data table results:', data ? data.length : 0, 'records found');
     
-    // If no data is found in the Linkmydeals_Offers table, use mock data
     if (!data || data.length === 0) {
-      console.log('No data found in Linkmydeals_Offers table, falling back to mock data');
-      return mockOffers;
+      console.log('No data found in Offers_data table');
+      return [];
     }
     
     // Transform the data to match our Offer type
@@ -160,38 +157,33 @@ export async function fetchOffers(): Promise<Offer[]> {
       if (item.offer_value) {
         const offerValue = item.offer_value;
         if (offerValue.includes('%')) {
-          // Percentage discount
           const percent = parseInt(offerValue.replace(/[^0-9]/g, ''));
-          originalPrice = Math.floor(1000 + Math.random() * 9000); // Random original price
+          originalPrice = Math.floor(1000 + Math.random() * 9000);
           price = Math.floor(originalPrice * (1 - percent / 100));
           savings = `${percent}%`;
         } else if (offerValue.match(/\d+/)) {
-          // Fixed amount discount
           const amount = parseInt(offerValue.replace(/[^0-9]/g, ''));
           price = amount;
           originalPrice = price + Math.floor(Math.random() * 500) + 100;
           savings = `₹${originalPrice - price}`;
         } else {
-          // Default values
           price = Math.floor(Math.random() * 1000) + 100;
           originalPrice = price + Math.floor(Math.random() * 500) + 100;
           savings = `₹${originalPrice - price}`;
         }
       } else {
-        // Default values
         price = Math.floor(Math.random() * 1000) + 100;
         originalPrice = price + Math.floor(Math.random() * 500) + 100;
         savings = `₹${originalPrice - price}`;
       }
 
-      // Determine if it's an Amazon offer
       const isAmazon = (item.store && item.store.toLowerCase().includes('amazon')) || 
                       (item.merchant_homepage && item.merchant_homepage.toLowerCase().includes('amazon'));
       
       return {
-        id: `lmd-${item.lmd_id || index}`,
+        id: `offer-${item.lmd_id || index}`,
         title: item.title || "",
-        description: item.description || item.long_offer || "",
+        description: item.description || item.long_offer || item.offer || "",
         imageUrl: item.image_url || "",
         store: item.store || "",
         category: item.categories || "",
@@ -200,7 +192,6 @@ export async function fetchOffers(): Promise<Offer[]> {
         expiryDate: item.end_date || "",
         isAmazon: isAmazon,
         savings: savings,
-        // Fields from the Linkmydeals_Offers table
         lmdId: Number(item.lmd_id) || 0,
         merchantHomepage: item.merchant_homepage || "",
         longOffer: item.long_offer || "",
@@ -219,8 +210,8 @@ export async function fetchOffers(): Promise<Offer[]> {
       };
     });
   } catch (error) {
-    console.error('Error in fetchOffers, falling back to mock data:', error);
-    return mockOffers;
+    console.error('Error in fetchOffers:', error);
+    return [];
   }
 }
 
@@ -239,7 +230,6 @@ export async function uploadImage(file: File): Promise<string> {
     throw error;
   }
   
-  // Get the public URL for the uploaded image
   const { data: { publicUrl } } = supabase.storage
     .from('offers')
     .getPublicUrl(filePath);
@@ -288,9 +278,9 @@ export async function saveOfferForUser(userId: string, offerId: string): Promise
       });
       
     if (error) {
-      if (error.code === '23505') { // Unique constraint violation
+      if (error.code === '23505') {
         console.log('Offer already saved for this user');
-        return true; // Already saved is still a success
+        return true;
       }
       console.error('Error saving offer:', error);
       throw error;
@@ -330,7 +320,7 @@ export async function unsaveOfferForUser(userId: string, offerId: string): Promi
   }
 }
 
-// Enhanced function to fetch user preferences with improved logging
+// Function to fetch user preferences
 export async function fetchUserPreferences(userId: string, preferenceType: string = 'all'): Promise<any[]> {
   try {
     if (!userId) {
@@ -363,7 +353,7 @@ export async function fetchUserPreferences(userId: string, preferenceType: strin
   }
 }
 
-// Enhanced function to save user preferences with better error handling
+// Function to save user preference
 export async function saveUserPreference(userId: string, preferenceType: string, preferenceId: string): Promise<boolean> {
   try {
     if (!userId || !preferenceType || !preferenceId) {
@@ -372,7 +362,6 @@ export async function saveUserPreference(userId: string, preferenceType: string,
     
     console.log(`Saving preference for user ${userId}: ${preferenceType} - ${preferenceId}`);
     
-    // Check if preference already exists
     const { data: existingPreference, error: checkError } = await (supabase as any)
       .from('user_preferences')
       .select('*')
@@ -381,18 +370,16 @@ export async function saveUserPreference(userId: string, preferenceType: string,
       .eq('preference_id', preferenceId)
       .single();
       
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means not found, which is expected
+    if (checkError && checkError.code !== 'PGRST116') {
       console.error('Error checking existing preference:', checkError);
       return false;
     }
     
-    // If preference already exists, don't add it again
     if (existingPreference) {
       console.log('Preference already exists, skipping save operation');
       return true;
     }
     
-    // Insert the new preference
     const { error } = await (supabase as any)
       .from('user_preferences')
       .insert({
@@ -414,7 +401,7 @@ export async function saveUserPreference(userId: string, preferenceType: string,
   }
 }
 
-// Enhanced function to remove user preference with better error handling and logging
+// Function to remove user preference
 export async function removeUserPreference(userId: string, preferenceType: string, preferenceId: string): Promise<boolean> {
   try {
     if (!userId || !preferenceType || !preferenceId) {
@@ -481,7 +468,7 @@ export async function searchOffers(query: string): Promise<Offer[]> {
     const searchTerm = `%${query}%`;
     
     const { data, error } = await (supabase as any)
-      .from('Linkmydeals_Offers')
+      .from('Offers_data')
       .select('*')
       .or(`title.ilike.${searchTerm},description.ilike.${searchTerm},store.ilike.${searchTerm},categories.ilike.${searchTerm}`)
       .limit(20);
@@ -495,9 +482,7 @@ export async function searchOffers(query: string): Promise<Offer[]> {
       return [];
     }
     
-    // Transform data to Offer type (reuse the transformation logic from fetchOffers)
     return data.map((item: any, index: number) => {
-      // Calculate price and savings (same logic as in fetchOffers)
       let price = 0;
       let originalPrice = 0;
       let savings = '';
@@ -529,9 +514,9 @@ export async function searchOffers(query: string): Promise<Offer[]> {
                       (item.merchant_homepage && item.merchant_homepage.toLowerCase().includes('amazon'));
       
       return {
-        id: `lmd-${item.lmd_id || index}`,
+        id: `offer-${item.lmd_id || index}`,
         title: item.title || "",
-        description: item.description || item.long_offer || "",
+        description: item.description || item.long_offer || item.offer || "",
         imageUrl: item.image_url || "",
         store: item.store || "",
         category: item.categories || "",
@@ -540,7 +525,6 @@ export async function searchOffers(query: string): Promise<Offer[]> {
         expiryDate: item.end_date || "",
         isAmazon: isAmazon,
         savings: savings,
-        // Fields from the Linkmydeals_Offers table
         lmdId: Number(item.lmd_id) || 0,
         merchantHomepage: item.merchant_homepage || "",
         longOffer: item.long_offer || "",
@@ -564,38 +548,7 @@ export async function searchOffers(query: string): Promise<Offer[]> {
   }
 }
 
-// Helper function to extract actual value from preference ID
-// This handles the case where preference IDs are like 'b1', 's2', etc.
-// but we need to match them against actual names in the offers
-function extractPreferenceValue(prefId: string): string {
-  // For IDs stored directly from Supabase data, they might be the actual values
-  if (prefId.length > 3 && !prefId.startsWith('b') && !prefId.startsWith('s') && !prefId.startsWith('bk')) {
-    return prefId;
-  }
-  
-  // Try to find the preference in the mock data first
-  const { mockBrands, mockStores, mockBanks } = require('@/mockData');
-  
-  if (prefId.startsWith('b')) {
-    const brand = mockBrands.find((b: any) => b.id === prefId);
-    return brand ? brand.name : '';
-  }
-  
-  if (prefId.startsWith('s')) {
-    const store = mockStores.find((s: any) => s.id === prefId);
-    return store ? store.name : '';
-  }
-  
-  if (prefId.startsWith('bk')) {
-    const bank = mockBanks.find((b: any) => b.id === prefId);
-    return bank ? bank.name : '';
-  }
-  
-  // If we can't extract, just return the original ID
-  return prefId;
-}
-
-// Enhanced function to apply preferences to offers with better logging
+// Function to apply preferences to offers
 export function applyPreferencesToOffers(offers: Offer[], preferences: {[key: string]: string[]}): Offer[] {
   if (!preferences || Object.keys(preferences).length === 0 || 
       (preferences.stores?.length === 0 && preferences.brands?.length === 0 && preferences.banks?.length === 0)) {
@@ -612,8 +565,7 @@ export function applyPreferencesToOffers(offers: Offer[], preferences: {[key: st
   const filteredOffers = offers.filter(offer => {
     // Check store preferences
     if (preferences.stores && preferences.stores.length > 0 && offer.store) {
-      for (const prefId of preferences.stores) {
-        const prefValue = extractPreferenceValue(prefId);
+      for (const prefValue of preferences.stores) {
         if (prefValue && offer.store.toLowerCase().includes(prefValue.toLowerCase())) {
           return true;
         }
@@ -622,8 +574,7 @@ export function applyPreferencesToOffers(offers: Offer[], preferences: {[key: st
     
     // Check brand/category preferences
     if (preferences.brands && preferences.brands.length > 0 && offer.category) {
-      for (const prefId of preferences.brands) {
-        const prefValue = extractPreferenceValue(prefId);
+      for (const prefValue of preferences.brands) {
         if (prefValue && offer.category.toLowerCase().includes(prefValue.toLowerCase())) {
           return true;
         }
@@ -635,15 +586,13 @@ export function applyPreferencesToOffers(offers: Offer[], preferences: {[key: st
        (offer.description || offer.termsAndConditions || offer.longOffer)) {
       const fullText = `${offer.description || ''} ${offer.termsAndConditions || ''} ${offer.longOffer || ''}`.toLowerCase();
       
-      for (const prefId of preferences.banks) {
-        const prefValue = extractPreferenceValue(prefId);
+      for (const prefValue of preferences.banks) {
         if (prefValue && fullText.includes(prefValue.toLowerCase())) {
           return true;
         }
       }
     }
     
-    // If no preferences match, don't include the offer
     return false;
   });
   

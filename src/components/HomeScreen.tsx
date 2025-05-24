@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Bell, Search, AlertCircle, RefreshCw } from 'lucide-react';
@@ -50,11 +51,9 @@ const HomeScreen = () => {
   // Extract categories from today's offers
   useEffect(() => {
     if (offers && offers.length > 0) {
-      // Get unique categories from the offers
       const uniqueCategories = new Set<string>();
       offers.forEach(offer => {
         if (offer.category) {
-          // Some offers might have multiple categories separated by commas
           const categories = offer.category.split(',').map(cat => cat.trim());
           categories.forEach(cat => {
             if (cat) uniqueCategories.add(cat);
@@ -62,9 +61,7 @@ const HomeScreen = () => {
         }
       });
 
-      // Map to the format expected by CategoryItem
       const categoryObjects: Category[] = Array.from(uniqueCategories).map(categoryName => {
-        // Try to find a matching category in the allCategories array
         const matchingCategory = allCategories.find(c => 
           c.name.toLowerCase() === categoryName.toLowerCase() ||
           c.id.toLowerCase() === categoryName.toLowerCase().replace(/\s+/g, '-')
@@ -74,7 +71,6 @@ const HomeScreen = () => {
           return matchingCategory;
         }
 
-        // If no match is found, create a new category object with reasonable defaults
         return {
           id: categoryName.toLowerCase().replace(/\s+/g, '-'),
           name: categoryName,
@@ -82,11 +78,12 @@ const HomeScreen = () => {
         };
       });
 
-      // Sort alphabetically by name for consistency
       categoryObjects.sort((a, b) => a.name.localeCompare(b.name));
       
       console.log('Generated dynamic categories:', categoryObjects);
       setDynamicCategories(categoryObjects);
+    } else {
+      setDynamicCategories([]);
     }
   }, [offers, allCategories]);
 
@@ -103,7 +100,6 @@ const HomeScreen = () => {
     if (name.includes('health') || name.includes('fitness')) return 'heart';
     if (name.includes('toy') || name.includes('kid')) return 'gift';
     
-    // Default icon
     return 'shopping-bag';
   };
 
@@ -123,7 +119,6 @@ const HomeScreen = () => {
           if (error) {
             console.error('Error fetching user preferences:', error);
           } else if (data) {
-            // Organize preferences by type
             const preferences: {[key: string]: string[]} = {
               brands: data.filter(p => p.preference_type === 'brands').map(p => p.preference_id),
               stores: data.filter(p => p.preference_type === 'stores').map(p => p.preference_id),
@@ -133,7 +128,6 @@ const HomeScreen = () => {
             setUserPreferences(preferences);
             console.log('Loaded preferences:', preferences);
 
-            // If user has preferences, show a badge or notification
             if (preferences.brands.length > 0 || preferences.stores.length > 0 || preferences.banks.length > 0) {
               console.log('User has personalization preferences applied');
             }
@@ -151,7 +145,6 @@ const HomeScreen = () => {
   }, []);
 
   useEffect(() => {
-    // Log for debugging purposes
     console.log("Home Screen Rendered");
     console.log("Offers loaded:", offers ? offers.length : 0);
     console.log("Filtered offers loaded:", filteredOffers ? filteredOffers.length : 0);
@@ -178,14 +171,12 @@ const HomeScreen = () => {
   
   // Enhanced search functionality with category filtering on top of already filtered offers
   const displayedOffers = filteredOffers.filter(offer => {
-    // First, check if the offer matches the selected category
     if (selectedCategory && offer.category) {
       const categoryMatch = offer.category.toLowerCase().includes(selectedCategory.toLowerCase()) ||
                            selectedCategory.toLowerCase().includes(offer.category.toLowerCase());
       if (!categoryMatch) return false;
     }
     
-    // Then filter by search query if one exists
     if (debouncedSearchTerm) {
       const searchTermLower = debouncedSearchTerm.toLowerCase();
       const matchesSearch = 
@@ -204,7 +195,6 @@ const HomeScreen = () => {
   const handleCategoryClick = (categoryId: string) => {
     console.log("Category clicked:", categoryId);
     if (selectedCategory === categoryId) {
-      // If the same category is clicked again, clear the filter
       setSelectedCategory(null);
     } else {
       setSelectedCategory(categoryId);
@@ -227,7 +217,6 @@ const HomeScreen = () => {
             <span className="text-sm">{user.location}</span>
           </div>
           <div className="flex items-center space-x-3">
-            {/* Add refresh button to header */}
             <button 
               onClick={() => refetchOffers()} 
               className="flex items-center justify-center"
@@ -252,7 +241,7 @@ const HomeScreen = () => {
           <Alert className="bg-amber-50 border-amber-200">
             <AlertCircle className="h-4 w-4 text-amber-600" />
             <AlertDescription className="text-amber-700">
-              Showing sample data. No real offers found in the database.
+              No real offers found in the Offers_data table. Please check your database.
             </AlertDescription>
           </Alert>
         )}
@@ -302,7 +291,7 @@ const HomeScreen = () => {
           />
         </div>
         
-        {/* Categories carousel with active state - NOW USING DYNAMIC CATEGORIES */}
+        {/* Categories carousel with active state */}
         <div>
           <div className="flex justify-between items-center mb-3">
             <h2 className="font-bold text-lg">For You</h2>
@@ -331,7 +320,7 @@ const HomeScreen = () => {
                   </div>
                 ))
               ) : (
-                <div className="text-gray-500 py-2">No categories available</div>
+                <div className="text-gray-500 py-2">No categories available from Offers_data table</div>
               )}
             </div>
           )}
@@ -436,7 +425,12 @@ const HomeScreen = () => {
                     !error && (
                       <div className="bg-white p-6 rounded-lg text-center shadow-sm">
                         <p className="text-gray-500">No offers found</p>
-                        <p className="text-sm text-gray-400 mt-2">Try a different search term or check back later</p>
+                        <p className="text-sm text-gray-400 mt-2">
+                          {offers.length === 0 
+                            ? "No offers available in the Offers_data table" 
+                            : "Try a different search term or check back later"
+                          }
+                        </p>
                         <div className="mt-4 flex flex-col gap-2">
                           <button
                             onClick={refetchOffers}
@@ -445,12 +439,14 @@ const HomeScreen = () => {
                             Refresh Data
                           </button>
                           
-                          <Link 
-                            to="/preferences/brands" 
-                            className="border border-monkeyGreen text-monkeyGreen px-4 py-2 rounded-lg text-center"
-                          >
-                            Adjust Preferences
-                          </Link>
+                          {offers.length > 0 && (
+                            <Link 
+                              to="/preferences/brands" 
+                              className="border border-monkeyGreen text-monkeyGreen px-4 py-2 rounded-lg text-center"
+                            >
+                              Adjust Preferences
+                            </Link>
+                          )}
                         </div>
                       </div>
                     )
@@ -488,12 +484,14 @@ const HomeScreen = () => {
               {displayedOffers.filter(offer => !offer.isAmazon).length === 0 && (
                 <div className="bg-white p-6 rounded-lg text-center shadow-sm">
                   <p className="text-gray-500">No nearby offers found</p>
-                  <Link 
-                    to="/preferences/stores" 
-                    className="mt-4 text-monkeyGreen block underline"
-                  >
-                    Adjust store preferences
-                  </Link>
+                  {offers.length > 0 && (
+                    <Link 
+                      to="/preferences/stores" 
+                      className="mt-4 text-monkeyGreen block underline"
+                    >
+                      Adjust store preferences
+                    </Link>
+                  )}
                 </div>
               )}
             </TabsContent>
@@ -510,12 +508,14 @@ const HomeScreen = () => {
               {displayedOffers.filter(offer => offer.isAmazon).length === 0 && (
                 <div className="bg-white p-6 rounded-lg text-center shadow-sm">
                   <p className="text-gray-500">No Amazon offers found</p>
-                  <Link 
-                    to="/preferences/stores" 
-                    className="mt-4 text-monkeyGreen block underline"
-                  >
-                    Adjust store preferences
-                  </Link>
+                  {offers.length > 0 && (
+                    <Link 
+                      to="/preferences/stores" 
+                      className="mt-4 text-monkeyGreen block underline"
+                    >
+                      Adjust store preferences
+                    </Link>
+                  )}
                 </div>
               )}
             </TabsContent>
