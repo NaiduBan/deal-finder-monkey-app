@@ -163,7 +163,10 @@ const PreferenceScreen = () => {
 
         if (error) throw error;
         
-        setSelectedItems(prev => prev.filter(id => id !== item));
+        toast({
+          title: "Preference removed",
+          description: `${item} removed from your ${type}`,
+        });
       } else {
         // Add preference
         const { error } = await supabase
@@ -176,13 +179,11 @@ const PreferenceScreen = () => {
 
         if (error) throw error;
         
-        setSelectedItems(prev => [...prev, item]);
+        toast({
+          title: "Preference added",
+          description: `${item} added to your ${type}`,
+        });
       }
-
-      toast({
-        title: isSelected ? "Preference removed" : "Preference added",
-        description: `${item} ${isSelected ? 'removed from' : 'added to'} your ${type}`,
-      });
     } catch (error) {
       console.error('Error updating preference:', error);
       toast({
@@ -244,14 +245,14 @@ const PreferenceScreen = () => {
                   <Button
                     key={item}
                     variant="outline"
-                    className={`w-full justify-between h-auto p-4 ${
+                    className={`w-full justify-between h-auto p-4 transition-all duration-200 ${
                       isSelected 
-                        ? 'bg-monkeyGreen/10 border-monkeyGreen text-monkeyGreen' 
-                        : 'bg-white border-gray-200'
+                        ? 'bg-monkeyGreen/10 border-monkeyGreen text-monkeyGreen shadow-md' 
+                        : 'bg-white border-gray-200 hover:bg-gray-50'
                     }`}
                     onClick={() => toggleItem(item)}
                   >
-                    <span className="text-left">{item}</span>
+                    <span className="text-left font-medium">{item}</span>
                     {isSelected && <Check className="w-5 h-5" />}
                   </Button>
                 );
