@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ChevronLeft, Check, Search, Star, Store, CreditCard, Grid, X } from 'lucide-react';
+import { ChevronLeft, Check, Search, Star, Store, CreditCard, Grid, X, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -25,7 +25,8 @@ const PreferenceScreen = () => {
           subtitle: 'Select brands you love to see personalized offers',
           icon: Star,
           placeholder: 'Search brands...',
-          emptyMessage: 'No brands found'
+          emptyMessage: 'No brands found',
+          color: 'from-orange-500 to-red-500'
         };
       case 'stores':
         return {
@@ -33,7 +34,8 @@ const PreferenceScreen = () => {
           subtitle: 'Choose stores where you shop most often',
           icon: Store,
           placeholder: 'Search stores...',
-          emptyMessage: 'No stores found'
+          emptyMessage: 'No stores found',
+          color: 'from-blue-500 to-indigo-500'
         };
       case 'banks':
         return {
@@ -41,7 +43,8 @@ const PreferenceScreen = () => {
           subtitle: 'Select your banks to see relevant card offers',
           icon: CreditCard,
           placeholder: 'Search banks...',
-          emptyMessage: 'No banks found'
+          emptyMessage: 'No banks found',
+          color: 'from-green-500 to-emerald-500'
         };
       default:
         return {
@@ -49,7 +52,8 @@ const PreferenceScreen = () => {
           subtitle: 'Select your preferences',
           icon: Grid,
           placeholder: 'Search...',
-          emptyMessage: 'No items found'
+          emptyMessage: 'No items found',
+          color: 'from-gray-500 to-gray-600'
         };
     }
   };
@@ -117,7 +121,7 @@ const PreferenceScreen = () => {
 
         const items = Array.from(itemsMap.entries())
           .map(([name, count]) => ({ id: name, name, count }))
-          .sort((a, b) => b.count - a.count); // Sort by count descending
+          .sort((a, b) => b.count - a.count);
 
         setAvailableItems(items);
       } catch (error) {
@@ -266,63 +270,59 @@ const PreferenceScreen = () => {
 
   return (
     <div className="pb-16 bg-gray-50 min-h-screen">
-      {/* Enhanced Header */}
-      <div className="bg-gradient-to-r from-monkeyGreen to-green-600 text-white py-6 px-4 sticky top-0 z-10 shadow-lg">
+      {/* Header */}
+      <div className={`bg-gradient-to-r ${config.color} text-white py-6 px-4 sticky top-0 z-10 shadow-lg`}>
         <div className="flex items-center space-x-3 mb-2">
           <Link to="/home" className="p-1 hover:bg-white/20 rounded-full transition-colors">
             <ChevronLeft className="w-6 h-6" />
           </Link>
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-white/20 rounded-full">
+            <div className="p-3 bg-white/20 rounded-full">
               <IconComponent className="w-6 h-6" />
             </div>
             <div>
               <h1 className="text-xl font-bold">{config.title}</h1>
-              <p className="text-green-100 text-sm">{config.subtitle}</p>
+              <p className="text-white/90 text-sm">{config.subtitle}</p>
             </div>
           </div>
+        </div>
+        
+        {/* Stats */}
+        <div className="flex items-center justify-between mt-4 bg-white/10 rounded-lg p-3">
+          <div className="text-center">
+            <p className="text-2xl font-bold">{selectedItems.length}</p>
+            <p className="text-xs text-white/80">Selected</p>
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-semibold">{availableItems.length}</p>
+            <p className="text-xs text-white/80">Available</p>
+          </div>
+          {selectedItems.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearAllPreferences}
+              className="text-white border-white/30 hover:bg-white/20 bg-transparent"
+            >
+              <X className="w-4 h-4 mr-1" />
+              Clear All
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Content */}
-      <div className="p-4 space-y-6">
-        {/* Search and Stats */}
-        <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <Input
-              type="search"
-              placeholder={config.placeholder}
-              className="pl-11 pr-4 py-3 w-full border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-monkeyGreen/20 focus:border-monkeyGreen"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-
-          {/* Stats Card */}
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold text-monkeyGreen">{selectedItems.length}</p>
-                <p className="text-sm text-gray-600">{type} selected</p>
-              </div>
-              <div className="text-right">
-                <p className="text-lg font-semibold text-gray-700">{availableItems.length}</p>
-                <p className="text-sm text-gray-600">available</p>
-              </div>
-              {selectedItems.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={clearAllPreferences}
-                  className="text-red-600 border-red-200 hover:bg-red-50"
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Clear All
-                </Button>
-              )}
-            </div>
-          </div>
+      <div className="p-4 space-y-4">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Input
+            type="search"
+            placeholder={config.placeholder}
+            className="pl-11 pr-4 py-3 w-full border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-monkeyGreen/20 focus:border-monkeyGreen bg-white"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
 
         {/* Items Grid */}
@@ -331,51 +331,21 @@ const PreferenceScreen = () => {
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-monkeyGreen"></div>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 gap-3">
             {filteredItems.length > 0 ? (
-              <>
-                {/* Selected Items First */}
-                {filteredItems.filter(item => selectedItems.includes(item.id)).length > 0 && (
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide px-2">
-                      Selected ({filteredItems.filter(item => selectedItems.includes(item.id)).length})
-                    </h3>
-                    {filteredItems
-                      .filter(item => selectedItems.includes(item.id))
-                      .map((item) => (
-                        <PreferenceItem
-                          key={item.id}
-                          item={item}
-                          isSelected={true}
-                          onClick={() => toggleItem(item.id)}
-                        />
-                      ))}
-                  </div>
-                )}
-
-                {/* Available Items */}
-                {filteredItems.filter(item => !selectedItems.includes(item.id)).length > 0 && (
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide px-2">
-                      Available ({filteredItems.filter(item => !selectedItems.includes(item.id)).length})
-                    </h3>
-                    {filteredItems
-                      .filter(item => !selectedItems.includes(item.id))
-                      .map((item) => (
-                        <PreferenceItem
-                          key={item.id}
-                          item={item}
-                          isSelected={false}
-                          onClick={() => toggleItem(item.id)}
-                        />
-                      ))}
-                  </div>
-                )}
-              </>
+              filteredItems.map((item) => (
+                <PreferenceItem
+                  key={item.id}
+                  item={item}
+                  isSelected={selectedItems.includes(item.id)}
+                  onClick={() => toggleItem(item.id)}
+                  color={config.color}
+                />
+              ))
             ) : (
               <div className="bg-white p-8 rounded-xl text-center shadow-sm border border-gray-100">
-                <div className="p-3 bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <IconComponent className="w-8 h-8 text-gray-400" />
+                <div className={`p-4 bg-gradient-to-r ${config.color} rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center`}>
+                  <IconComponent className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   {config.emptyMessage}
@@ -397,37 +367,44 @@ const PreferenceItem: React.FC<{
   item: { id: string; name: string; count: number };
   isSelected: boolean;
   onClick: () => void;
-}> = ({ item, isSelected, onClick }) => (
+  color: string;
+}> = ({ item, isSelected, onClick, color }) => (
   <div
     className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
       isSelected 
-        ? 'bg-monkeyGreen/10 border-monkeyGreen shadow-md' 
-        : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
+        ? `bg-gradient-to-r ${color} text-white border-transparent shadow-lg transform scale-[1.02]` 
+        : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-md'
     }`}
     onClick={onClick}
   >
     <div className="flex items-center justify-between">
       <div className="flex-1">
-        <h4 className={`font-medium ${isSelected ? 'text-monkeyGreen' : 'text-gray-900'}`}>
+        <h4 className={`font-semibold text-lg ${isSelected ? 'text-white' : 'text-gray-900'}`}>
           {item.name}
         </h4>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className={`text-sm mt-1 ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
           {item.count} offer{item.count !== 1 ? 's' : ''} available
         </p>
       </div>
       <div className="flex items-center space-x-3">
-        <span className={`text-xs px-2 py-1 rounded-full ${
+        <span className={`text-xs px-3 py-1 rounded-full font-medium ${
           isSelected 
-            ? 'bg-monkeyGreen/20 text-monkeyGreen' 
+            ? 'bg-white/20 text-white' 
             : 'bg-gray-100 text-gray-600'
         }`}>
           {item.count}
         </span>
-        {isSelected && (
-          <div className="p-1 bg-monkeyGreen rounded-full">
-            <Check className="w-4 h-4 text-white" />
-          </div>
-        )}
+        <div className={`p-2 rounded-full transition-all ${
+          isSelected 
+            ? 'bg-white/20' 
+            : 'bg-gray-100'
+        }`}>
+          {isSelected ? (
+            <Check className="w-5 h-5 text-white" />
+          ) : (
+            <Plus className="w-5 h-5 text-gray-400" />
+          )}
+        </div>
       </div>
     </div>
   </div>

@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, ChevronLeft, Mic, Sparkles, Bot, User } from 'lucide-react';
+import { Send, ChevronLeft, Bot, User, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
@@ -195,62 +195,59 @@ const ChatbotScreen = () => {
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-monkeyGreen/5 via-white to-monkeyYellow/5">
+    <div className="flex flex-col h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-monkeyGreen to-green-600 text-white p-4 shadow-lg border-b">
-        <div className="flex items-center space-x-4">
-          <Link to="/home" className="hover:bg-white/10 p-1 rounded-lg transition-colors">
-            <ChevronLeft className="w-6 h-6" />
-          </Link>
-          <div className="flex items-center space-x-3 flex-1">
-            <div className="relative">
-              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                <Bot className="w-6 h-6 text-white" />
+      <div className="bg-monkeyGreen text-white p-4 shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Link to="/home" className="hover:bg-white/10 p-1 rounded-lg transition-colors">
+              <ChevronLeft className="w-6 h-6" />
+            </Link>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+                <Bot className="w-5 h-5 text-white" />
               </div>
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-monkeyYellow rounded-full flex items-center justify-center">
-                <Sparkles className="w-2 h-2 text-monkeyGreen" />
+              <div>
+                <h1 className="text-lg font-semibold">AI Assistant</h1>
+                <p className="text-sm text-green-100">Powered by OpenAI • Personalized for you</p>
               </div>
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">AI Assistant</h1>
-              <p className="text-sm text-green-100">Powered by OpenAI • Personalized for you</p>
             </div>
           </div>
           <div className="text-right">
-            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse mb-1"></div>
+            <div className="w-2 h-2 bg-green-400 rounded-full mb-1"></div>
             <p className="text-xs text-green-100">Online</p>
           </div>
         </div>
       </div>
       
       {/* Messages container */}
-      <ScrollArea className="flex-1 p-4 overflow-y-auto">
-        <div className="max-w-4xl mx-auto space-y-4 pb-2">
+      <ScrollArea className="flex-1 bg-gray-50">
+        <div className="p-4 space-y-4">
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex ${message.isUser ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2 duration-300`}
+              className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
             >
-              <div className="flex items-start space-x-3 max-w-[85%]">
+              <div className={`flex items-start space-x-2 max-w-[80%] ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
                 {!message.isUser && (
-                  <div className="w-8 h-8 bg-gradient-to-br from-monkeyGreen to-green-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-md">
+                  <div className="w-8 h-8 bg-monkeyGreen rounded-full flex items-center justify-center flex-shrink-0">
                     <Bot className="w-4 h-4 text-white" />
                   </div>
                 )}
                 <div
-                  className={`rounded-2xl px-4 py-3 shadow-lg backdrop-blur-sm ${
+                  className={`rounded-2xl px-4 py-3 ${
                     message.isUser
-                      ? 'bg-gradient-to-r from-monkeyGreen to-green-600 text-white rounded-tr-md'
-                      : 'bg-white/90 text-gray-800 rounded-tl-md border border-gray-100'
+                      ? 'bg-monkeyGreen text-white rounded-br-md'
+                      : 'bg-white text-gray-800 rounded-bl-md shadow-sm border'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap leading-relaxed text-sm">{message.text}</p>
-                  <p className={`text-xs mt-2 ${message.isUser ? 'text-green-100' : 'text-gray-400'}`}>
+                  <p className="text-sm leading-relaxed">{message.text}</p>
+                  <p className={`text-xs mt-1 ${message.isUser ? 'text-green-100' : 'text-gray-400'}`}>
                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
                 {message.isUser && (
-                  <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-md">
+                  <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
                     <User className="w-4 h-4 text-white" />
                   </div>
                 )}
@@ -259,13 +256,13 @@ const ChatbotScreen = () => {
           ))}
           
           {isTyping && (
-            <div className="flex justify-start animate-in slide-in-from-bottom-2 duration-300">
-              <div className="flex items-start space-x-3 max-w-[85%]">
-                <div className="w-8 h-8 bg-gradient-to-br from-monkeyGreen to-green-600 rounded-full flex items-center justify-center flex-shrink-0">
+            <div className="flex justify-start">
+              <div className="flex items-start space-x-2 max-w-[80%]">
+                <div className="w-8 h-8 bg-monkeyGreen rounded-full flex items-center justify-center flex-shrink-0">
                   <Bot className="w-4 h-4 text-white" />
                 </div>
-                <div className="bg-white/90 text-gray-800 rounded-2xl rounded-tl-md px-4 py-3 shadow-lg border border-gray-100 backdrop-blur-sm">
-                  <div className="flex space-x-2">
+                <div className="bg-white text-gray-800 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm border">
+                  <div className="flex space-x-1">
                     <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce"></div>
                     <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce delay-150"></div>
                     <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce delay-300"></div>
@@ -277,15 +274,15 @@ const ChatbotScreen = () => {
           
           {/* Suggested questions for new users */}
           {messages.length === 1 && (
-            <div className="space-y-3 animate-in fade-in duration-500 delay-500">
-              <p className="text-sm text-gray-500 text-center font-medium">Try asking:</p>
-              <div className="grid grid-cols-1 gap-2">
+            <div className="space-y-3">
+              <p className="text-sm text-gray-500 text-center">Try asking:</p>
+              <div className="space-y-2">
                 {suggestedQuestions.map((question, index) => (
                   <Button
                     key={index}
                     variant="outline"
                     size="sm"
-                    className="text-sm h-auto p-3 text-left justify-start bg-white/50 hover:bg-white/80 border-monkeyGreen/20 hover:border-monkeyGreen/40 transition-all duration-200"
+                    className="w-full text-left justify-start bg-white hover:bg-gray-50 border-gray-200 text-gray-700"
                     onClick={() => setInput(question)}
                   >
                     {question}
@@ -300,60 +297,37 @@ const ChatbotScreen = () => {
       </ScrollArea>
       
       {/* Input area */}
-      <div className="p-4 bg-white/80 backdrop-blur-md border-t border-gray-100">
-        <div className="max-w-4xl mx-auto">
-          <form onSubmit={handleSendMessage} className="flex space-x-3">
-            <div className="flex-1 relative">
-              <Input
-                placeholder="Ask about deals, offers, or anything else..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                className="pr-12 border-gray-200 focus:border-monkeyGreen bg-white/90 shadow-sm backdrop-blur-sm rounded-xl"
-                disabled={isLoading || !session?.user}
-                autoFocus
-              />
-              {input && (
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-gray-400 hover:text-gray-600"
-                  onClick={() => setInput('')}
-                >
-                  ×
-                </Button>
-              )}
-            </div>
-            <Button 
-              type="button"
-              size="icon"
-              variant="outline"
-              className="bg-white/90 text-monkeyGreen border-monkeyGreen/30 hover:bg-monkeyGreen/10 hover:border-monkeyGreen rounded-xl shadow-sm backdrop-blur-sm"
-              disabled={isLoading}
-            >
-              <Mic className="h-5 w-5" />
-            </Button>
-            <Button 
-              type="submit" 
-              size="icon" 
-              className="bg-gradient-to-r from-monkeyGreen to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-md rounded-xl"
-              disabled={!input.trim() || isLoading || !session?.user}
-            >
-              {isLoading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Send className="h-5 w-5" />
-              )}
-            </Button>
-          </form>
-          
-          {!session?.user && (
-            <p className="text-xs text-gray-500 text-center mt-3">
-              Please <Link to="/auth" className="text-monkeyGreen underline hover:text-green-600">sign in</Link> to use the AI assistant
-            </p>
-          )}
-        </div>
+      <div className="p-4 bg-white border-t border-gray-200">
+        <form onSubmit={handleSendMessage} className="flex space-x-2">
+          <div className="flex-1">
+            <Input
+              placeholder="Ask about deals, offers, or anything else..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="border-gray-300 focus:border-monkeyGreen bg-white rounded-full"
+              disabled={isLoading || !session?.user}
+            />
+          </div>
+          <Button 
+            type="submit" 
+            size="icon" 
+            className="bg-monkeyGreen hover:bg-green-600 text-white rounded-full"
+            disabled={!input.trim() || isLoading || !session?.user}
+          >
+            {isLoading ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+          </Button>
+        </form>
+        
+        {!session?.user && (
+          <p className="text-xs text-gray-500 text-center mt-2">
+            Please <Link to="/auth" className="text-monkeyGreen underline">sign in</Link> to use the AI assistant
+          </p>
+        )}
       </div>
     </div>
   );
