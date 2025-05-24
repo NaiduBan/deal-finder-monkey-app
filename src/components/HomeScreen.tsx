@@ -1,526 +1,350 @@
+
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { MapPin, Bell, Search, AlertCircle, RefreshCw } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Link, useNavigate } from 'react-router-dom';
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useUser } from '@/contexts/UserContext';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Bell, Search, MapPin, Filter, TrendingUp, Clock, Star, Gift } from "lucide-react";
+import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
+import { useUser } from '@/contexts/UserContext';
+import { fetchTodaysOffers, fetchUserPreferences, applyPreferencesToOffers } from '@/services/supabaseService';
+import { Offer } from '@/types';
 import OfferCard from './OfferCard';
 import CategoryItem from './CategoryItem';
-import { supabase } from '@/integrations/supabase/client';
-import { applyPreferencesToOffers } from '@/services/supabaseService';
-import { Category } from '@/types';
+import BannerCarousel from './BannerCarousel';
 
 const HomeScreen = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const { user } = useUser();
-  const { 
-    offers, 
-    filteredOffers,
-    categories: allCategories, 
-    isLoading: isDataLoading, 
-    error, 
-    refetchOffers, 
-    isUsingMockData 
-  } = useData();
+  const navigate = useNavigate();
+  const { user: authUser, userProfile } = useAuth();
+  const { user: userContext } = useUser();
+  const { categories, bannerItems } = useData();
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [userPreferences, setUserPreferences] = useState<{[key: string]: string[]}>({
-    brands: [],
-    stores: [],
-    banks: []
-  });
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const [dynamicCategories, setDynamicCategories] = useState<Category[]>([]);
-  const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
+  const [todaysOffers, setTodaysOffers] = useState<Offer[]>([]);
+  const [filteredOffers, setFilteredOffers] = useState<Offer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState('India');
 
-  // Debounce search input
   useEffect(() => {
-    const timerId = setTimeout(() => {
-      setDebouncedSearchTerm(searchQuery);
-    }, 300);
+    setUserLocation(userProfile?.location || userContext.location || 'India');
+  }, [userProfile, userContext]);
 
-    return () => {
-      clearTimeout(timerId);
-    };
-  }, [searchQuery]);
-
-  // Extract categories from today's offers
   useEffect(() => {
-    if (offers && offers.length > 0) {
-      // Get unique categories from the offers
-      const uniqueCategories = new Set<string>();
-      offers.forEach(offer => {
-        if (offer.category) {
-          // Some offers might have multiple categories separated by commas
-          const categories = offer.category.split(',').map(cat => cat.trim());
-          categories.forEach(cat => {
-            if (cat) uniqueCategories.add(cat);
-          });
-        }
-      });
-
-      // Map to the format expected by CategoryItem
-      const categoryObjects: Category[] = Array.from(uniqueCategories).map(categoryName => {
-        // Try to find a matching category in the allCategories array
-        const matchingCategory = allCategories.find(c => 
-          c.name.toLowerCase() === categoryName.toLowerCase() ||
-          c.id.toLowerCase() === categoryName.toLowerCase().replace(/\s+/g, '-')
-        );
-
-        if (matchingCategory) {
-          return matchingCategory;
-        }
-
-        // If no match is found, create a new category object with reasonable defaults
-        return {
-          id: categoryName.toLowerCase().replace(/\s+/g, '-'),
-          name: categoryName,
-          icon: getCategoryIcon(categoryName),
-        };
-      });
-
-      // Sort alphabetically by name for consistency
-      categoryObjects.sort((a, b) => a.name.localeCompare(b.name));
-      
-      console.log('Generated dynamic categories:', categoryObjects);
-      setDynamicCategories(categoryObjects);
-    }
-  }, [offers, allCategories]);
-
-  // Helper function to determine an appropriate icon based on the category name
-  const getCategoryIcon = (categoryName: string): string => {
-    const name = categoryName.toLowerCase();
-    
-    if (name.includes('electronics') || name.includes('tech')) return 'laptop';
-    if (name.includes('fashion') || name.includes('clothing') || name.includes('apparel')) return 'shirt';
-    if (name.includes('food') || name.includes('drink') || name.includes('restaurant')) return 'utensils';
-    if (name.includes('home') || name.includes('furniture')) return 'home';
-    if (name.includes('travel') || name.includes('flight')) return 'plane';
-    if (name.includes('beauty') || name.includes('cosmetic')) return 'sparkles';
-    if (name.includes('health') || name.includes('fitness')) return 'heart';
-    if (name.includes('toy') || name.includes('kid')) return 'gift';
-    
-    // Default icon
-    return 'shopping-bag';
-  };
-
-  // Fetch user preferences when component mounts
-  useEffect(() => {
-    const fetchUserPreferences = async () => {
+    const loadTodaysOffers = async () => {
       try {
-        console.log("Fetching user preferences...");
-        const { data: { session } } = await supabase.auth.getSession();
+        setLoading(true);
+        console.log('Loading today\'s offers...');
         
-        if (session) {
-          const { data, error } = await supabase
-            .from('user_preferences')
-            .select('*')
-            .eq('user_id', session.user.id);
+        const offers = await fetchTodaysOffers();
+        console.log('Fetched offers:', offers.length);
+        
+        let finalOffers = offers;
+        
+        // Apply user preferences if user is authenticated
+        if (authUser) {
+          try {
+            console.log('Fetching user preferences for authenticated user:', authUser.id);
+            const [storePrefs, brandPrefs, bankPrefs] = await Promise.all([
+              fetchUserPreferences(authUser.id, 'stores'),
+              fetchUserPreferences(authUser.id, 'brands'), 
+              fetchUserPreferences(authUser.id, 'banks')
+            ]);
             
-          if (error) {
-            console.error('Error fetching user preferences:', error);
-          } else if (data) {
-            // Organize preferences by type
-            const preferences: {[key: string]: string[]} = {
-              brands: data.filter(p => p.preference_type === 'brands').map(p => p.preference_id),
-              stores: data.filter(p => p.preference_type === 'stores').map(p => p.preference_id),
-              banks: data.filter(p => p.preference_type === 'banks').map(p => p.preference_id)
-            };
-            
-            setUserPreferences(preferences);
-            console.log('Loaded preferences:', preferences);
-
-            // If user has preferences, show a badge or notification
-            if (preferences.brands.length > 0 || preferences.stores.length > 0 || preferences.banks.length > 0) {
-              console.log('User has personalization preferences applied');
+            if (storePrefs.length > 0 || brandPrefs.length > 0 || bankPrefs.length > 0) {
+              const preferences = {
+                stores: storePrefs.map(p => p.preference_id),
+                brands: brandPrefs.map(p => p.preference_id),
+                banks: bankPrefs.map(p => p.preference_id)
+              };
+              
+              console.log('Applying user preferences:', preferences);
+              finalOffers = applyPreferencesToOffers(offers, preferences);
             }
+          } catch (error) {
+            console.error('Error fetching user preferences:', error);
           }
-          
-          setHasLoadedPreferences(true);
         }
+        
+        setTodaysOffers(finalOffers);
+        setFilteredOffers(finalOffers);
       } catch (error) {
-        console.error('Error loading user preferences:', error);
-        setHasLoadedPreferences(true);
+        console.error('Error loading today\'s offers:', error);
+      } finally {
+        setLoading(false);
       }
     };
-    
-    fetchUserPreferences();
-  }, []);
+
+    loadTodaysOffers();
+  }, [authUser]);
 
   useEffect(() => {
-    // Log for debugging purposes
-    console.log("Home Screen Rendered");
-    console.log("Offers loaded:", offers ? offers.length : 0);
-    console.log("Filtered offers loaded:", filteredOffers ? filteredOffers.length : 0);
-    console.log("Categories loaded:", dynamicCategories ? dynamicCategories.length : 0);
-    console.log("Is loading:", isDataLoading);
-    console.log("Error:", error);
-    console.log("Using mock data:", isUsingMockData);
-    console.log("User preferences:", userPreferences);
-    console.log("Selected category:", selectedCategory);
-    console.log("Has loaded preferences:", hasLoadedPreferences);
-  }, [offers, filteredOffers, dynamicCategories, isDataLoading, error, isUsingMockData, userPreferences, selectedCategory, hasLoadedPreferences]);
-
-  const loadMoreOffers = () => {
-    setIsLoading(true);
-    refetchOffers().then(() => {
-      setIsLoading(false);
-    });
-  };
-
-  // Get saved offers
-  const savedOffers = offers.filter(offer => 
-    user.savedOffers.includes(offer.id)
-  );
-  
-  // Enhanced search functionality with category filtering on top of already filtered offers
-  const displayedOffers = filteredOffers.filter(offer => {
-    // First, check if the offer matches the selected category
-    if (selectedCategory && offer.category) {
-      const categoryMatch = offer.category.toLowerCase().includes(selectedCategory.toLowerCase()) ||
-                           selectedCategory.toLowerCase().includes(offer.category.toLowerCase());
-      if (!categoryMatch) return false;
-    }
-    
-    // Then filter by search query if one exists
-    if (debouncedSearchTerm) {
-      const searchTermLower = debouncedSearchTerm.toLowerCase();
-      const matchesSearch = 
-        (offer.title && offer.title.toLowerCase().includes(searchTermLower)) ||
-        (offer.store && offer.store.toLowerCase().includes(searchTermLower)) ||
-        (offer.description && offer.description.toLowerCase().includes(searchTermLower)) ||
-        (offer.category && offer.category.toLowerCase().includes(searchTermLower));
-      
-      if (!matchesSearch) return false;
-    }
-    
-    return true;
-  });
-
-  // Handle category selection
-  const handleCategoryClick = (categoryId: string) => {
-    console.log("Category clicked:", categoryId);
-    if (selectedCategory === categoryId) {
-      // If the same category is clicked again, clear the filter
-      setSelectedCategory(null);
+    if (searchQuery.trim()) {
+      const filtered = todaysOffers.filter(offer =>
+        offer.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        offer.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        offer.store?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        offer.category?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredOffers(filtered);
     } else {
-      setSelectedCategory(categoryId);
+      setFilteredOffers(todaysOffers);
+    }
+  }, [searchQuery, todaysOffers]);
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
+  const getInitials = (name?: string) => {
+    if (!name) return 'U';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
     }
   };
 
-  // Updated search handler with debouncing
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-    console.log("Searching for:", e.target.value);
-  };
+  const featuredOffers = filteredOffers.filter(offer => offer.featured).slice(0, 5);
+  const regularOffers = filteredOffers.filter(offer => !offer.featured).slice(0, 10);
 
   return (
-    <div className="pb-16 bg-monkeyBackground min-h-screen">
-      {/* Header with location */}
-      <div className="bg-monkeyGreen text-white py-4 px-4 sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-1">
-            <MapPin className="w-4 h-4" />
-            <span className="text-sm">{user.location}</span>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 pb-20">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 rounded-b-3xl shadow-lg">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
-            {/* Add refresh button to header */}
-            <button 
-              onClick={() => refetchOffers()} 
-              className="flex items-center justify-center"
-              aria-label="Refresh offers"
+            <Avatar className="w-12 h-12 border-2 border-white/20">
+              <AvatarImage src={userProfile?.avatar_url} />
+              <AvatarFallback className="bg-white/20 text-white font-bold">
+                {getInitials(userProfile?.name || userContext.name)}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="text-sm text-green-100">
+                {getGreeting()}{authUser ? ', ' + (userProfile?.name || 'User') : '!'}
+              </p>
+              <div className="flex items-center gap-1 text-white/90">
+                <MapPin className="w-4 h-4" />
+                <span className="text-sm">{userLocation}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/notifications')}
+              className="text-white hover:bg-white/20 relative"
             >
-              <RefreshCw className={`w-4 h-4 text-white ${isLoading ? 'animate-spin' : ''}`} />
-            </button>
-            <Link to="/notifications" className="flex items-center">
-              <Bell className="w-5 h-5 text-white" />
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-monkeyYellow text-[10px] text-black absolute translate-x-3 -translate-y-2">
+              <Bell className="w-6 h-6" />
+              <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 text-xs bg-red-500 text-white">
                 3
-              </span>
-            </Link>
+              </Badge>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/profile')}
+              className="text-white hover:bg-white/20"
+            >
+              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                <span className="text-xs font-bold">
+                  {getInitials(userProfile?.name || userContext.name)}
+                </span>
+              </div>
+            </Button>
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Input
+            placeholder="Search for offers, brands, or stores..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            className="pl-10 pr-12 bg-white/95 border-0 text-gray-800 placeholder-gray-500 h-12 rounded-xl shadow-sm"
+          />
+          <Button
+            onClick={handleSearch}
+            size="icon"
+            className="absolute right-1 top-1 h-10 w-10 bg-green-600 hover:bg-green-700 rounded-lg"
+          >
+            <Search className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-white/10 rounded-xl p-3 text-center backdrop-blur-sm">
+            <div className="text-2xl font-bold">{userContext.points}</div>
+            <div className="text-xs text-green-100">Points</div>
+          </div>
+          <div className="bg-white/10 rounded-xl p-3 text-center backdrop-blur-sm">
+            <div className="text-2xl font-bold">{userContext.savedOffers.length}</div>
+            <div className="text-xs text-green-100">Saved</div>
+          </div>
+          <div className="bg-white/10 rounded-xl p-3 text-center backdrop-blur-sm">
+            <div className="text-2xl font-bold">{filteredOffers.length}</div>
+            <div className="text-xs text-green-100">Today's Deals</div>
           </div>
         </div>
       </div>
-      
-      {/* Main content */}
+
       <div className="p-4 space-y-6">
-        {/* Data source alert */}
-        {isUsingMockData && (
-          <Alert className="bg-amber-50 border-amber-200">
-            <AlertCircle className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="text-amber-700">
-              Showing sample data. No real offers found in the database.
-            </AlertDescription>
-          </Alert>
-        )}
-        
-        {/* Last updated timestamp */}
-        <div className="text-xs text-gray-500 flex justify-between items-center">
-          <span>Last updated: {new Date().toLocaleTimeString()}</span>
-          <button 
-            onClick={() => refetchOffers()}
-            className="text-monkeyGreen flex items-center gap-1"
-            disabled={isLoading}
-          >
-            <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
-        </div>
-        
-        {/* Personalization badge */}
-        {hasLoadedPreferences && (
-          userPreferences.brands.length > 0 || 
-          userPreferences.stores.length > 0 || 
-          userPreferences.banks.length > 0
-        ) && (
-          <div className="bg-monkeyGreen/10 p-3 rounded-lg flex justify-between items-center">
-            <div>
-              <h3 className="font-medium text-monkeyGreen">Personalized for You</h3>
-              <p className="text-xs text-gray-600">Offers are filtered based on your preferences</p>
-            </div>
-            <Link 
-              to="/preferences/brands" 
-              className="bg-monkeyGreen text-white text-sm px-3 py-1 rounded-full"
-            >
-              Edit
-            </Link>
+        {/* Banner Carousel */}
+        {bannerItems.length > 0 && (
+          <div className="mb-6">
+            <BannerCarousel items={bannerItems} />
           </div>
         )}
-        
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input
-            type="search"
-            placeholder="Search for offers, stores, categories..."
-            className="pl-10 pr-4 py-2 w-full border-gray-200"
-            value={searchQuery}
-            onChange={handleSearch}
-          />
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-4 gap-3">
+          <Button
+            variant="outline"
+            className="h-20 flex flex-col items-center justify-center bg-white border-green-200 hover:bg-green-50"
+            onClick={() => navigate('/categories')}
+          >
+            <div className="text-2xl mb-1">🏷️</div>
+            <span className="text-xs">Categories</span>
+          </Button>
+          <Button
+            variant="outline"
+            className="h-20 flex flex-col items-center justify-center bg-white border-green-200 hover:bg-green-50"
+            onClick={() => navigate('/saved')}
+          >
+            <div className="text-2xl mb-1">💾</div>
+            <span className="text-xs">Saved</span>
+          </Button>
+          <Button
+            variant="outline"
+            className="h-20 flex flex-col items-center justify-center bg-white border-green-200 hover:bg-green-50"
+            onClick={() => navigate('/preferences')}
+          >
+            <div className="text-2xl mb-1">⚙️</div>
+            <span className="text-xs">Preferences</span>
+          </Button>
+          <Button
+            variant="outline"
+            className="h-20 flex flex-col items-center justify-center bg-white border-green-200 hover:bg-green-50"
+            onClick={() => navigate('/chatbot')}
+          >
+            <div className="text-2xl mb-1">🤖</div>
+            <span className="text-xs">AI Assistant</span>
+          </Button>
         </div>
-        
-        {/* Categories carousel with active state - NOW USING DYNAMIC CATEGORIES */}
+
+        {/* Categories */}
         <div>
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="font-bold text-lg">For You</h2>
-            <Link to="/preferences/brands" className="text-monkeyGreen text-sm">
-              Set preferences
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-800">Categories</h2>
+            <Link to="/categories" className="text-green-600 text-sm font-medium">
+              View All
             </Link>
+          </div>
+          <div className="flex space-x-4 overflow-x-auto pb-2">
+            {categories.slice(0, 6).map((category) => (
+              <div key={category.id} className="flex-shrink-0">
+                <CategoryItem category={category} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Featured Offers */}
+        {featuredOffers.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Star className="w-5 h-5 text-yellow-500" />
+              <h2 className="text-xl font-bold text-gray-800">Featured Offers</h2>
+              <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                {featuredOffers.length}
+              </Badge>
+            </div>
+            <div className="space-y-4">
+              {featuredOffers.map((offer) => (
+                <OfferCard key={offer.id} offer={offer} featured />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Today's Offers */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Clock className="w-5 h-5 text-green-600" />
+            <h2 className="text-xl font-bold text-gray-800">Today's Offers</h2>
+            <Badge variant="secondary" className="bg-green-100 text-green-800">
+              {filteredOffers.length}
+            </Badge>
           </div>
           
-          {isDataLoading ? (
-            <div className="flex justify-center py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-monkeyGreen"></div>
+          {loading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardContent className="p-4">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          ) : (
-            <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-hide">
-              {dynamicCategories.length > 0 ? (
-                dynamicCategories.map((category) => (
-                  <div 
-                    key={category.id} 
-                    onClick={() => handleCategoryClick(category.id)}
-                    className={`cursor-pointer ${selectedCategory === category.id ? 'scale-110 transform transition-transform' : ''}`}
-                  >
-                    <CategoryItem key={category.id} category={category} />
-                    {selectedCategory === category.id && (
-                      <div className="h-1 w-full bg-monkeyGreen rounded-full mt-1"></div>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <div className="text-gray-500 py-2">No categories available</div>
-              )}
-            </div>
-          )}
-        </div>
-        
-        {/* Active filters */}
-        {(selectedCategory || debouncedSearchTerm) && (
-          <div className="flex flex-wrap gap-2">
-            {selectedCategory && (
-              <div className="bg-monkeyGreen/10 text-monkeyGreen px-3 py-1 rounded-full text-sm flex items-center">
-                {dynamicCategories.find(c => c.id === selectedCategory)?.name}
-                <button 
-                  onClick={() => setSelectedCategory(null)}
-                  className="ml-1 text-monkeyGreen"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-            {debouncedSearchTerm && (
-              <div className="bg-monkeyGreen/10 text-monkeyGreen px-3 py-1 rounded-full text-sm flex items-center">
-                "{debouncedSearchTerm}"
-                <button 
-                  onClick={() => {
-                    setSearchQuery('');
-                    setDebouncedSearchTerm('');
-                  }}
-                  className="ml-1 text-monkeyGreen"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-            {(selectedCategory || debouncedSearchTerm) && (
-              <button 
-                onClick={() => {
-                  setSelectedCategory(null);
-                  setSearchQuery('');
-                  setDebouncedSearchTerm('');
-                }}
-                className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-600"
-              >
-                Clear all
-              </button>
-            )}
-          </div>
-        )}
-        
-        {/* Favorites section */}
-        <div>
-          <h2 className="font-bold mb-3 text-lg">Your Favorites</h2>
-          {savedOffers.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4">
-              {savedOffers.map((offer) => (
-                <Link key={offer.id} to={`/offer/${offer.id}`}>
-                  <OfferCard offer={offer} />
-                </Link>
+          ) : filteredOffers.length > 0 ? (
+            <div className="space-y-4">
+              {regularOffers.map((offer) => (
+                <OfferCard key={offer.id} offer={offer} />
               ))}
             </div>
           ) : (
-            <div className="bg-white p-6 rounded-lg text-center shadow-sm">
-              <p className="text-gray-500">No saved offers yet</p>
-              <p className="text-sm text-gray-400 mt-2">Save offers to see them here</p>
-            </div>
+            <Card className="text-center p-8 bg-white/50 border-dashed border-2 border-gray-300">
+              <Gift className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">No offers found</h3>
+              <p className="text-gray-500 mb-4">
+                {searchQuery ? 'Try adjusting your search terms' : 'Check back later for new deals'}
+              </p>
+              {searchQuery && (
+                <Button
+                  variant="outline"
+                  onClick={() => setSearchQuery('')}
+                  className="text-green-600 border-green-600 hover:bg-green-50"
+                >
+                  Clear Search
+                </Button>
+              )}
+            </Card>
           )}
         </div>
-        
-        {/* Offers section */}
-        <div>
-          <Tabs defaultValue="all">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="font-bold text-lg">Today's Offers</h2>
-              <TabsList>
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="nearby">Nearby</TabsTrigger>
-                <TabsTrigger value="amazon">Amazon</TabsTrigger>
-              </TabsList>
-            </div>
-            
-            <TabsContent value="all" className="space-y-4 mt-2">
-              {isDataLoading || isLoading ? (
-                <div className="flex justify-center items-center py-10">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-monkeyGreen"></div>
-                </div>
-              ) : (
-                <>
-                  {error && (
-                    <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                      <p className="text-red-600">Error loading offers: {error.message}</p>
-                    </div>
-                  )}
-                  
-                  {!error && displayedOffers.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-4">
-                      {displayedOffers.map((offer) => (
-                        <Link key={offer.id} to={`/offer/${offer.id}`}>
-                          <OfferCard offer={offer} />
-                        </Link>
-                      ))}
-                    </div>
-                  ) : (
-                    !error && (
-                      <div className="bg-white p-6 rounded-lg text-center shadow-sm">
-                        <p className="text-gray-500">No offers found</p>
-                        <p className="text-sm text-gray-400 mt-2">Try a different search term or check back later</p>
-                        <div className="mt-4 flex flex-col gap-2">
-                          <button
-                            onClick={refetchOffers}
-                            className="bg-monkeyGreen text-white px-4 py-2 rounded-lg w-full"
-                          >
-                            Refresh Data
-                          </button>
-                          
-                          <Link 
-                            to="/preferences/brands" 
-                            className="border border-monkeyGreen text-monkeyGreen px-4 py-2 rounded-lg text-center"
-                          >
-                            Adjust Preferences
-                          </Link>
-                        </div>
-                      </div>
-                    )
-                  )}
-                </>
-              )}
-              
-              {!isDataLoading && !error && displayedOffers.length > 0 && (
-                <button 
-                  onClick={loadMoreOffers}
-                  className="w-full py-3 text-center text-monkeyGreen border border-monkeyGreen rounded-lg mt-4 flex items-center justify-center"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 rounded-full border-2 border-monkeyGreen border-t-transparent animate-spin"></div>
-                      <span>Loading more...</span>
-                    </div>
-                  ) : (
-                    <span>Load more</span>
-                  )}
-                </button>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="nearby" className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                {displayedOffers.filter(offer => !offer.isAmazon).map((offer) => (
-                  <Link key={offer.id} to={`/offer/${offer.id}`}>
-                    <OfferCard offer={offer} />
-                  </Link>
-                ))}
-              </div>
-              
-              {displayedOffers.filter(offer => !offer.isAmazon).length === 0 && (
-                <div className="bg-white p-6 rounded-lg text-center shadow-sm">
-                  <p className="text-gray-500">No nearby offers found</p>
-                  <Link 
-                    to="/preferences/stores" 
-                    className="mt-4 text-monkeyGreen block underline"
-                  >
-                    Adjust store preferences
-                  </Link>
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="amazon" className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                {displayedOffers.filter(offer => offer.isAmazon).map((offer) => (
-                  <Link key={offer.id} to={`/offer/${offer.id}`}>
-                    <OfferCard offer={offer} />
-                  </Link>
-                ))}
-              </div>
-              
-              {displayedOffers.filter(offer => offer.isAmazon).length === 0 && (
-                <div className="bg-white p-6 rounded-lg text-center shadow-sm">
-                  <p className="text-gray-500">No Amazon offers found</p>
-                  <Link 
-                    to="/preferences/stores" 
-                    className="mt-4 text-monkeyGreen block underline"
-                  >
-                    Adjust store preferences
-                  </Link>
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </div>
+
+        {/* Authentication CTA for guests */}
+        {!authUser && (
+          <Card className="bg-gradient-to-r from-green-600 to-emerald-600 text-white border-0 shadow-lg">
+            <CardContent className="p-6 text-center">
+              <div className="text-4xl mb-3">🎯</div>
+              <CardTitle className="text-xl mb-2">Get Personalized Offers</CardTitle>
+              <CardDescription className="text-green-100 mb-4">
+                Sign up to save your preferences and get deals tailored just for you
+              </CardDescription>
+              <Button
+                onClick={() => navigate('/login')}
+                className="bg-white text-green-600 hover:bg-green-50 font-medium"
+              >
+                Sign Up Now
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
