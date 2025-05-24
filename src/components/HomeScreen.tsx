@@ -20,13 +20,29 @@ const HomeScreen = () => {
   const navigate = useNavigate();
   const { user: authUser, userProfile } = useAuth();
   const { user: userContext } = useUser();
-  const { categories, bannerItems } = useData();
+  const { categories } = useData();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [todaysOffers, setTodaysOffers] = useState<Offer[]>([]);
   const [filteredOffers, setFilteredOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState('India');
+
+  // Mock banner items for now
+  const bannerItems = [
+    {
+      id: '1',
+      imageUrl: '/placeholder.svg',
+      title: 'Welcome to LinkMyDeals',
+      link: '/offers'
+    },
+    {
+      id: '2', 
+      imageUrl: '/placeholder.svg',
+      title: 'Best Deals Today',
+      link: '/categories'
+    }
+  ];
 
   useEffect(() => {
     setUserLocation(userProfile?.location || userContext.location || 'India');
@@ -205,7 +221,7 @@ const HomeScreen = () => {
         {/* Banner Carousel */}
         {bannerItems.length > 0 && (
           <div className="mb-6">
-            <BannerCarousel items={bannerItems} />
+            <BannerCarousel banners={bannerItems} />
           </div>
         )}
 
@@ -274,7 +290,7 @@ const HomeScreen = () => {
             </div>
             <div className="space-y-4">
               {featuredOffers.map((offer) => (
-                <OfferCard key={offer.id} offer={offer} featured />
+                <OfferCard key={offer.id} offer={offer} />
               ))}
             </div>
           </div>
