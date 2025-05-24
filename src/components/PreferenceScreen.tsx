@@ -34,12 +34,12 @@ const PreferenceScreen = () => {
           case 'brands':
             console.log('Fetching brands/categories data');
             try {
-              // For brands, extract unique categories from Linkmydeals_Offers table
+              // For brands, extract unique categories from Offers_data table
               const { data: categoriesData, error: categoriesError } = await supabase
-                .from('Linkmydeals_Offers')
+                .from('Offers_data')
                 .select('categories')
                 .not('categories', 'is', null)
-                .limit(1000); // Increased limit for more comprehensive data
+                .limit(1000);
               
               if (categoriesError) {
                 console.error('Error fetching categories:', categoriesError);
@@ -84,12 +84,12 @@ const PreferenceScreen = () => {
           case 'stores':
             console.log('Fetching stores data');
             try {
-              // For stores, extract unique store names from Linkmydeals_Offers table
+              // For stores, extract unique store names from Offers_data table
               const { data: storesData, error: storesError } = await supabase
-                .from('Linkmydeals_Offers')
+                .from('Offers_data')
                 .select('store')
                 .not('store', 'is', null)
-                .limit(1000); // Increased limit
+                .limit(1000);
               
               if (storesError) {
                 console.error('Error fetching stores:', storesError);
@@ -133,9 +133,9 @@ const PreferenceScreen = () => {
             try {
               // For banks, extract bank references from offer descriptions
               const { data: offersData, error: offersError } = await supabase
-                .from('Linkmydeals_Offers')
+                .from('Offers_data')
                 .select('description, long_offer, title, terms_and_conditions')
-                .limit(1000); // Increased limit
+                .limit(1000);
               
               if (offersError) {
                 console.error('Error fetching offers for bank extraction:', offersError);

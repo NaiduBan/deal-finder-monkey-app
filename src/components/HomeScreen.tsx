@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Bell, Search, AlertCircle, RefreshCw } from 'lucide-react';
+import { MapPin, Bell, Search, AlertCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -163,11 +163,6 @@ const HomeScreen = () => {
       setIsLoading(false);
     });
   };
-
-  // Get saved offers
-  const savedOffers = offers.filter(offer => 
-    user.savedOffers.includes(offer.id)
-  );
   
   // Enhanced search functionality with category filtering on top of already filtered offers
   const displayedOffers = filteredOffers.filter(offer => {
@@ -217,13 +212,6 @@ const HomeScreen = () => {
             <span className="text-sm">{user.location}</span>
           </div>
           <div className="flex items-center space-x-3">
-            <button 
-              onClick={() => refetchOffers()} 
-              className="flex items-center justify-center"
-              aria-label="Refresh offers"
-            >
-              <RefreshCw className={`w-4 h-4 text-white ${isLoading ? 'animate-spin' : ''}`} />
-            </button>
             <Link to="/notifications" className="flex items-center">
               <Bell className="w-5 h-5 text-white" />
               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-monkeyYellow text-[10px] text-black absolute translate-x-3 -translate-y-2">
@@ -245,19 +233,6 @@ const HomeScreen = () => {
             </AlertDescription>
           </Alert>
         )}
-        
-        {/* Last updated timestamp */}
-        <div className="text-xs text-gray-500 flex justify-between items-center">
-          <span>Last updated: {new Date().toLocaleTimeString()}</span>
-          <button 
-            onClick={() => refetchOffers()}
-            className="text-monkeyGreen flex items-center gap-1"
-            disabled={isLoading}
-          >
-            <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
-        </div>
         
         {/* Personalization badge */}
         {hasLoadedPreferences && (
@@ -368,25 +343,6 @@ const HomeScreen = () => {
             )}
           </div>
         )}
-        
-        {/* Favorites section */}
-        <div>
-          <h2 className="font-bold mb-3 text-lg">Your Favorites</h2>
-          {savedOffers.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4">
-              {savedOffers.map((offer) => (
-                <Link key={offer.id} to={`/offer/${offer.id}`}>
-                  <OfferCard offer={offer} />
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-white p-6 rounded-lg text-center shadow-sm">
-              <p className="text-gray-500">No saved offers yet</p>
-              <p className="text-sm text-gray-400 mt-2">Save offers to see them here</p>
-            </div>
-          )}
-        </div>
         
         {/* Offers section */}
         <div>
