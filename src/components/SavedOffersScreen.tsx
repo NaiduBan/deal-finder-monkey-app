@@ -1,37 +1,236 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, Bookmark, Share2, Filter } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
-import { mockOffers } from '@/mockData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import OfferCard from './OfferCard';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Offer } from '@/types';
 
 const SavedOffersScreen = () => {
   const { user, unsaveOffer } = useUser();
+  const { session } = useAuth();
   const { toast } = useToast();
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
+  const [savedOffers, setSavedOffers] = useState<Offer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Get saved offers
-  const savedOffers = mockOffers.filter(offer => 
-    user.savedOffers.includes(offer.id)
-  );
+  // Fetch saved offers from database
+  useEffect(() => {
+    const fetchSavedOffers = async () => {
+      if (!session?.user) {
+        setSavedOffers([]);
+        setIsLoading(false);
+        return;
+      }
 
-  // Function to handle removing an offer from saved
+      try {
+        setIsLoading(true);
+        
+        // Get user's saved offer IDs
+        const { data: savedOfferIds, error: savedError } = await supabase
+          .from('saved_offers')
+          .select('offer_id')
+          .eq('user_id', session.user.id);
+
+        if (savedError) throw savedError;
+
+        if (!savedOfferIds || savedOfferIds.length === 0) {
+          setSavedOffers([]);
+          setIsLoading(false);
+          return;
+        }
+
+        // Get offer details for saved offers
+        const offerIds = savedOfferIds.map(item => item.offer_id.replace('offer-', ''));
+        
+        const { data: offersData, error: offersError } = await supabase
+          .from('Offers_data')
+          .select('*')
+          .in('lmd_id', offerIds);
+
+        if (offersError) throw offersError;
+
+        // Transform the data to match our Offer type
+        const transformedOffers: Offer[] = (offersData || []).map((item: any, index: number) => {
+          // Calculate price and savings
+          let price = 0;
+          let originalPrice = 0;
+          let savings = '';
+          
+          if (item.offer_value) {
+            const offerValue = item.offer_value;
+            if (offerValue.includes('%')) {
+              const percent = parseInt(offerValue.replace(/[^0-9]/g, ''));
+              originalPrice = Math.floor(1000 + Math.random() * 9000);
+              price = Math.floor(originalPrice * (1 - percent / 100));
+              savings = `${percent}%`;
+            } else if (offerValue.match(/\d+/)) {
+              const amount = parseInt(offerValue.replace(/[^0-9]/g, ''));
+              price = amount;
+              originalPrice = price + Math.floor(Math.random() * 500) + 100;
+              savings = `₹${originalPrice - price}`;
+            } else {
+              price = Math.floor(Math.random() * 1000) + 100;
+              originalPrice = price + Math.floor(Math.random() * 500) + 100;
+              savings = `₹${originalPrice - price}`;
+            }
+          } else {
+            price = Math.floor(Math.random() * 1000) + 100;
+            originalPrice = price + Math.floor(Math.random() * 500) + 100;
+            savings = `₹${originalPrice - price}`;
+          }
+
+          const isAmazon = (item.store && item.store.toLowerCase().includes('amazon')) || 
+                          (item.merchant_homepage && item.merchant_homepage.toLowerCase().includes('amazon'));
+          
+          return {
+            id: `offer-${item.lmd_id}`,
+            title: item.title || "",
+            description: item.description || item.long_offer || item.offer || "",
+            imageUrl: item.image_url || "",
+            store: item.store || "",
+            category: item.categories || "",
+            price: price,
+            originalPrice: originalPrice,
+            expiryDate: item.end_date || "",
+            isAmazon: isAmazon,
+            savings: savings,
+            lmdId: Number(item.lmd_id) || 0,
+            merchantHomepage: item.merchant_homepage || "",
+            longOffer: item.long_offer || "",
+            code: item.code || "",
+            termsAndConditions: item.terms_and_conditions || "",
+            featured: item.featured === "true" || item.featured === "1",
+            publisherExclusive: item.publisher_exclusive === "true" || item.publisher_exclusive === "1",
+            url: item.url || "",
+            smartlink: item.smartlink || "",
+            offerType: item.type || "",
+            offerValue: item.offer_value || "",
+            status: item.status || "",
+            startDate: item.start_date || "",
+            endDate: item.end_date || "",
+            categories: item.categories || ""
+          };
+        });
+
+        setSavedOffers(transformedOffers);
+      } catch (error) {
+        console.error('Error fetching saved offers:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load saved offers",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSavedOffers();
+  }, [session, toast]);
+
+  // Real-time subscription for saved offers changes
+  useEffect(() => {
+    if (!session?.user) return;
+
+    const channel = supabase
+      .channel('saved-offers-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'saved_offers',
+          filter: `user_id=eq.${session.user.id}`
+        },
+        (payload) => {
+          console.log('Saved offers change detected:', payload);
+          // Refetch saved offers when changes occur
+          // This ensures we always have the latest data
+          if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
+            // Re-fetch offers after a small delay to ensure DB consistency
+            setTimeout(() => {
+              fetchSavedOffers();
+            }, 100);
+          }
+        }
+      )
+      .subscribe();
+
+    // Helper function to refetch (for the timeout above)
+    const fetchSavedOffers = async () => {
+      try {
+        const { data: savedOfferIds } = await supabase
+          .from('saved_offers')
+          .select('offer_id')
+          .eq('user_id', session.user.id);
+
+        if (!savedOfferIds || savedOfferIds.length === 0) {
+          setSavedOffers([]);
+          return;
+        }
+
+        const offerIds = savedOfferIds.map(item => item.offer_id.replace('offer-', ''));
+        
+        const { data: offersData } = await supabase
+          .from('Offers_data')
+          .select('*')
+          .in('lmd_id', offerIds);
+
+        if (offersData) {
+          // Same transformation logic as above
+          const transformedOffers: Offer[] = offersData.map((item: any) => ({
+            id: `offer-${item.lmd_id}`,
+            title: item.title || "",
+            description: item.description || item.long_offer || item.offer || "",
+            imageUrl: item.image_url || "",
+            store: item.store || "",
+            category: item.categories || "",
+            price: Math.floor(Math.random() * 1000) + 100,
+            originalPrice: Math.floor(Math.random() * 1500) + 200,
+            expiryDate: item.end_date || "",
+            isAmazon: (item.store && item.store.toLowerCase().includes('amazon')),
+            savings: "20%",
+            lmdId: Number(item.lmd_id) || 0,
+            merchantHomepage: item.merchant_homepage || "",
+            longOffer: item.long_offer || "",
+            code: item.code || "",
+            termsAndConditions: item.terms_and_conditions || "",
+            featured: item.featured === "true",
+            publisherExclusive: item.publisher_exclusive === "true",
+            url: item.url || "",
+            smartlink: item.smartlink || "",
+            offerType: item.type || "",
+            offerValue: item.offer_value || "",
+            status: item.status || "",
+            startDate: item.start_date || "",
+            endDate: item.end_date || "",
+            categories: item.categories || ""
+          }));
+
+          setSavedOffers(transformedOffers);
+        }
+      } catch (error) {
+        console.error('Error in real-time refetch:', error);
+      }
+    };
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session]);
+
   const handleUnsave = (offerId: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     unsaveOffer(offerId);
-    toast({
-      title: "Offer removed",
-      description: "The offer has been removed from your saved items.",
-    });
   };
 
-  // Function to handle sharing an offer
   const handleShare = (offerId: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -121,7 +320,11 @@ const SavedOffersScreen = () => {
           </TabsList>
 
           <TabsContent value="all" className="mt-4">
-            {sortedOffers.length > 0 ? (
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-monkeyGreen"></div>
+              </div>
+            ) : sortedOffers.length > 0 ? (
               <div className="grid grid-cols-2 gap-4">
                 {sortedOffers.map((offer) => (
                   <div key={offer.id} className="relative">

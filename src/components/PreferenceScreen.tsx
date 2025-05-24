@@ -1,543 +1,270 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Search, ShoppingBag, Store, CreditCard } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { ChevronLeft, Check, Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { mockBrands, mockStores, mockBanks } from '@/mockData';
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 const PreferenceScreen = () => {
-  const { preferenceType = 'brands' } = useParams<{ preferenceType?: string }>();
+  const { type } = useParams<{ type: string }>();
   const { toast } = useToast();
-  const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
+  const { session } = useAuth();
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [availableItems, setAvailableItems] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [items, setItems] = useState<Array<{id: string, name: string, logo?: string}>>([]);
-  
-  // Log preferenceType to debug
-  console.log('Current preference type:', preferenceType);
-  
-  // Fetch data from Supabase based on preference type
+
+  const getTitle = () => {
+    switch (type) {
+      case 'brands': return 'Select Brands';
+      case 'stores': return 'Select Stores';
+      case 'banks': return 'Select Banks';
+      default: return 'Select Preferences';
+    }
+  };
+
+  // Fetch available items from Offers_data table
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      console.log('Fetching data for preference type:', preferenceType);
-      
+    const fetchAvailableItems = async () => {
       try {
-        let fetchedItems: Array<{id: string, name: string, logo?: string}> = [];
+        setIsLoading(true);
+        const { data: offers, error } = await supabase
+          .from('Offers_data')
+          .select('store, categories, terms_and_conditions, description, long_offer');
         
-        switch (preferenceType) {
-          case 'brands':
-            console.log('Fetching brands/categories data');
-            try {
-              // For brands, extract unique categories from Offers_data table
-              const { data: categoriesData, error: categoriesError } = await supabase
-                .from('Offers_data')
-                .select('categories')
-                .not('categories', 'is', null)
-                .limit(1000);
-              
-              if (categoriesError) {
-                console.error('Error fetching categories:', categoriesError);
-                throw categoriesError;
-              } else if (categoriesData && categoriesData.length > 0) {
-                console.log('Categories data found:', categoriesData.length);
-                // Extract unique categories
-                const uniqueCategories = new Set<string>();
-                
-                categoriesData.forEach(item => {
-                  if (item.categories) {
-                    const categories = item.categories.split(',');
-                    categories.forEach((cat: string) => {
-                      const trimmedCat = cat.trim();
-                      if (trimmedCat) uniqueCategories.add(trimmedCat);
-                    });
-                  }
-                });
-                
-                console.log('Unique categories extracted:', uniqueCategories.size);
-                
-                // Convert to our format
-                let index = 0;
-                fetchedItems = Array.from(uniqueCategories).map(cat => ({
-                  id: `b${index++}`,
-                  name: cat,
-                  logo: '🏷️'
-                }));
-                
-                console.log('Fetched categories:', fetchedItems.length);
-              } else {
-                console.log('No categories data found, using mock brands');
-                fetchedItems = mockBrands;
-              }
-            } catch (err) {
-              console.error('Error processing categories:', err);
-              console.log('Using mock brands due to error');
-              fetchedItems = mockBrands;
+        if (error) throw error;
+
+        const items = new Set<string>();
+        
+        if (type === 'stores') {
+          offers?.forEach(offer => {
+            if (offer.store) {
+              items.add(offer.store.trim());
             }
-            break;
-            
-          case 'stores':
-            console.log('Fetching stores data');
-            try {
-              // For stores, extract unique store names from Offers_data table
-              const { data: storesData, error: storesError } = await supabase
-                .from('Offers_data')
-                .select('store')
-                .not('store', 'is', null)
-                .limit(1000);
-              
-              if (storesError) {
-                console.error('Error fetching stores:', storesError);
-                throw storesError;
-              } else if (storesData && storesData.length > 0) {
-                console.log('Stores data found:', storesData.length);
-                // Extract unique stores
-                const uniqueStores = new Set<string>();
-                
-                storesData.forEach(item => {
-                  if (item.store) {
-                    const store = item.store.trim();
-                    if (store) uniqueStores.add(store);
-                  }
-                });
-                
-                console.log('Unique stores extracted:', uniqueStores.size);
-                
-                // Convert to our format
-                let index = 0;
-                fetchedItems = Array.from(uniqueStores).map(store => ({
-                  id: `s${index++}`,
-                  name: store,
-                  logo: '🏬'
-                }));
-                
-                console.log('Fetched stores:', fetchedItems.length);
-              } else {
-                console.log('No stores data found, using mock stores');
-                fetchedItems = mockStores;
-              }
-            } catch (err) {
-              console.error('Error processing stores:', err);
-              console.log('Using mock stores due to error');
-              fetchedItems = mockStores;
+          });
+        } else if (type === 'brands') {
+          offers?.forEach(offer => {
+            if (offer.categories) {
+              const categories = offer.categories.split(',');
+              categories.forEach(cat => {
+                const trimmed = cat.trim();
+                if (trimmed) items.add(trimmed);
+              });
             }
-            break;
+          });
+        } else if (type === 'banks') {
+          offers?.forEach(offer => {
+            const fullText = `${offer.terms_and_conditions || ''} ${offer.description || ''} ${offer.long_offer || ''}`.toLowerCase();
             
-          case 'banks':
-            console.log('Fetching banks data');
-            try {
-              // For banks, extract bank references from offer descriptions
-              const { data: offersData, error: offersError } = await supabase
-                .from('Offers_data')
-                .select('description, long_offer, title, terms_and_conditions')
-                .limit(1000);
-              
-              if (offersError) {
-                console.error('Error fetching offers for bank extraction:', offersError);
-                throw offersError;
-              } else if (offersData && offersData.length > 0) {
-                console.log('Offers data found for bank extraction:', offersData.length);
-                // Common bank names in India to look for
-                const bankNames = [
-                  'HDFC', 'SBI', 'ICICI', 'Axis', 'RBL', 'Kotak', 
-                  'Bank of Baroda', 'Punjab National', 'IDBI', 'Canara',
-                  'Federal', 'IndusInd', 'Yes Bank', 'Union Bank',
-                  'HSBC', 'Citi', 'Standard Chartered', 'American Express',
-                  'Deutsche', 'DBS', 'IDFC', 'AU Small Finance', 'Bank of India',
-                  'Indian Bank', 'UCO Bank', 'South Indian Bank', 'Karnataka Bank',
-                  'Bandhan Bank', 'J&K Bank', 'Bank of Maharashtra'
-                ];
-                
-                const bankReferences: {[key: string]: number} = {};
-                
-                offersData.forEach(item => {
-                  const fullText = `${item.title || ''} ${item.description || ''} ${item.long_offer || ''} ${item.terms_and_conditions || ''}`.toLowerCase();
-                  
-                  bankNames.forEach(bank => {
-                    if (fullText.toLowerCase().includes(bank.toLowerCase())) {
-                      bankReferences[bank] = (bankReferences[bank] || 0) + 1;
-                    }
-                  });
-                });
-                
-                console.log('Bank references found:', Object.keys(bankReferences).length);
-                
-                // Convert to our format, only include banks that were actually found
-                let index = 0;
-                fetchedItems = Object.keys(bankReferences)
-                  .sort((a, b) => bankReferences[b] - bankReferences[a]) // Sort by frequency
-                  .map(bank => ({
-                    id: `bk${index++}`,
-                    name: bank,
-                    logo: '🏦'
-                  }));
-                
-                console.log('Fetched banks:', fetchedItems.length);
-                
-                if (fetchedItems.length === 0) {
-                  console.log('No bank references found, using mock banks');
-                  fetchedItems = mockBanks;
-                }
-              } else {
-                console.log('No offers data found for bank extraction, using mock banks');
-                fetchedItems = mockBanks;
+            // Extract bank names from text
+            const bankKeywords = [
+              'hdfc', 'icici', 'sbi', 'axis', 'kotak', 'paytm', 'citi', 'american express',
+              'standard chartered', 'yes bank', 'indusind', 'bob', 'canara bank',
+              'union bank', 'pnb', 'bank of india', 'central bank', 'indian bank'
+            ];
+            
+            bankKeywords.forEach(bank => {
+              if (fullText.includes(bank)) {
+                items.add(bank.split(' ').map(word => 
+                  word.charAt(0).toUpperCase() + word.slice(1)
+                ).join(' '));
               }
-            } catch (err) {
-              console.error('Error processing banks:', err);
-              console.log('Using mock banks due to error');
-              fetchedItems = mockBanks;
-            }
-            break;
-            
-          default:
-            console.log('Unknown preference type, using empty array');
-            fetchedItems = [];
+            });
+          });
         }
-        
-        // Always ensure we have at least some items
-        if (!fetchedItems || fetchedItems.length === 0) {
-          console.log('No items fetched, using appropriate mock data');
-          switch (preferenceType) {
-            case 'brands':
-              fetchedItems = mockBrands;
-              break;
-            case 'stores':
-              fetchedItems = mockStores;
-              break;
-            case 'banks':
-              fetchedItems = mockBanks;
-              break;
-          }
-        }
-        
-        console.log('Final items list length:', fetchedItems.length);
-        console.log('Sample items:', fetchedItems.slice(0, 3));
-        setItems(fetchedItems);
+
+        setAvailableItems(Array.from(items).sort());
       } catch (error) {
-        console.error(`Error loading ${preferenceType}:`, error);
-        
-        // Set mock data as fallback
-        console.log('Exception occurred, falling back to mock data');
-        switch (preferenceType) {
-          case 'brands':
-            setItems(mockBrands);
-            break;
-          case 'stores':
-            setItems(mockStores);
-            break;
-          case 'banks':
-            setItems(mockBanks);
-            break;
-          default:
-            setItems([]);
-        }
-      }
-      
-      // Now fetch user preferences from Supabase
-      fetchUserPreferences();
-    };
-    
-    const fetchUserPreferences = async () => {
-      try {
-        console.log('Fetching user preferences');
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          console.log('User is authenticated, fetching preferences from Supabase');
-          // If authenticated, fetch preferences from Supabase
-          const { data, error } = await supabase
-            .from('user_preferences')
-            .select('preference_id')
-            .eq('user_id', session.user.id)
-            .eq('preference_type', preferenceType);
-            
-          if (error) {
-            console.error('Error fetching preferences:', error);
-            setDefaultSelections();
-          } else if (data && data.length > 0) {
-            console.log('User preferences found:', data.length);
-            // Set the selected items based on fetched preferences
-            setSelectedItems(data.map(pref => pref.preference_id));
-          } else {
-            console.log('No user preferences found in database');
-            // Set default selections
-            setDefaultSelections();
-          }
-        } else {
-          console.log('User not authenticated, using default selections');
-          // If not authenticated, use default selections
-          setDefaultSelections();
-        }
-      } catch (error) {
-        console.error('Error loading preferences:', error);
-        setDefaultSelections();
+        console.error('Error fetching available items:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load available options",
+          variant: "destructive"
+        });
       } finally {
         setIsLoading(false);
       }
     };
-    
-    const setDefaultSelections = () => {
-      console.log('Setting default selections for', preferenceType);
-      switch (preferenceType) {
-        case 'brands':
-          setSelectedItems(['b1', 'b3', 'b5']);
-          break;
-        case 'stores':
-          setSelectedItems(['s2', 's4', 's8']);
-          break;
-        case 'banks':
-          setSelectedItems(['bk2', 'bk5', 'bk6']);
-          break;
-        default:
-          setSelectedItems([]);
+
+    fetchAvailableItems();
+  }, [type, toast]);
+
+  // Load user's current preferences
+  useEffect(() => {
+    const loadUserPreferences = async () => {
+      if (!session?.user || !type) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('user_preferences')
+          .select('preference_id')
+          .eq('user_id', session.user.id)
+          .eq('preference_type', type);
+
+        if (error) throw error;
+
+        setSelectedItems(data?.map(item => item.preference_id) || []);
+      } catch (error) {
+        console.error('Error loading preferences:', error);
       }
     };
-    
-    fetchData();
-  }, [preferenceType]);
-  
-  // Determine which data to use based on preference type
-  const getDataAndTitle = (type: string) => {
-    switch (type) {
-      case 'brands':
-        return { data: items, title: 'Favorite Brands' };
-      case 'stores':
-        return { data: items, title: 'Preferred Stores' };
-      case 'banks':
-        return { data: items, title: 'Bank Offers' };
-      default:
-        return { data: [], title: 'Preferences' };
-    }
-  };
-  
-  const handleTabChange = (value: string) => {
-    navigate(`/preferences/${value}`);
-  };
-  
-  const { title } = getDataAndTitle(preferenceType);
-  
-  // Filter data based on search query
-  const filteredData = getDataAndTitle(preferenceType).data.filter(item => 
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  
-  const toggleSelection = (id: string) => {
-    setSelectedItems(prev => {
-      if (prev.includes(id)) {
-        return prev.filter(itemId => itemId !== id);
-      } else {
-        return [...prev, id];
-      }
-    });
-  };
-  
-  const savePreferences = async () => {
-    setIsLoading(true);
-    
+
+    loadUserPreferences();
+  }, [session, type]);
+
+  // Real-time subscription for preference changes
+  useEffect(() => {
+    if (!session?.user || !type) return;
+
+    const channel = supabase
+      .channel('user-preferences-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_preferences',
+          filter: `user_id=eq.${session.user.id}`
+        },
+        (payload) => {
+          console.log('Preference change detected:', payload);
+          // Refresh preferences when changes occur
+          if (payload.eventType === 'INSERT' && payload.new.preference_type === type) {
+            setSelectedItems(prev => [...prev, payload.new.preference_id]);
+          } else if (payload.eventType === 'DELETE' && payload.old.preference_type === type) {
+            setSelectedItems(prev => prev.filter(id => id !== payload.old.preference_id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session, type]);
+
+  const toggleItem = async (item: string) => {
+    if (!session?.user || !type) return;
+
     try {
-      // Use await to resolve the Promise before accessing session
-      const sessionData = await supabase.auth.getSession();
-      const session = sessionData.data.session;
+      const isSelected = selectedItems.includes(item);
       
-      if (session) {
-        console.log('Saving preferences for authenticated user');
-        // First, delete existing preferences of this type for the user
-        const { error: deleteError } = await supabase
+      if (isSelected) {
+        // Remove preference
+        const { error } = await supabase
           .from('user_preferences')
           .delete()
           .eq('user_id', session.user.id)
-          .eq('preference_type', preferenceType);
-          
-        if (deleteError) {
-          console.error('Error deleting existing preferences:', deleteError);
-          throw deleteError;
-        }
+          .eq('preference_type', type)
+          .eq('preference_id', item);
+
+        if (error) throw error;
         
-        // Then insert the new preferences
-        if (selectedItems.length > 0) {
-          console.log(`Inserting ${selectedItems.length} new preferences`);
-          const preferencesToInsert = selectedItems.map(preferenceId => ({
-            user_id: session.user.id,
-            preference_type: preferenceType,
-            preference_id: preferenceId
-          }));
-          
-          const { error: insertError } = await supabase
-            .from('user_preferences')
-            .insert(preferencesToInsert);
-            
-          if (insertError) {
-            console.error('Error inserting preferences:', insertError);
-            throw insertError;
-          } else {
-            console.log('Preferences saved successfully');
-          }
-        } else {
-          console.log('No preferences to save (empty selection)');
-        }
-        
-        toast({
-          title: "Preferences saved",
-          description: `Your ${title.toLowerCase()} have been updated`,
-        });
-        
-        // Redirect to home to see updated offers
-        navigate('/home');
+        setSelectedItems(prev => prev.filter(id => id !== item));
       } else {
-        console.log('User not authenticated, saving preferences locally');
-        // User not authenticated, just show a success message
-        toast({
-          title: "Preferences saved locally",
-          description: `Your ${title.toLowerCase()} have been updated locally`,
-        });
+        // Add preference
+        const { error } = await supabase
+          .from('user_preferences')
+          .insert({
+            user_id: session.user.id,
+            preference_type: type,
+            preference_id: item
+          });
+
+        if (error) throw error;
         
-        // Redirect to home
-        navigate('/home');
+        setSelectedItems(prev => [...prev, item]);
       }
-    } catch (error: any) {
-      console.error('Error in savePreferences:', error);
+
       toast({
-        title: "Error saving preferences",
-        description: error.message || "Something went wrong",
-        variant: "destructive",
+        title: isSelected ? "Preference removed" : "Preference added",
+        description: `${item} ${isSelected ? 'removed from' : 'added to'} your ${type}`,
       });
-    } finally {
-      setIsLoading(false);
+    } catch (error) {
+      console.error('Error updating preference:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update preference",
+        variant: "destructive"
+      });
     }
   };
-  
+
+  const filteredItems = availableItems.filter(item =>
+    item.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="pb-16 bg-monkeyBackground min-h-screen">
       {/* Header */}
-      <div className="bg-monkeyGreen text-white p-4 flex items-center justify-between sticky top-0 z-10">
-        <Link to="/profile">
-          <ChevronLeft className="w-6 h-6" />
-        </Link>
-        <h1 className="text-xl font-semibold">Preferences</h1>
-        <button 
-          onClick={savePreferences} 
-          className="text-sm bg-monkeyYellow text-black px-3 py-1 rounded-full font-medium"
-          disabled={isLoading}
-        >
-          {isLoading ? 'Saving...' : 'Save'}
-        </button>
+      <div className="bg-monkeyGreen text-white py-4 px-4 sticky top-0 z-10">
+        <div className="flex items-center space-x-2">
+          <Link to="/home">
+            <ChevronLeft className="w-5 h-5" />
+          </Link>
+          <h1 className="text-lg font-medium">{getTitle()}</h1>
+        </div>
       </div>
-      
-      {/* Preference Tabs */}
-      <div className="p-2 bg-white">
-        <Tabs
-          defaultValue={preferenceType}
-          value={preferenceType}
-          onValueChange={handleTabChange}
-          className="w-full"
-        >
-          <TabsList className="w-full grid grid-cols-3">
-            <TabsTrigger value="brands" className="flex items-center gap-2">
-              <ShoppingBag className="w-4 h-4" />
-              <span>Brands</span>
-            </TabsTrigger>
-            <TabsTrigger value="stores" className="flex items-center gap-2">
-              <Store className="w-4 h-4" />
-              <span>Stores</span>
-            </TabsTrigger>
-            <TabsTrigger value="banks" className="flex items-center gap-2">
-              <CreditCard className="w-4 h-4" />
-              <span>Banks</span>
-            </TabsTrigger>
-          </TabsList>
-          
-          <div className="mt-4">
-            {/* Search bar */}
-            <div className="px-2 py-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  type="search"
-                  placeholder={`Search ${getDataAndTitle(preferenceType).title.toLowerCase()}...`}
-                  className="pl-10 pr-4 py-2 w-full border-gray-200"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-            </div>
-          
-            {isLoading ? (
-              <div className="flex justify-center items-center h-40">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-monkeyGreen"></div>
-              </div>
+
+      {/* Content */}
+      <div className="p-4 space-y-4">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            type="search"
+            placeholder={`Search ${type}...`}
+            className="pl-10 pr-4 py-2 w-full border-gray-200"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {/* Selected count */}
+        <div className="bg-white p-3 rounded-lg shadow-sm">
+          <p className="text-sm text-gray-600">
+            {selectedItems.length} {type} selected
+          </p>
+        </div>
+
+        {/* Items list */}
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-monkeyGreen"></div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {filteredItems.length > 0 ? (
+              filteredItems.map((item) => {
+                const isSelected = selectedItems.includes(item);
+                return (
+                  <Button
+                    key={item}
+                    variant="outline"
+                    className={`w-full justify-between h-auto p-4 ${
+                      isSelected 
+                        ? 'bg-monkeyGreen/10 border-monkeyGreen text-monkeyGreen' 
+                        : 'bg-white border-gray-200'
+                    }`}
+                    onClick={() => toggleItem(item)}
+                  >
+                    <span className="text-left">{item}</span>
+                    {isSelected && <Check className="w-5 h-5" />}
+                  </Button>
+                );
+              })
             ) : (
-              <>
-                {/* Data summary */}
-                <div className="px-4 py-1 mb-2">
-                  <p className="text-xs text-gray-500">
-                    {items.length} {getDataAndTitle(preferenceType).title.toLowerCase()} available
-                  </p>
-                </div>
-              
-                {/* Selected items as bubbles */}
-                <div className="px-4 py-3">
-                  <h3 className="text-sm text-gray-600 mb-2">Selected {getDataAndTitle(preferenceType).title}</h3>
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {selectedItems.length > 0 ? (
-                      items
-                        .filter(item => selectedItems.includes(item.id))
-                        .map(item => (
-                          <Badge 
-                            key={item.id}
-                            variant="outline" 
-                            className="bg-monkeyGreen/10 text-monkeyGreen border-monkeyGreen/30 px-3 py-1"
-                            onClick={() => toggleSelection(item.id)}
-                          >
-                            {item.logo} {item.name}
-                          </Badge>
-                        ))
-                    ) : (
-                      <p className="text-sm text-gray-500">No {getDataAndTitle(preferenceType).title.toLowerCase()} selected</p>
-                    )}
-                  </div>
-                </div>
-                
-                {/* List of available items */}
-                <div className="px-4 space-y-2 mt-2">
-                  <h3 className="text-sm text-gray-600 mb-2">Available {getDataAndTitle(preferenceType).title}</h3>
-                  
-                  {filteredData.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {filteredData
-                        .filter(item => !selectedItems.includes(item.id))
-                        .map((item) => (
-                          <Badge 
-                            key={item.id}
-                            variant="outline" 
-                            className="bg-white hover:bg-gray-100 text-gray-800 cursor-pointer px-3 py-1"
-                            onClick={() => toggleSelection(item.id)}
-                          >
-                            {item.logo} {item.name}
-                          </Badge>
-                        ))
-                      }
-                    </div>
-                  ) : (
-                    searchQuery ? (
-                      <div className="text-center py-6 text-gray-500">
-                        No results found. Try a different search term.
-                      </div>
-                    ) : (
-                      <div className="text-center py-6 text-gray-500">
-                        All {getDataAndTitle(preferenceType).title.toLowerCase()} are selected.
-                      </div>
-                    )
-                  )}
-                </div>
-              </>
+              <div className="bg-white p-6 rounded-lg text-center shadow-sm">
+                <p className="text-gray-500">
+                  {searchTerm ? `No ${type} found matching "${searchTerm}"` : `No ${type} available`}
+                </p>
+              </div>
             )}
           </div>
-        </Tabs>
+        )}
       </div>
     </div>
   );

@@ -1,19 +1,31 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, ChevronLeft, Mic } from 'lucide-react';
+import { Send, ChevronLeft, Mic, Sparkles, Bot } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { mockChatMessages } from '@/mockData';
 import { Link } from 'react-router-dom';
 import { Message } from '@/types';
 import { toast } from "@/components/ui/use-toast";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUser } from '@/contexts/UserContext';
 
 const ChatbotScreen = () => {
-  const [messages, setMessages] = useState<Message[]>(mockChatMessages);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 'welcome',
+      text: "Hi there! 👋 I'm your OffersMonkey Assistant powered by AI. I can help you find the best deals, answer questions about offers, and provide personalized recommendations based on your preferences. What would you like to know?",
+      isUser: false,
+      timestamp: new Date()
+    }
+  ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { session } = useAuth();
+  const { user } = useUser();
   
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -22,11 +34,86 @@ const ChatbotScreen = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Load chat history
+  useEffect(() => {
+    const loadChatHistory = async () => {
+      if (!session?.user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('chat_messages')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('created_at', { ascending: true })
+          .limit(10);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const historyMessages: Message[] = [];
+          data.forEach(chat => {
+            historyMessages.push({
+              id: `${chat.id}-user`,
+              text: chat.message,
+              isUser: true,
+              timestamp: new Date(chat.created_at)
+            });
+            if (chat.response) {
+              historyMessages.push({
+                id: `${chat.id}-bot`,
+                text: chat.response,
+                isUser: false,
+                timestamp: new Date(chat.created_at)
+              });
+            }
+          });
+          
+          setMessages(prev => [prev[0], ...historyMessages]);
+        }
+      } catch (error) {
+        console.error('Error loading chat history:', error);
+      }
+    };
+
+    loadChatHistory();
+  }, [session]);
+
+  const getUserContext = async () => {
+    if (!session?.user) return null;
+
+    try {
+      // Get user preferences
+      const { data: preferences } = await supabase
+        .from('user_preferences')
+        .select('preference_type, preference_id')
+        .eq('user_id', session.user.id);
+
+      // Get saved offers count
+      const { data: savedOffers } = await supabase
+        .from('saved_offers')
+        .select('offer_id')
+        .eq('user_id', session.user.id);
+
+      return {
+        location: user.location,
+        preferences: preferences || [],
+        savedOffersCount: savedOffers?.length || 0,
+        userInfo: {
+          name: user.name,
+          email: user.email
+        }
+      };
+    } catch (error) {
+      console.error('Error getting user context:', error);
+      return null;
+    }
+  };
   
-  const handleSendMessage = (e?: React.FormEvent) => {
+  const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading || !session?.user) return;
     
     // Add user message
     const userMessage: Message = {
@@ -37,147 +124,235 @@ const ChatbotScreen = () => {
     };
     
     setMessages(prev => [...prev, userMessage]);
-    const currentInput = input; // Store current input before clearing
+    const currentInput = input;
     setInput('');
     setIsTyping(true);
+    setIsLoading(true);
     
-    // Simulate bot response after delay
-    setTimeout(() => {
-      let botResponse: string;
+    try {
+      // Get user context for personalized responses
+      const context = await getUserContext();
       
-      // Enhanced response logic based on keywords
-      const lowercaseInput = currentInput.toLowerCase();
-      if (lowercaseInput.includes('deal') || lowercaseInput.includes('offer')) {
-        botResponse = "I found several great deals nearby! 🎉\n\n• Electronics: 30% off Samsung devices\n• Grocery: BOGO deals at Whole Foods\n• Fashion: 50% off at Nike\n\nWhich category interests you most?";
-      } else if (lowercaseInput.includes('electronic') || lowercaseInput.includes('phone')) {
-        botResponse = "📱 Tech deals alert! Check out:\n\n• Samsung Galaxy S23 at Best Buy - save $200 with trade-in\n• Apple AirPods Pro 20% off at Amazon\n• Dell XPS laptops with $300 discount\n\nWant more electronics deals?";
-      } else if (lowercaseInput.includes('amazon')) {
-        botResponse = "Amazon deals right now:\n\n• Echo Dot - 30% off\n• Fire TV Stick 4K - 40% off\n• Kindle Paperwhite - $45 discount\n\nThese are affiliate deals with great value! Would you like the links?";
-      } else if (lowercaseInput.includes('grocery') || lowercaseInput.includes('food')) {
-        botResponse = "Fresh food deals this week:\n\n• Whole Foods: 50% off produce (ends Sunday)\n• Safeway: BOGO ice cream\n• Trader Joe's: Wine discounts\n• Kroger: 30% off meat department\n\nShould I add these to your saved deals?";
-      } else if (lowercaseInput.includes('expir')) {
-        botResponse = "⏰ Expiring soon:\n\n• Nike sale: TOMORROW\n• Whole Foods produce: Sunday\n• Best Buy tech event: 3 days left\n\nWould you like to receive notifications before these expire?";
-      } else if (lowercaseInput.includes('hello') || lowercaseInput.includes('hi')) {
-        botResponse = "Hello there! 👋 I'm your OffersMonkey assistant. I can help with:\n\n• Finding deals near you\n• Searching by store or category\n• Tracking expiring offers\n• Amazon product deals\n\nWhat are you looking for today?";
-      } else if (lowercaseInput.includes('thank')) {
-        botResponse = "You're welcome! 😊 Always happy to help you find the best deals. Let me know if you need anything else!";
-      } else if (lowercaseInput.includes('save') || lowercaseInput.includes('bookmark')) {
-        botResponse = "I've saved this deal to your favorites! 🌟 You can access all your saved deals in the Profile section. Would you like me to remind you about this deal before it expires?";
-      } else if (lowercaseInput.includes('nearby') || lowercaseInput.includes('close') || lowercaseInput.includes('near me')) {
-        botResponse = "📍 Deals near your location:\n\n• Target (0.8mi): 25% off home goods\n• Walgreens (1.2mi): BOGO vitamins\n• Best Buy (1.5mi): Weekend tech sale\n• Ross (2.1mi): Clearance event\n\nWould you like directions to any of these?";
-      } else {
-        botResponse = "I'm still learning! 🐒 Would you like to:\n\n• See the latest deals near you?\n• Check offers by category?\n• View expiring deals?\n• Search Amazon products?\n\nJust let me know how I can help!";
-      }
-      
+      // Call OpenAI via Edge Function
+      const { data, error } = await supabase.functions.invoke('chat-with-ai', {
+        body: {
+          message: currentInput,
+          context: context
+        }
+      });
+
+      if (error) throw error;
+
       const botMessage: Message = {
         id: `bot-${Date.now()}`,
-        text: botResponse,
+        text: data.response,
         isUser: false,
         timestamp: new Date()
       };
       
       setMessages(prev => [...prev, botMessage]);
-      setIsTyping(false);
       
-      // Show toast notification for new deals
-      if (lowercaseInput.includes('deal') || lowercaseInput.includes('offer')) {
-        setTimeout(() => {
-          toast({
-            title: "New Deals Found!",
-            description: "3 new deals match your preferences",
-          });
-        }, 1000);
-      }
-    }, 1500);
+      toast({
+        title: "AI Response",
+        description: "Got a personalized response based on your preferences!",
+      });
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      
+      // Fallback response
+      const errorMessage: Message = {
+        id: `bot-error-${Date.now()}`,
+        text: "I'm sorry, I'm having trouble connecting right now. Please try again in a moment. In the meantime, you can browse offers in the home section! 🐒",
+        isUser: false,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+      
+      toast({
+        title: "Connection Error",
+        description: "Unable to get AI response. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsTyping(false);
+      setIsLoading(false);
+    }
   };
 
-  // Handle Enter key press
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
       handleSendMessage();
     }
   };
 
+  const suggestedQuestions = [
+    "What are the best deals near me?",
+    "Show me electronics offers",
+    "Find grocery deals",
+    "What's expiring soon?"
+  ];
+
   return (
-    <div className="flex flex-col h-screen bg-monkeyBackground">
+    <div className="flex flex-col h-screen bg-gradient-to-br from-green-50 via-white to-yellow-50">
       {/* Header */}
-      <div className="bg-monkeyGreen text-white p-4 flex items-center space-x-4 shadow-md">
-        <Link to="/home">
-          <ChevronLeft className="w-6 h-6" />
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-xl font-semibold">OffersMonkey Assistant</h1>
-          <p className="text-xs text-green-100">Always finding the best deals for you</p>
+      <div className="bg-gradient-to-r from-monkeyGreen to-green-600 text-white p-4 shadow-lg">
+        <div className="flex items-center space-x-4">
+          <Link to="/home">
+            <ChevronLeft className="w-6 h-6" />
+          </Link>
+          <div className="flex items-center space-x-3 flex-1">
+            <div className="relative">
+              <Bot className="w-10 h-10 p-2 bg-white/20 rounded-full" />
+              <Sparkles className="w-4 h-4 absolute -top-1 -right-1 text-monkeyYellow" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">AI Assistant</h1>
+              <p className="text-xs text-green-100">Powered by OpenAI • Personalized for you</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+            <p className="text-xs text-green-100">Online</p>
+          </div>
         </div>
       </div>
       
       {/* Messages container */}
-      <ScrollArea className="flex-1 p-4 overflow-y-auto bg-gradient-to-b from-green-50 to-yellow-50">
-        <div className="space-y-4 pb-2">
+      <ScrollArea className="flex-1 p-4 overflow-y-auto">
+        <div className="max-w-4xl mx-auto space-y-4 pb-2">
           {messages.map((message) => (
             <div
               key={message.id}
               className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
             >
-              <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  message.isUser
-                    ? 'bg-monkeyGreen text-white rounded-tr-none shadow-lg'
-                    : 'bg-white text-gray-800 rounded-tl-none shadow-md'
-                }`}
-              >
-                <p className="whitespace-pre-wrap">{message.text}</p>
-                <p className="text-xs opacity-70 text-right mt-1">
-                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
+              <div className="flex items-start space-x-2 max-w-[85%]">
+                {!message.isUser && (
+                  <div className="w-8 h-8 bg-monkeyGreen rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <Bot className="w-4 h-4 text-white" />
+                  </div>
+                )}
+                <div
+                  className={`rounded-2xl px-4 py-3 shadow-md ${
+                    message.isUser
+                      ? 'bg-gradient-to-r from-monkeyGreen to-green-600 text-white rounded-tr-sm'
+                      : 'bg-white text-gray-800 rounded-tl-sm border border-gray-100'
+                  }`}
+                >
+                  <p className="whitespace-pre-wrap leading-relaxed">{message.text}</p>
+                  <p className={`text-xs mt-2 ${message.isUser ? 'text-green-100' : 'text-gray-400'}`}>
+                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+                {message.isUser && (
+                  <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                    <span className="text-xs font-medium text-gray-600">
+                      {user.name ? user.name[0].toUpperCase() : 'U'}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           ))}
           
           {isTyping && (
             <div className="flex justify-start">
-              <div className="bg-white text-gray-800 rounded-2xl rounded-tl-none px-4 py-3 shadow-md max-w-[80%]">
-                <div className="flex space-x-2">
-                  <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce delay-150"></div>
-                  <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce delay-300"></div>
+              <div className="flex items-start space-x-2 max-w-[85%]">
+                <div className="w-8 h-8 bg-monkeyGreen rounded-full flex items-center justify-center flex-shrink-0">
+                  <Bot className="w-4 h-4 text-white" />
+                </div>
+                <div className="bg-white text-gray-800 rounded-2xl rounded-tl-sm px-4 py-3 shadow-md border border-gray-100">
+                  <div className="flex space-x-2">
+                    <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce delay-150"></div>
+                    <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce delay-300"></div>
+                  </div>
                 </div>
               </div>
             </div>
           )}
+          
+          {/* Suggested questions for new users */}
+          {messages.length === 1 && (
+            <div className="space-y-2">
+              <p className="text-sm text-gray-500 text-center">Try asking:</p>
+              <div className="grid grid-cols-2 gap-2">
+                {suggestedQuestions.map((question, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-auto p-2 text-left justify-start"
+                    onClick={() => setInput(question)}
+                  >
+                    {question}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+          
           <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
       
       {/* Input area */}
-      <form onSubmit={handleSendMessage} className="p-4 bg-white shadow-up border-t border-gray-100">
-        <div className="flex space-x-2">
-          <Input
-            placeholder="Ask about deals near you..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="flex-1 border-gray-200 focus:border-monkeyGreen"
-            autoFocus
-          />
-          <Button 
-            type="button"
-            size="icon"
-            variant="outline"
-            className="bg-white text-monkeyGreen border-monkeyGreen hover:bg-green-50"
-          >
-            <Mic className="h-5 w-5" />
-          </Button>
-          <Button 
-            type="submit" 
-            size="icon" 
-            className="bg-monkeyYellow text-black hover:bg-monkeyYellow/90 shadow-sm"
-            disabled={!input.trim()}
-          >
-            <Send className="h-5 w-5" />
-          </Button>
+      <div className="p-4 bg-white/80 backdrop-blur border-t border-gray-100">
+        <div className="max-w-4xl mx-auto">
+          <form onSubmit={handleSendMessage} className="flex space-x-2">
+            <div className="flex-1 relative">
+              <Input
+                placeholder="Ask about deals, offers, or anything else..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                className="pr-12 border-gray-200 focus:border-monkeyGreen bg-white shadow-sm"
+                disabled={isLoading || !session?.user}
+                autoFocus
+              />
+              {input && (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-gray-400 hover:text-gray-600"
+                  onClick={() => setInput('')}
+                >
+                  ×
+                </Button>
+              )}
+            </div>
+            <Button 
+              type="button"
+              size="icon"
+              variant="outline"
+              className="bg-white text-monkeyGreen border-monkeyGreen hover:bg-green-50"
+              disabled={isLoading}
+            >
+              <Mic className="h-5 w-5" />
+            </Button>
+            <Button 
+              type="submit" 
+              size="icon" 
+              className="bg-gradient-to-r from-monkeyGreen to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-md"
+              disabled={!input.trim() || isLoading || !session?.user}
+            >
+              {isLoading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Send className="h-5 w-5" />
+              )}
+            </Button>
+          </form>
+          
+          {!session?.user && (
+            <p className="text-xs text-gray-500 text-center mt-2">
+              Please <Link to="/auth" className="text-monkeyGreen underline">sign in</Link> to use the AI assistant
+            </p>
+          )}
         </div>
-      </form>
+      </div>
     </div>
   );
 };

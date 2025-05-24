@@ -8,7 +8,6 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface UserContextType {
   user: User;
-  updatePoints: (amount: number) => void;
   saveOffer: (offerId: string) => void;
   unsaveOffer: (offerId: string) => void;
   isOfferSaved: (offerId: string) => boolean;
@@ -17,7 +16,6 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-// Try to load user from localStorage if available
 const getInitialUser = (): User => {
   try {
     const savedUser = localStorage.getItem('user');
@@ -25,13 +23,15 @@ const getInitialUser = (): User => {
       const parsedUser = JSON.parse(savedUser);
       return {
         ...parsedUser,
-        savedOffers: parsedUser.savedOffers || []
+        savedOffers: parsedUser.savedOffers || [],
+        points: 0 // Remove points completely
       };
     } else {
       return {
         ...mockUser,
         location: 'India',
-        savedOffers: []
+        savedOffers: [],
+        points: 0 // Remove points completely
       };
     }
   } catch (error) {
@@ -39,7 +39,8 @@ const getInitialUser = (): User => {
     return {
       ...mockUser,
       location: 'India',
-      savedOffers: []
+      savedOffers: [],
+      points: 0 // Remove points completely
     };
   }
 };
@@ -52,7 +53,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   // Sync with auth context
   useEffect(() => {
     if (session?.user && userProfile) {
-      // Update user data with auth information
       setUser(prevUser => {
         const updatedUser = {
           ...prevUser,
@@ -61,18 +61,17 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           name: userProfile.name || '',
           phone: userProfile.phone || '',
           location: userProfile.location || 'India',
+          points: 0 // Remove points completely
         };
         
-        // Save to localStorage
         localStorage.setItem('user', JSON.stringify(updatedUser));
-        
         return updatedUser;
       });
       
       // Fetch saved offers for authenticated user
       const fetchSavedOffers = async () => {
         try {
-          const { data: savedOffers } = await (supabase as any)
+          const { data: savedOffers } = await supabase
             .from('saved_offers')
             .select('offer_id')
             .eq('user_id', session.user.id);
@@ -85,7 +84,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
               };
               
               localStorage.setItem('user', JSON.stringify(updatedUser));
-              
               return updatedUser;
             });
           }
@@ -96,41 +94,62 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       
       fetchSavedOffers();
     } else if (!session) {
-      // Reset to guest user when signed out
       const guestUser = {
         ...mockUser,
         location: 'India',
-        savedOffers: []
+        savedOffers: [],
+        points: 0 // Remove points completely
       };
       setUser(guestUser);
       localStorage.setItem('user', JSON.stringify(guestUser));
     }
   }, [session, userProfile]);
 
-  // Function to update user points
-  const updatePoints = (amount: number) => {
-    setUser(prevUser => {
-      const newPoints = prevUser.points + amount;
-      if (amount > 0) {
-        toast({
-          title: `+${amount} points earned!`,
-          description: `You now have ${newPoints} points total.`,
-        });
-      }
-      
-      const updatedUser = {
-        ...prevUser,
-        points: newPoints
-      };
-      
-      // Save to localStorage
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      
-      return updatedUser;
-    });
-  };
+  // Real-time subscription for saved offers
+  useEffect(() => {
+    if (!session?.user) return;
 
-  // Function to save an offer to user's favorites
+    const channel = supabase
+      .channel('saved-offers-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'saved_offers',
+          filter: `user_id=eq.${session.user.id}`
+        },
+        (payload) => {
+          console.log('Saved offer change detected:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            setUser(prevUser => {
+              const updatedUser = {
+                ...prevUser,
+                savedOffers: [...prevUser.savedOffers, payload.new.offer_id]
+              };
+              localStorage.setItem('user', JSON.stringify(updatedUser));
+              return updatedUser;
+            });
+          } else if (payload.eventType === 'DELETE') {
+            setUser(prevUser => {
+              const updatedUser = {
+                ...prevUser,
+                savedOffers: prevUser.savedOffers.filter(id => id !== payload.old.offer_id)
+              };
+              localStorage.setItem('user', JSON.stringify(updatedUser));
+              return updatedUser;
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session]);
+
   const saveOffer = async (offerId: string) => {
     console.log('Saving offer:', offerId);
     
@@ -139,8 +158,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(prevUser => {
         const updatedUser = {
           ...prevUser,
-          savedOffers: [...prevUser.savedOffers, offerId],
-          points: prevUser.points + 5 // Add 5 points for saving an offer
+          savedOffers: [...prevUser.savedOffers, offerId]
         };
         
         localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -151,7 +169,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       if (session?.user) {
         try {
           console.log('Saving to Supabase:', offerId, 'User ID:', session.user.id);
-          const { error } = await (supabase as any)
+          const { error } = await supabase
             .from('saved_offers')
             .insert({
               user_id: session.user.id,
@@ -164,8 +182,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
             setUser(prevUser => {
               const updatedUser = {
                 ...prevUser,
-                savedOffers: prevUser.savedOffers.filter(id => id !== offerId),
-                points: prevUser.points - 5
+                savedOffers: prevUser.savedOffers.filter(id => id !== offerId)
               };
               
               localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -186,12 +203,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       
       toast({
         title: "Offer saved!",
-        description: "The offer has been added to your saved items and you've earned 5 points!",
+        description: "The offer has been added to your saved items.",
       });
     }
   };
 
-  // Function to remove an offer from user's favorites
   const unsaveOffer = async (offerId: string) => {
     console.log('Unsaving offer:', offerId);
     
@@ -210,7 +226,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     if (session?.user) {
       try {
         console.log('Removing from Supabase:', offerId, 'User ID:', session.user.id);
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('saved_offers')
           .delete()
           .eq('user_id', session.user.id)
@@ -251,7 +267,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     return user.savedOffers.includes(offerId);
   };
 
-  // Function to update user location
   const updateLocation = async (location: string) => {
     // Update local state first for responsiveness
     setUser(prevUser => {
@@ -264,10 +279,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       return updatedUser;
     });
     
-    // If user is authenticated, update location in Supabase through auth context
+    // If user is authenticated, update location in Supabase
     if (session?.user) {
       try {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('profiles')
           .update({ location })
           .eq('id', session.user.id);
@@ -289,7 +304,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <UserContext.Provider value={{ 
       user, 
-      updatePoints, 
       saveOffer, 
       unsaveOffer, 
       isOfferSaved,
