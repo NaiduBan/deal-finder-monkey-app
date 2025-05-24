@@ -62,7 +62,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           console.log("User is authenticated:", session.user.id);
           
           // If authenticated, fetch user profile from Supabase
-          const { data: profileData, error: profileError } = await supabase
+          const { data: profileData, error: profileError } = await (supabase as any)
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
@@ -74,7 +74,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
             // If profile doesn't exist yet, create it
             if (profileError.code === 'PGRST116') {
               try {
-                const { error: insertError } = await supabase
+                const { error: insertError } = await (supabase as any)
                   .from('profiles')
                   .insert({
                     id: session.user.id,
@@ -94,7 +94,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           }
           
           // Fetch saved offers for this user
-          const { data: savedOffers, error: savedOffersError } = await supabase
+          const { data: savedOffers, error: savedOffersError } = await (supabase as any)
             .from('saved_offers')
             .select('offer_id')
             .eq('user_id', session.user.id);
@@ -111,7 +111,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
             id: session.user.id,
             email: session.user.email || '',
             location: profileData?.location || 'India',
-            savedOffers: savedOffers ? savedOffers.map(item => item.offer_id) : []
+            savedOffers: savedOffers ? savedOffers.map((item: any) => item.offer_id) : []
           }));
           
           // Save user to localStorage for offline access
@@ -120,7 +120,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
             id: session.user.id,
             email: session.user.email || '',
             location: profileData?.location || 'India',
-            savedOffers: savedOffers ? savedOffers.map(item => item.offer_id) : []
+            savedOffers: savedOffers ? savedOffers.map((item: any) => item.offer_id) : []
           }));
         }
       } catch (error) {
@@ -137,7 +137,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (event === 'SIGNED_IN' && session) {
         // User signed in, fetch their profile
-        const { data: profileData, error: profileError } = await supabase
+        const { data: profileData, error: profileError } = await (supabase as any)
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
@@ -146,7 +146,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         if (profileError && profileError.code === 'PGRST116') {
           // Profile doesn't exist, create it
           try {
-            const { error: insertError } = await supabase
+            const { error: insertError } = await (supabase as any)
               .from('profiles')
               .insert({
                 id: session.user.id,
@@ -165,7 +165,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         }
         
         // Fetch saved offers for this user
-        const { data: savedOffers } = await supabase
+        const { data: savedOffers } = await (supabase as any)
           .from('saved_offers')
           .select('offer_id')
           .eq('user_id', session.user.id);
@@ -178,7 +178,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           id: session.user.id,
           email: session.user.email || '',
           location: profileData?.location || 'India',
-          savedOffers: savedOffers ? savedOffers.map(item => item.offer_id) : []
+          savedOffers: savedOffers ? savedOffers.map((item: any) => item.offer_id) : []
         };
         
         setUser(updatedUser);
@@ -259,7 +259,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       if (authSession && authSession.user) {
         try {
           console.log('Saving to Supabase:', offerId, 'User ID:', authSession.user.id);
-          const { error } = await supabase
+          const { error } = await (supabase as any)
             .from('saved_offers')
             .insert({
               user_id: authSession.user.id,
@@ -322,7 +322,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     if (authSession && authSession.user) {
       try {
         console.log('Removing from Supabase:', offerId, 'User ID:', authSession.user.id);
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('saved_offers')
           .delete()
           .eq('user_id', authSession.user.id)
@@ -381,7 +381,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     // If user is authenticated, update location in Supabase
     if (authSession && authSession.user) {
       try {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('profiles')
           .update({ location })
           .eq('id', authSession.user.id);

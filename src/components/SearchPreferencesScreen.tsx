@@ -68,8 +68,8 @@ const SearchPreferencesScreen = () => {
     }
     
     try {
-      // Search in the Linkmydeals_Offers table
-      const { data: searchData, error } = await supabase
+      // Search in the Linkmydeals_Offers table with type assertion
+      const { data: searchData, error } = await (supabase as any)
         .from('Linkmydeals_Offers')
         .select('*')
         .or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,store.ilike.%${searchQuery}%,categories.ilike.%${searchQuery}%`)

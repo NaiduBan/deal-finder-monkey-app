@@ -7,8 +7,8 @@ import { mockCategories, mockOffers } from "@/mockData";
 export async function fetchCategories(): Promise<Category[]> {
   try {
     console.log('Fetching categories from Supabase...');
-    // First try to get categories from dedicated categories table
-    const { data, error } = await supabase
+    // Use type assertion to handle missing types
+    const { data, error } = await (supabase as any)
       .from('categories')
       .select('*');
     
@@ -23,7 +23,7 @@ export async function fetchCategories(): Promise<Category[]> {
     if (!data || data.length === 0) {
       console.log('No categories found in categories table, attempting to extract from Linkmydeals_Offers table');
       
-      const { data: offersData, error: offersError } = await supabase
+      const { data: offersData, error: offersError } = await (supabase as any)
         .from('Linkmydeals_Offers')
         .select('categories')
         .not('categories', 'is', null);
@@ -37,7 +37,7 @@ export async function fetchCategories(): Promise<Category[]> {
         // Extract unique categories from Linkmydeals_Offers table
         const categoryMap = new Map<string, Category>();
         
-        offersData.forEach(item => {
+        offersData.forEach((item: any) => {
           if (item.categories) {
             const cats = item.categories.split(',').map((c: string) => c.trim());
             cats.forEach((catName: string, index: number) => {
@@ -60,7 +60,7 @@ export async function fetchCategories(): Promise<Category[]> {
         // Store the extracted categories in the categories table for future use
         if (extractedCategories.length > 0) {
           try {
-            const { error: insertError } = await supabase
+            const { error: insertError } = await (supabase as any)
               .from('categories')
               .upsert(extractedCategories.map(cat => ({
                 id: cat.id,
@@ -86,7 +86,7 @@ export async function fetchCategories(): Promise<Category[]> {
     }
     
     // Transform the data to match our Category type
-    return data.map(item => ({
+    return data.map((item: any) => ({
       id: item.id || `b${item.name.toLowerCase().replace(/\s+/g, '-')}`,
       name: item.name,
       icon: item.icon || getCategoryIcon(item.name),
@@ -131,7 +131,7 @@ function getCategoryIcon(categoryName: string): string {
 export async function fetchOffers(): Promise<Offer[]> {
   try {
     console.log('Fetching fresh offers from Linkmydeals_Offers table...');
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('Linkmydeals_Offers')
       .select('*')
       .order('lmd_id', { ascending: false }) // Get newest offers first
@@ -151,7 +151,7 @@ export async function fetchOffers(): Promise<Offer[]> {
     }
     
     // Transform the data to match our Offer type
-    return data.map((item, index) => {
+    return data.map((item: any, index: number) => {
       // Calculate price and savings
       let price = 0;
       let originalPrice = 0;
@@ -254,7 +254,7 @@ export async function fetchUserSavedOffers(userId: string): Promise<string[]> {
       throw new Error('User ID is required to fetch saved offers');
     }
     
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('saved_offers')
       .select('offer_id')
       .eq('user_id', userId);
@@ -264,7 +264,7 @@ export async function fetchUserSavedOffers(userId: string): Promise<string[]> {
       throw error;
     }
     
-    return data ? data.map(item => item.offer_id) : [];
+    return data ? data.map((item: any) => item.offer_id) : [];
   } catch (error) {
     console.error('Error in fetchUserSavedOffers:', error);
     return [];
@@ -280,7 +280,7 @@ export async function saveOfferForUser(userId: string, offerId: string): Promise
     
     console.log('Saving offer for user:', userId, offerId);
     
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('saved_offers')
       .insert({
         user_id: userId,
@@ -312,7 +312,7 @@ export async function unsaveOfferForUser(userId: string, offerId: string): Promi
     
     console.log('Removing saved offer for user:', userId, offerId);
     
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('saved_offers')
       .delete()
       .eq('user_id', userId)
@@ -339,7 +339,7 @@ export async function fetchUserPreferences(userId: string, preferenceType: strin
     
     console.log(`Fetching ${preferenceType} preferences for user ${userId}`);
     
-    let query = supabase
+    let query = (supabase as any)
       .from('user_preferences')
       .select('*')
       .eq('user_id', userId);
@@ -373,7 +373,7 @@ export async function saveUserPreference(userId: string, preferenceType: string,
     console.log(`Saving preference for user ${userId}: ${preferenceType} - ${preferenceId}`);
     
     // Check if preference already exists
-    const { data: existingPreference, error: checkError } = await supabase
+    const { data: existingPreference, error: checkError } = await (supabase as any)
       .from('user_preferences')
       .select('*')
       .eq('user_id', userId)
@@ -393,7 +393,7 @@ export async function saveUserPreference(userId: string, preferenceType: string,
     }
     
     // Insert the new preference
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('user_preferences')
       .insert({
         user_id: userId,
@@ -423,7 +423,7 @@ export async function removeUserPreference(userId: string, preferenceType: strin
     
     console.log(`Removing preference for user ${userId}: ${preferenceType} - ${preferenceId}`);
     
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('user_preferences')
       .delete()
       .eq('user_id', userId)
@@ -452,7 +452,7 @@ export async function removeAllUserPreferencesOfType(userId: string, preferenceT
     
     console.log(`Removing all ${preferenceType} preferences for user ${userId}`);
     
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('user_preferences')
       .delete()
       .eq('user_id', userId)
@@ -480,7 +480,7 @@ export async function searchOffers(query: string): Promise<Offer[]> {
     
     const searchTerm = `%${query}%`;
     
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('Linkmydeals_Offers')
       .select('*')
       .or(`title.ilike.${searchTerm},description.ilike.${searchTerm},store.ilike.${searchTerm},categories.ilike.${searchTerm}`)
@@ -496,7 +496,7 @@ export async function searchOffers(query: string): Promise<Offer[]> {
     }
     
     // Transform data to Offer type (reuse the transformation logic from fetchOffers)
-    return data.map((item, index) => {
+    return data.map((item: any, index: number) => {
       // Calculate price and savings (same logic as in fetchOffers)
       let price = 0;
       let originalPrice = 0;
@@ -577,17 +577,17 @@ function extractPreferenceValue(prefId: string): string {
   const { mockBrands, mockStores, mockBanks } = require('@/mockData');
   
   if (prefId.startsWith('b')) {
-    const brand = mockBrands.find(b => b.id === prefId);
+    const brand = mockBrands.find((b: any) => b.id === prefId);
     return brand ? brand.name : '';
   }
   
   if (prefId.startsWith('s')) {
-    const store = mockStores.find(s => s.id === prefId);
+    const store = mockStores.find((s: any) => s.id === prefId);
     return store ? store.name : '';
   }
   
   if (prefId.startsWith('bk')) {
-    const bank = mockBanks.find(b => b.id === prefId);
+    const bank = mockBanks.find((b: any) => b.id === prefId);
     return bank ? bank.name : '';
   }
   

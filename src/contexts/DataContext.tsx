@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Offer, Category } from '@/types';
 import { fetchCategories, fetchOffers, applyPreferencesToOffers } from '@/services/supabaseService';
@@ -84,8 +85,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('Fetching preferences for user:', userId);
       
-      // Fetch preferences from Supabase
-      const { data: preferencesData, error } = await supabase
+      // Fetch preferences from Supabase with type assertion
+      const { data: preferencesData, error } = await (supabase as any)
         .from('user_preferences')
         .select('*')
         .eq('user_id', userId);
@@ -104,7 +105,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         banks: [] as string[]
       };
       
-      preferencesData?.forEach(pref => {
+      preferencesData?.forEach((pref: any) => {
         if (preferences[pref.preference_type as keyof typeof preferences]) {
           preferences[pref.preference_type as keyof typeof preferences].push(pref.preference_id);
         }
