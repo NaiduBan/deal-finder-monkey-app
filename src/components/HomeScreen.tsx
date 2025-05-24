@@ -20,7 +20,7 @@ const HomeScreen = () => {
   const navigate = useNavigate();
   const { user: authUser, userProfile } = useAuth();
   const { user: userContext } = useUser();
-  const { categories, bannerItems } = useData();
+  const { categories } = useData();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [todaysOffers, setTodaysOffers] = useState<Offer[]>([]);
@@ -28,8 +28,24 @@ const HomeScreen = () => {
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState('India');
 
+  // Mock banner items since bannerItems is not available in DataContext
+  const bannerItems = [
+    {
+      id: '1',
+      imageUrl: '/placeholder.svg',
+      title: 'Special Offers',
+      link: '/offers'
+    },
+    {
+      id: '2', 
+      imageUrl: '/placeholder.svg',
+      title: 'Exclusive Deals',
+      link: '/deals'
+    }
+  ];
+
   useEffect(() => {
-    setUserLocation(userProfile?.location || userContext.location || 'India');
+    setUserLocation(userProfile?.location || userContext?.location || 'India');
   }, [userProfile, userContext]);
 
   useEffect(() => {
@@ -39,9 +55,9 @@ const HomeScreen = () => {
         console.log('Loading today\'s offers...');
         
         const offers = await fetchTodaysOffers();
-        console.log('Fetched offers:', offers.length);
+        console.log('Fetched offers:', offers?.length || 0);
         
-        let finalOffers = offers;
+        let finalOffers = offers || [];
         
         // Apply user preferences if user is authenticated
         if (authUser) {
@@ -53,15 +69,15 @@ const HomeScreen = () => {
               fetchUserPreferences(authUser.id, 'banks')
             ]);
             
-            if (storePrefs.length > 0 || brandPrefs.length > 0 || bankPrefs.length > 0) {
+            if ((storePrefs?.length || 0) > 0 || (brandPrefs?.length || 0) > 0 || (bankPrefs?.length || 0) > 0) {
               const preferences = {
-                stores: storePrefs.map(p => p.preference_id),
-                brands: brandPrefs.map(p => p.preference_id),
-                banks: bankPrefs.map(p => p.preference_id)
+                stores: (storePrefs || []).map(p => p.preference_id),
+                brands: (brandPrefs || []).map(p => p.preference_id),
+                banks: (bankPrefs || []).map(p => p.preference_id)
               };
               
               console.log('Applying user preferences:', preferences);
-              finalOffers = applyPreferencesToOffers(offers, preferences);
+              finalOffers = applyPreferencesToOffers(finalOffers, preferences);
             }
           } catch (error) {
             console.error('Error fetching user preferences:', error);
@@ -72,6 +88,8 @@ const HomeScreen = () => {
         setFilteredOffers(finalOffers);
       } catch (error) {
         console.error('Error loading today\'s offers:', error);
+        setTodaysOffers([]);
+        setFilteredOffers([]);
       } finally {
         setLoading(false);
       }
@@ -82,7 +100,7 @@ const HomeScreen = () => {
 
   useEffect(() => {
     if (searchQuery.trim()) {
-      const filtered = todaysOffers.filter(offer =>
+      const filtered = (todaysOffers || []).filter(offer =>
         offer.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         offer.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         offer.store?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -90,7 +108,7 @@ const HomeScreen = () => {
       );
       setFilteredOffers(filtered);
     } else {
-      setFilteredOffers(todaysOffers);
+      setFilteredOffers(todaysOffers || []);
     }
   }, [searchQuery, todaysOffers]);
 
@@ -112,8 +130,8 @@ const HomeScreen = () => {
     }
   };
 
-  const featuredOffers = filteredOffers.filter(offer => offer.featured).slice(0, 5);
-  const regularOffers = filteredOffers.filter(offer => !offer.featured).slice(0, 10);
+  const featuredOffers = (filteredOffers || []).filter(offer => offer.featured).slice(0, 5);
+  const regularOffers = (filteredOffers || []).filter(offer => !offer.featured).slice(0, 10);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 pb-20">
@@ -124,7 +142,7 @@ const HomeScreen = () => {
             <Avatar className="w-12 h-12 border-2 border-white/20">
               <AvatarImage src={userProfile?.avatar_url} />
               <AvatarFallback className="bg-white/20 text-white font-bold">
-                {getInitials(userProfile?.name || userContext.name)}
+                {getInitials(userProfile?.name || userContext?.name)}
               </AvatarFallback>
             </Avatar>
             <div>
@@ -158,7 +176,7 @@ const HomeScreen = () => {
             >
               <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
                 <span className="text-xs font-bold">
-                  {getInitials(userProfile?.name || userContext.name)}
+                  {getInitials(userProfile?.name || userContext?.name)}
                 </span>
               </div>
             </Button>
@@ -187,15 +205,15 @@ const HomeScreen = () => {
         {/* Quick Stats */}
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-white/10 rounded-xl p-3 text-center backdrop-blur-sm">
-            <div className="text-2xl font-bold">{userContext.points}</div>
+            <div className="text-2xl font-bold">{userContext?.points || 0}</div>
             <div className="text-xs text-green-100">Points</div>
           </div>
           <div className="bg-white/10 rounded-xl p-3 text-center backdrop-blur-sm">
-            <div className="text-2xl font-bold">{userContext.savedOffers.length}</div>
+            <div className="text-2xl font-bold">{userContext?.savedOffers?.length || 0}</div>
             <div className="text-xs text-green-100">Saved</div>
           </div>
           <div className="bg-white/10 rounded-xl p-3 text-center backdrop-blur-sm">
-            <div className="text-2xl font-bold">{filteredOffers.length}</div>
+            <div className="text-2xl font-bold">{filteredOffers?.length || 0}</div>
             <div className="text-xs text-green-100">Today's Deals</div>
           </div>
         </div>
@@ -203,9 +221,9 @@ const HomeScreen = () => {
 
       <div className="p-4 space-y-6">
         {/* Banner Carousel */}
-        {bannerItems.length > 0 && (
+        {bannerItems && bannerItems.length > 0 && (
           <div className="mb-6">
-            <BannerCarousel items={bannerItems} />
+            <BannerCarousel banners={bannerItems} />
           </div>
         )}
 
@@ -254,7 +272,7 @@ const HomeScreen = () => {
             </Link>
           </div>
           <div className="flex space-x-4 overflow-x-auto pb-2">
-            {categories.slice(0, 6).map((category) => (
+            {(categories || []).slice(0, 6).map((category) => (
               <div key={category.id} className="flex-shrink-0">
                 <CategoryItem category={category} />
               </div>
@@ -263,7 +281,7 @@ const HomeScreen = () => {
         </div>
 
         {/* Featured Offers */}
-        {featuredOffers.length > 0 && (
+        {featuredOffers && featuredOffers.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Star className="w-5 h-5 text-yellow-500" />
@@ -274,7 +292,7 @@ const HomeScreen = () => {
             </div>
             <div className="space-y-4">
               {featuredOffers.map((offer) => (
-                <OfferCard key={offer.id} offer={offer} featured />
+                <OfferCard key={offer.id} offer={offer} />
               ))}
             </div>
           </div>
@@ -286,7 +304,7 @@ const HomeScreen = () => {
             <Clock className="w-5 h-5 text-green-600" />
             <h2 className="text-xl font-bold text-gray-800">Today's Offers</h2>
             <Badge variant="secondary" className="bg-green-100 text-green-800">
-              {filteredOffers.length}
+              {filteredOffers?.length || 0}
             </Badge>
           </div>
           
@@ -301,7 +319,7 @@ const HomeScreen = () => {
                 </Card>
               ))}
             </div>
-          ) : filteredOffers.length > 0 ? (
+          ) : (filteredOffers && filteredOffers.length > 0) ? (
             <div className="space-y-4">
               {regularOffers.map((offer) => (
                 <OfferCard key={offer.id} offer={offer} />
