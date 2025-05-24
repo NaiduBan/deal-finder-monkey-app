@@ -4,6 +4,7 @@ import { User } from '@/types';
 import { mockUser } from '@/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UserContextType {
   user: User;
@@ -22,13 +23,11 @@ const getInitialUser = (): User => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
       const parsedUser = JSON.parse(savedUser);
-      // Update location to India if it's the first time
-      if (parsedUser.location !== 'India') {
-        parsedUser.location = 'India';
-      }
-      return parsedUser;
+      return {
+        ...parsedUser,
+        savedOffers: parsedUser.savedOffers || []
+      };
     } else {
-      // Set default location to India
       return {
         ...mockUser,
         location: 'India',
@@ -48,170 +47,65 @@ const getInitialUser = (): User => {
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User>(getInitialUser);
   const { toast } = useToast();
-  const [authSession, setAuthSession] = useState<any>(null);
+  const { session, userProfile } = useAuth();
 
-  // Check if user is already logged in
+  // Sync with auth context
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        // Get current session
-        const { data: { session } } = await supabase.auth.getSession();
-        setAuthSession(session);
+    if (session?.user && userProfile) {
+      // Update user data with auth information
+      setUser(prevUser => {
+        const updatedUser = {
+          ...prevUser,
+          id: session.user.id,
+          email: userProfile.email || session.user.email || '',
+          name: userProfile.name || '',
+          phone: userProfile.phone || '',
+          location: userProfile.location || 'India',
+        };
         
-        if (session) {
-          console.log("User is authenticated:", session.user.id);
-          
-          // If authenticated, fetch user profile from Supabase
-          const { data: profileData, error: profileError } = await (supabase as any)
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (profileError) {
-            console.error('Error fetching user profile:', profileError);
-            
-            // If profile doesn't exist yet, create it
-            if (profileError.code === 'PGRST116') {
-              try {
-                const { error: insertError } = await (supabase as any)
-                  .from('profiles')
-                  .insert({
-                    id: session.user.id,
-                    email: session.user.email,
-                    location: 'India'
-                  });
-                  
-                if (insertError) {
-                  console.error('Error creating user profile:', insertError);
-                } else {
-                  console.log('Created new user profile');
-                }
-              } catch (err) {
-                console.error('Error in profile creation:', err);
-              }
-            }
-          }
-          
-          // Fetch saved offers for this user
-          const { data: savedOffers, error: savedOffersError } = await (supabase as any)
+        // Save to localStorage
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        
+        return updatedUser;
+      });
+      
+      // Fetch saved offers for authenticated user
+      const fetchSavedOffers = async () => {
+        try {
+          const { data: savedOffers } = await (supabase as any)
             .from('saved_offers')
             .select('offer_id')
             .eq('user_id', session.user.id);
           
-          if (savedOffersError) {
-            console.error('Error fetching saved offers:', savedOffersError);
-          }
-          
-          console.log("Saved offers:", savedOffers);
-          
-          // Update the user state with data from Supabase
-          setUser(prevUser => ({
-            ...prevUser,
-            id: session.user.id,
-            email: session.user.email || '',
-            location: profileData?.location || 'India',
-            savedOffers: savedOffers ? savedOffers.map((item: any) => item.offer_id) : []
-          }));
-          
-          // Save user to localStorage for offline access
-          localStorage.setItem('user', JSON.stringify({
-            ...prevUser,
-            id: session.user.id,
-            email: session.user.email || '',
-            location: profileData?.location || 'India',
-            savedOffers: savedOffers ? savedOffers.map((item: any) => item.offer_id) : []
-          }));
-        }
-      } catch (error) {
-        console.error('Error checking authentication:', error);
-      }
-    };
-
-    checkAuth();
-    
-    // Listen for auth changes
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, session?.user?.id);
-      setAuthSession(session);
-      
-      if (event === 'SIGNED_IN' && session) {
-        // User signed in, fetch their profile
-        const { data: profileData, error: profileError } = await (supabase as any)
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-          
-        if (profileError && profileError.code === 'PGRST116') {
-          // Profile doesn't exist, create it
-          try {
-            const { error: insertError } = await (supabase as any)
-              .from('profiles')
-              .insert({
-                id: session.user.id,
-                email: session.user.email,
-                location: 'India'
-              });
+          if (savedOffers) {
+            setUser(prevUser => {
+              const updatedUser = {
+                ...prevUser,
+                savedOffers: savedOffers.map((item: any) => item.offer_id)
+              };
               
-            if (insertError) {
-              console.error('Error creating user profile on sign in:', insertError);
-            } else {
-              console.log('Created new user profile on sign in');
-            }
-          } catch (err) {
-            console.error('Error in profile creation on sign in:', err);
+              localStorage.setItem('user', JSON.stringify(updatedUser));
+              
+              return updatedUser;
+            });
           }
+        } catch (error) {
+          console.error('Error fetching saved offers:', error);
         }
-        
-        // Fetch saved offers for this user
-        const { data: savedOffers } = await (supabase as any)
-          .from('saved_offers')
-          .select('offer_id')
-          .eq('user_id', session.user.id);
-        
-        console.log("Signed in - saved offers:", savedOffers);
-        
-        // Update user state
-        const updatedUser = {
-          ...user,
-          id: session.user.id,
-          email: session.user.email || '',
-          location: profileData?.location || 'India',
-          savedOffers: savedOffers ? savedOffers.map((item: any) => item.offer_id) : []
-        };
-        
-        setUser(updatedUser);
-        
-        // Save user to localStorage for offline access
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        
-      } else if (event === 'SIGNED_OUT') {
-        // User signed out, revert to default user
-        setUser({
-          ...mockUser,
-          location: 'India'
-        });
-        
-        // Update localStorage
-        localStorage.setItem('user', JSON.stringify({
-          ...mockUser,
-          location: 'India'
-        }));
-      }
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
-  
-  // save prevUser reference for the update closure
-  const prevUser = React.useRef(user);
-  
-  useEffect(() => {
-    prevUser.current = user;
-  }, [user]);
+      };
+      
+      fetchSavedOffers();
+    } else if (!session) {
+      // Reset to guest user when signed out
+      const guestUser = {
+        ...mockUser,
+        location: 'India',
+        savedOffers: []
+      };
+      setUser(guestUser);
+      localStorage.setItem('user', JSON.stringify(guestUser));
+    }
+  }, [session, userProfile]);
 
   // Function to update user points
   const updatePoints = (amount: number) => {
@@ -229,14 +123,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         points: newPoints
       };
       
-      // Save to localStorage for offline access
+      // Save to localStorage
       localStorage.setItem('user', JSON.stringify(updatedUser));
       
       return updatedUser;
     });
   };
 
-  // Function to save an offer to user's favorites in Supabase
+  // Function to save an offer to user's favorites
   const saveOffer = async (offerId: string) => {
     console.log('Saving offer:', offerId);
     
@@ -249,20 +143,18 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           points: prevUser.points + 5 // Add 5 points for saving an offer
         };
         
-        // Save to localStorage for offline access
         localStorage.setItem('user', JSON.stringify(updatedUser));
-        
         return updatedUser;
       });
       
       // If user is authenticated, save to Supabase
-      if (authSession && authSession.user) {
+      if (session?.user) {
         try {
-          console.log('Saving to Supabase:', offerId, 'User ID:', authSession.user.id);
+          console.log('Saving to Supabase:', offerId, 'User ID:', session.user.id);
           const { error } = await (supabase as any)
             .from('saved_offers')
             .insert({
-              user_id: authSession.user.id,
+              user_id: session.user.id,
               offer_id: offerId
             });
             
@@ -277,7 +169,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
               };
               
               localStorage.setItem('user', JSON.stringify(updatedUser));
-              
               return updatedUser;
             });
             
@@ -297,12 +188,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         title: "Offer saved!",
         description: "The offer has been added to your saved items and you've earned 5 points!",
       });
-    } else {
-      console.log('Offer already saved:', offerId);
     }
   };
 
-  // Function to remove an offer from user's favorites in Supabase
+  // Function to remove an offer from user's favorites
   const unsaveOffer = async (offerId: string) => {
     console.log('Unsaving offer:', offerId);
     
@@ -314,18 +203,17 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       };
       
       localStorage.setItem('user', JSON.stringify(updatedUser));
-      
       return updatedUser;
     });
     
     // If user is authenticated, remove from Supabase
-    if (authSession && authSession.user) {
+    if (session?.user) {
       try {
-        console.log('Removing from Supabase:', offerId, 'User ID:', authSession.user.id);
+        console.log('Removing from Supabase:', offerId, 'User ID:', session.user.id);
         const { error } = await (supabase as any)
           .from('saved_offers')
           .delete()
-          .eq('user_id', authSession.user.id)
+          .eq('user_id', session.user.id)
           .eq('offer_id', offerId);
           
         if (error) {
@@ -338,7 +226,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
             };
             
             localStorage.setItem('user', JSON.stringify(updatedUser));
-            
             return updatedUser;
           });
           
@@ -364,7 +251,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     return user.savedOffers.includes(offerId);
   };
 
-  // Function to update user location and save to Supabase
+  // Function to update user location
   const updateLocation = async (location: string) => {
     // Update local state first for responsiveness
     setUser(prevUser => {
@@ -374,21 +261,19 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       };
       
       localStorage.setItem('user', JSON.stringify(updatedUser));
-      
       return updatedUser;
     });
     
-    // If user is authenticated, update location in Supabase
-    if (authSession && authSession.user) {
+    // If user is authenticated, update location in Supabase through auth context
+    if (session?.user) {
       try {
         const { error } = await (supabase as any)
           .from('profiles')
           .update({ location })
-          .eq('id', authSession.user.id);
+          .eq('id', session.user.id);
           
         if (error) {
           console.error('Error updating location in Supabase:', error);
-          // Don't revert local state as it's not critical
         }
       } catch (error) {
         console.error('Exception while updating location:', error);
