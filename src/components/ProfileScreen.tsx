@@ -140,15 +140,9 @@ const ProfileScreen = () => {
           
           <CardContent className="space-y-6">
             {/* Account Stats */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">{userContext.points || 0}</div>
-                <div className="text-sm text-blue-700">Points Earned</div>
-              </div>
-              <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600">{userContext.savedOffers?.length || 0}</div>
-                <div className="text-sm text-purple-700">Saved Offers</div>
-              </div>
+            <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
+              <div className="text-2xl font-bold text-purple-600">{userContext.savedOffers?.length || 0}</div>
+              <div className="text-sm text-purple-700">Saved Offers</div>
             </div>
             
             <Separator />
@@ -287,15 +281,6 @@ const ProfileScreen = () => {
             >
               <span className="text-2xl mr-3">⚙️</span>
               Manage Preferences
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="w-full justify-start h-12"
-              onClick={() => navigate('/points')}
-            >
-              <span className="text-2xl mr-3">🏆</span>
-              Points History
             </Button>
             
             <Button 

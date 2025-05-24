@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Bookmark, Share2, MapPin, Info, Clock, ExternalLink, Tag, Copy } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Bookmark, Share2, MapPin, Info, Clock, ExternalLink, Tag, Copy, Grid, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useData } from '@/contexts/DataContext';
 import { useUser } from '@/contexts/UserContext';
@@ -144,6 +144,14 @@ const OfferDetailScreen = () => {
           <h1 className="text-xl font-bold text-gray-900">{offer.title || offer.description}</h1>
           <p className="text-monkeyGreen font-semibold mt-1">{offer.store}</p>
           
+          {/* Status */}
+          {offer.status && (
+            <div className="flex items-center text-sm mt-2">
+              <AlertCircle className="w-4 h-4 mr-1 text-green-600" />
+              <span className="text-green-600 font-medium">Status: {offer.status}</span>
+            </div>
+          )}
+          
           {/* Expiry */}
           {offer.expiryDate && (
             <div className="flex items-center text-gray-500 text-sm mt-2">
@@ -166,6 +174,19 @@ const OfferDetailScreen = () => {
           <div className="bg-white p-4 rounded-xl shadow-sm">
             <h3 className="font-semibold mb-2">Details</h3>
             <p className="text-gray-700 leading-relaxed">{offer.longOffer}</p>
+          </div>
+        )}
+        
+        {/* Categories */}
+        {offer.categories && (
+          <div className="bg-white p-4 rounded-xl shadow-sm">
+            <div className="flex items-start space-x-3">
+              <Grid className="w-5 h-5 text-monkeyGreen mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">Categories</h3>
+                <p className="text-sm text-gray-600">{offer.categories}</p>
+              </div>
+            </div>
           </div>
         )}
         

@@ -63,14 +63,28 @@ const OfferCard = ({ offer }: OfferCardProps) => {
         {/* Store */}
         <p className="text-xs text-monkeyGreen font-semibold mb-1">{offer.store || "Store"}</p>
         
+        {/* Title */}
+        {offer.title && (
+          <h3 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2">
+            {offer.title}
+          </h3>
+        )}
+        
         {/* Description */}
-        <p className="text-sm text-gray-700 line-clamp-3 flex-1 leading-relaxed">
-          {offer.description || offer.title || "Offer Description"}
+        <p className="text-sm text-gray-700 line-clamp-2 flex-1 leading-relaxed mb-2">
+          {offer.description || "Offer Description"}
         </p>
+        
+        {/* Long Offer */}
+        {offer.longOffer && offer.longOffer !== offer.description && (
+          <p className="text-xs text-gray-600 line-clamp-2 mb-2">
+            {offer.longOffer}
+          </p>
+        )}
         
         {/* Code Display */}
         {offer.code && (
-          <div className="mt-2 text-center">
+          <div className="mt-auto text-center">
             <span className="text-xs text-gray-500">Code: </span>
             <span className="text-xs font-mono font-semibold text-monkeyGreen bg-monkeyGreen/10 px-2 py-1 rounded">
               {offer.code}
