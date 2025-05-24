@@ -1,11 +1,13 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Offer, Category } from "@/types";
-import { mockCategories } from "@/mockData";
+import { mockCategories, mockOffers } from "@/mockData";
 
 // Function to fetch all categories
 export async function fetchCategories(): Promise<Category[]> {
   try {
     console.log('Fetching categories from Supabase...');
+    // Use type assertion to handle missing types
     const { data, error } = await (supabase as any)
       .from('categories')
       .select('*');
@@ -17,20 +19,22 @@ export async function fetchCategories(): Promise<Category[]> {
     
     console.log('Categories fetched from categories table:', data ? data.length : 0);
     
+    // If no categories found, try to extract categories from Linkmydeals_Offers table
     if (!data || data.length === 0) {
-      console.log('No categories found in categories table, attempting to extract from Offers_data table');
+      console.log('No categories found in categories table, attempting to extract from Linkmydeals_Offers table');
       
       const { data: offersData, error: offersError } = await (supabase as any)
-        .from('Offers_data')
+        .from('Linkmydeals_Offers')
         .select('categories')
         .not('categories', 'is', null);
         
       if (offersError) {
-        console.error('Error fetching categories from Offers_data table:', offersError);
+        console.error('Error fetching categories from Linkmydeals_Offers table:', offersError);
         return mockCategories;
       }
       
       if (offersData && offersData.length > 0) {
+        // Extract unique categories from Linkmydeals_Offers table
         const categoryMap = new Map<string, Category>();
         
         offersData.forEach((item: any) => {
@@ -38,11 +42,11 @@ export async function fetchCategories(): Promise<Category[]> {
             const cats = item.categories.split(',').map((c: string) => c.trim());
             cats.forEach((catName: string, index: number) => {
               if (catName && !categoryMap.has(catName.toLowerCase())) {
-                const id = `b${categoryMap.size + index}`;
+                const id = `b${categoryMap.size + index}`; // Use a more reliable ID format
                 categoryMap.set(catName.toLowerCase(), {
                   id,
                   name: catName,
-                  icon: getCategoryIcon(catName),
+                  icon: getCategoryIcon(catName), // Get appropriate icon based on category name
                   subcategories: []
                 });
               }
@@ -51,8 +55,9 @@ export async function fetchCategories(): Promise<Category[]> {
         });
         
         const extractedCategories = Array.from(categoryMap.values());
-        console.log('Extracted categories from Offers_data table:', extractedCategories.length);
+        console.log('Extracted categories from Linkmydeals_Offers table:', extractedCategories.length);
         
+        // Store the extracted categories in the categories table for future use
         if (extractedCategories.length > 0) {
           try {
             const { error: insertError } = await (supabase as any)
@@ -80,11 +85,12 @@ export async function fetchCategories(): Promise<Category[]> {
       return mockCategories;
     }
     
+    // Transform the data to match our Category type
     return data.map((item: any) => ({
       id: item.id || `b${item.name.toLowerCase().replace(/\s+/g, '-')}`,
       name: item.name,
       icon: item.icon || getCategoryIcon(item.name),
-      subcategories: []
+      subcategories: []  // We don't have subcategories in the DB schema yet
     }));
   } catch (error) {
     console.error('Error in fetchCategories, falling back to mock data:', error);
@@ -92,6 +98,7 @@ export async function fetchCategories(): Promise<Category[]> {
   }
 }
 
+// Helper function to get appropriate icon based on category name
 function getCategoryIcon(categoryName: string): string {
   const nameLower = categoryName.toLowerCase();
   
@@ -116,211 +123,104 @@ function getCategoryIcon(categoryName: string): string {
   } else if (nameLower.includes('coffee') || nameLower.includes('cafe')) {
     return 'coffee';
   } else {
-    return 'shopping-bag';
+    return 'shopping-bag';  // Default icon
   }
 }
 
-// Function to fetch today's offers from the Offers_data table
-export async function fetchTodaysOffers(): Promise<Offer[]> {
+// Function to fetch all offers from the Linkmydeals_Offers table
+export async function fetchOffers(): Promise<Offer[]> {
   try {
-    console.log('Fetching today\'s offers from Offers_data table...');
-    const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
-    
+    console.log('Fetching fresh offers from Linkmydeals_Offers table...');
     const { data, error } = await (supabase as any)
-      .from('Offers_data')
+      .from('Linkmydeals_Offers')
       .select('*')
-      .or(`start_date.lte.${today},start_date.is.null`)
-      .or(`end_date.gte.${today},end_date.is.null`)
-      .order('lmd_id', { ascending: false })
-      .limit(50);
+      .order('lmd_id', { ascending: false }) // Get newest offers first
+      .limit(200); // Limit to a reasonable number for better performance
     
     if (error) {
-      console.error('Error fetching today\'s offers from Offers_data table:', error);
+      console.error('Error fetching offers from Linkmydeals_Offers table:', error);
       throw error;
     }
     
-    console.log('Today\'s offers from Offers_data table:', data ? data.length : 0, 'records found');
+    console.log('Linkmydeals_Offers table results:', data ? data.length : 0, 'records found');
     
+    // If no data is found in the Linkmydeals_Offers table, use mock data
     if (!data || data.length === 0) {
-      console.log('No offers found for today, fetching all offers');
-      return fetchAllOffers();
+      console.log('No data found in Linkmydeals_Offers table, falling back to mock data');
+      return mockOffers;
     }
     
-    return transformOffersData(data);
-  } catch (error) {
-    console.error('Error in fetchTodaysOffers, falling back to all offers:', error);
-    return fetchAllOffers();
-  }
-}
-
-// Function to fetch all offers from the Offers_data table
-export async function fetchAllOffers(): Promise<Offer[]> {
-  try {
-    console.log('Fetching all offers from Offers_data table...');
-    const { data, error } = await (supabase as any)
-      .from('Offers_data')
-      .select('*')
-      .order('lmd_id', { ascending: false })
-      .limit(200);
-    
-    if (error) {
-      console.error('Error fetching offers from Offers_data table:', error);
-      throw error;
-    }
-    
-    console.log('Offers_data table results:', data ? data.length : 0, 'records found');
-    
-    if (!data || data.length === 0) {
-      console.log('No data found in Offers_data table');
-      return [];
-    }
-    
-    return transformOffersData(data);
-  } catch (error) {
-    console.error('Error in fetchAllOffers:', error);
-    return [];
-  }
-}
-
-// Helper function to transform offers data
-function transformOffersData(data: any[]): Offer[] {
-  return data.map((item: any, index: number) => {
-    let price = 0;
-    let originalPrice = 0;
-    let savings = '';
-    
-    if (item.offer_value) {
-      const offerValue = item.offer_value;
-      if (offerValue.includes('%')) {
-        const percent = parseInt(offerValue.replace(/[^0-9]/g, ''));
-        originalPrice = Math.floor(1000 + Math.random() * 9000);
-        price = Math.floor(originalPrice * (1 - percent / 100));
-        savings = `${percent}%`;
-      } else if (offerValue.match(/\d+/)) {
-        const amount = parseInt(offerValue.replace(/[^0-9]/g, ''));
-        price = amount;
-        originalPrice = price + Math.floor(Math.random() * 500) + 100;
-        savings = `₹${originalPrice - price}`;
+    // Transform the data to match our Offer type
+    return data.map((item: any, index: number) => {
+      // Calculate price and savings
+      let price = 0;
+      let originalPrice = 0;
+      let savings = '';
+      
+      if (item.offer_value) {
+        const offerValue = item.offer_value;
+        if (offerValue.includes('%')) {
+          // Percentage discount
+          const percent = parseInt(offerValue.replace(/[^0-9]/g, ''));
+          originalPrice = Math.floor(1000 + Math.random() * 9000); // Random original price
+          price = Math.floor(originalPrice * (1 - percent / 100));
+          savings = `${percent}%`;
+        } else if (offerValue.match(/\d+/)) {
+          // Fixed amount discount
+          const amount = parseInt(offerValue.replace(/[^0-9]/g, ''));
+          price = amount;
+          originalPrice = price + Math.floor(Math.random() * 500) + 100;
+          savings = `₹${originalPrice - price}`;
+        } else {
+          // Default values
+          price = Math.floor(Math.random() * 1000) + 100;
+          originalPrice = price + Math.floor(Math.random() * 500) + 100;
+          savings = `₹${originalPrice - price}`;
+        }
       } else {
+        // Default values
         price = Math.floor(Math.random() * 1000) + 100;
         originalPrice = price + Math.floor(Math.random() * 500) + 100;
         savings = `₹${originalPrice - price}`;
       }
-    } else {
-      price = Math.floor(Math.random() * 1000) + 100;
-      originalPrice = price + Math.floor(Math.random() * 500) + 100;
-      savings = `₹${originalPrice - price}`;
-    }
 
-    const isAmazon = (item.store && item.store.toLowerCase().includes('amazon')) || 
-                    (item.merchant_homepage && item.merchant_homepage.toLowerCase().includes('amazon'));
-    
-    return {
-      id: `offer-${item.lmd_id || index}`,
-      title: item.title || "",
-      description: item.description || item.long_offer || "",
-      imageUrl: item.image_url || "",
-      store: item.store || "",
-      category: item.categories || "",
-      price: price,
-      originalPrice: originalPrice,
-      expiryDate: item.end_date || "",
-      isAmazon: isAmazon,
-      savings: savings,
-      lmdId: Number(item.lmd_id) || 0,
-      merchantHomepage: item.merchant_homepage || "",
-      longOffer: item.long_offer || "",
-      code: item.code || "",
-      termsAndConditions: item.terms_and_conditions || "",
-      featured: item.featured === "true" || item.featured === "1",
-      publisherExclusive: item.publisher_exclusive === "true" || item.publisher_exclusive === "1",
-      url: item.url || "",
-      smartlink: item.smartlink || "",
-      offerType: item.type || "",
-      offerValue: item.offer_value || "",
-      status: item.status || "",
-      startDate: item.start_date || "",
-      endDate: item.end_date || "",
-      categories: item.categories || ""
-    };
-  });
-}
-
-// Keep existing functions but use the new naming convention
-export const fetchOffers = fetchTodaysOffers;
-
-// User profile functions
-export async function createUserProfile(userId: string, userData: any) {
-  try {
-    const { data, error } = await (supabase as any)
-      .from('profiles')
-      .insert({
-        id: userId,
-        email: userData.email,
-        name: userData.name || '',
-        first_name: userData.first_name || '',
-        last_name: userData.last_name || '',
-        phone: userData.phone || '',
-        location: userData.location || 'India',
-        avatar_url: userData.avatar_url || '',
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error creating user profile:', error);
-      throw error;
-    }
-
-    return data;
+      // Determine if it's an Amazon offer
+      const isAmazon = (item.store && item.store.toLowerCase().includes('amazon')) || 
+                      (item.merchant_homepage && item.merchant_homepage.toLowerCase().includes('amazon'));
+      
+      return {
+        id: `lmd-${item.lmd_id || index}`,
+        title: item.title || "",
+        description: item.description || item.long_offer || "",
+        imageUrl: item.image_url || "",
+        store: item.store || "",
+        category: item.categories || "",
+        price: price,
+        originalPrice: originalPrice,
+        expiryDate: item.end_date || "",
+        isAmazon: isAmazon,
+        savings: savings,
+        // Fields from the Linkmydeals_Offers table
+        lmdId: Number(item.lmd_id) || 0,
+        merchantHomepage: item.merchant_homepage || "",
+        longOffer: item.long_offer || "",
+        code: item.code || "",
+        termsAndConditions: item.terms_and_conditions || "",
+        featured: item.featured === "true" || item.featured === "1",
+        publisherExclusive: item.publisher_exclusive === "true" || item.publisher_exclusive === "1",
+        url: item.url || "",
+        smartlink: item.smartlink || "",
+        offerType: item.type || "",
+        offerValue: item.offer_value || "",
+        status: item.status || "",
+        startDate: item.start_date || "",
+        endDate: item.end_date || "",
+        categories: item.categories || ""
+      };
+    });
   } catch (error) {
-    console.error('Error in createUserProfile:', error);
-    throw error;
-  }
-}
-
-export async function updateUserProfile(userId: string, updates: any) {
-  try {
-    const { data, error } = await (supabase as any)
-      .from('profiles')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating user profile:', error);
-      throw error;
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Error in updateUserProfile:', error);
-    throw error;
-  }
-}
-
-export async function fetchUserProfile(userId: string) {
-  try {
-    const { data, error } = await (supabase as any)
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching user profile:', error);
-      throw error;
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Error in fetchUserProfile:', error);
-    return null;
+    console.error('Error in fetchOffers, falling back to mock data:', error);
+    return mockOffers;
   }
 }
 
@@ -339,6 +239,7 @@ export async function uploadImage(file: File): Promise<string> {
     throw error;
   }
   
+  // Get the public URL for the uploaded image
   const { data: { publicUrl } } = supabase.storage
     .from('offers')
     .getPublicUrl(filePath);
@@ -387,9 +288,9 @@ export async function saveOfferForUser(userId: string, offerId: string): Promise
       });
       
     if (error) {
-      if (error.code === '23505') {
+      if (error.code === '23505') { // Unique constraint violation
         console.log('Offer already saved for this user');
-        return true;
+        return true; // Already saved is still a success
       }
       console.error('Error saving offer:', error);
       throw error;
@@ -580,7 +481,7 @@ export async function searchOffers(query: string): Promise<Offer[]> {
     const searchTerm = `%${query}%`;
     
     const { data, error } = await (supabase as any)
-      .from('Offers_data')
+      .from('Linkmydeals_Offers')
       .select('*')
       .or(`title.ilike.${searchTerm},description.ilike.${searchTerm},store.ilike.${searchTerm},categories.ilike.${searchTerm}`)
       .limit(20);
@@ -594,7 +495,69 @@ export async function searchOffers(query: string): Promise<Offer[]> {
       return [];
     }
     
-    return transformOffersData(data);
+    // Transform data to Offer type (reuse the transformation logic from fetchOffers)
+    return data.map((item: any, index: number) => {
+      // Calculate price and savings (same logic as in fetchOffers)
+      let price = 0;
+      let originalPrice = 0;
+      let savings = '';
+      
+      if (item.offer_value) {
+        const offerValue = item.offer_value;
+        if (offerValue.includes('%')) {
+          const percent = parseInt(offerValue.replace(/[^0-9]/g, ''));
+          originalPrice = Math.floor(1000 + Math.random() * 9000);
+          price = Math.floor(originalPrice * (1 - percent / 100));
+          savings = `${percent}%`;
+        } else if (offerValue.match(/\d+/)) {
+          const amount = parseInt(offerValue.replace(/[^0-9]/g, ''));
+          price = amount;
+          originalPrice = price + Math.floor(Math.random() * 500) + 100;
+          savings = `₹${originalPrice - price}`;
+        } else {
+          price = Math.floor(Math.random() * 1000) + 100;
+          originalPrice = price + Math.floor(Math.random() * 500) + 100;
+          savings = `₹${originalPrice - price}`;
+        }
+      } else {
+        price = Math.floor(Math.random() * 1000) + 100;
+        originalPrice = price + Math.floor(Math.random() * 500) + 100;
+        savings = `₹${originalPrice - price}`;
+      }
+      
+      const isAmazon = (item.store && item.store.toLowerCase().includes('amazon')) || 
+                      (item.merchant_homepage && item.merchant_homepage.toLowerCase().includes('amazon'));
+      
+      return {
+        id: `lmd-${item.lmd_id || index}`,
+        title: item.title || "",
+        description: item.description || item.long_offer || "",
+        imageUrl: item.image_url || "",
+        store: item.store || "",
+        category: item.categories || "",
+        price: price,
+        originalPrice: originalPrice,
+        expiryDate: item.end_date || "",
+        isAmazon: isAmazon,
+        savings: savings,
+        // Fields from the Linkmydeals_Offers table
+        lmdId: Number(item.lmd_id) || 0,
+        merchantHomepage: item.merchant_homepage || "",
+        longOffer: item.long_offer || "",
+        code: item.code || "",
+        termsAndConditions: item.terms_and_conditions || "",
+        featured: item.featured === "true" || item.featured === "1",
+        publisherExclusive: item.publisher_exclusive === "true" || item.publisher_exclusive === "1",
+        url: item.url || "",
+        smartlink: item.smartlink || "",
+        offerType: item.type || "",
+        offerValue: item.offer_value || "",
+        status: item.status || "",
+        startDate: item.start_date || "",
+        endDate: item.end_date || "",
+        categories: item.categories || ""
+      };
+    });
   } catch (error) {
     console.error('Error in searchOffers:', error);
     return [];
