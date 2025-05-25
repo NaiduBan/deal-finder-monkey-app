@@ -16,50 +16,6 @@ const PreferenceScreen = () => {
   const [availableItems, setAvailableItems] = useState<{ id: string; name: string; count: number }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const getPreferenceConfig = () => {
-    switch (type) {
-      case 'brands':
-        return {
-          title: 'Favorite Brands',
-          subtitle: 'Select brands you love to see personalized offers',
-          icon: Star,
-          placeholder: 'Search brands...',
-          emptyMessage: 'No brands found',
-          color: 'from-green-500 to-emerald-600'
-        };
-      case 'stores':
-        return {
-          title: 'Preferred Stores',
-          subtitle: 'Choose stores where you shop most often',
-          icon: Store,
-          placeholder: 'Search stores...',
-          emptyMessage: 'No stores found',
-          color: 'from-green-600 to-green-700'
-        };
-      case 'categories':
-        return {
-          title: 'Favorite Categories',
-          subtitle: 'Select categories you are interested in',
-          icon: Tag,
-          placeholder: 'Search categories...',
-          emptyMessage: 'No categories found',
-          color: 'from-emerald-500 to-green-600'
-        };
-      default:
-        return {
-          title: 'Preferences',
-          subtitle: 'Select your preferences',
-          icon: Tag,
-          placeholder: 'Search...',
-          emptyMessage: 'No items found',
-          color: 'from-green-500 to-emerald-600'
-        };
-    }
-  };
-
-  const config = getPreferenceConfig();
-  const IconComponent = config.icon;
-
   // Fetch available items with counts from Offers_data table
   useEffect(() => {
     const fetchAvailableItems = async () => {
@@ -122,6 +78,7 @@ const PreferenceScreen = () => {
       if (!session?.user || !type) return;
 
       try {
+        console.log('Loading preferences for user:', session.user.id, 'type:', type);
         const { data, error } = await supabase
           .from('user_preferences')
           .select('preference_id')
@@ -130,6 +87,7 @@ const PreferenceScreen = () => {
 
         if (error) throw error;
 
+        console.log('Loaded preferences:', data);
         setSelectedItems(data?.map(item => item.preference_id) || []);
       } catch (error) {
         console.error('Error loading preferences:', error);
@@ -139,32 +97,50 @@ const PreferenceScreen = () => {
     loadUserPreferences();
   }, [session, type]);
 
-  // Real-time subscription for preference changes
+  // Enhanced real-time subscription for preference changes
   useEffect(() => {
     if (!session?.user || !type) return;
 
+    console.log('Setting up real-time subscription for user:', session.user.id, 'type:', type);
+
     const channel = supabase
-      .channel('user-preferences-changes')
+      .channel(`user-preferences-${session.user.id}-${type}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'user_preferences',
-          filter: `user_id=eq.${session.user.id}`
+          filter: `user_id=eq.${session.user.id},preference_type=eq.${type}`
         },
         (payload) => {
-          console.log('Preference change detected:', payload);
-          if (payload.eventType === 'INSERT' && payload.new.preference_type === type) {
-            setSelectedItems(prev => [...prev, payload.new.preference_id]);
-          } else if (payload.eventType === 'DELETE' && payload.old.preference_type === type) {
-            setSelectedItems(prev => prev.filter(id => id !== payload.old.preference_id));
+          console.log('Real-time preference change detected:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            const newPreferenceId = payload.new.preference_id;
+            setSelectedItems(prev => {
+              if (!prev.includes(newPreferenceId)) {
+                console.log('Adding preference:', newPreferenceId);
+                return [...prev, newPreferenceId];
+              }
+              return prev;
+            });
+          } else if (payload.eventType === 'DELETE') {
+            const deletedPreferenceId = payload.old.preference_id;
+            setSelectedItems(prev => {
+              const filtered = prev.filter(id => id !== deletedPreferenceId);
+              console.log('Removing preference:', deletedPreferenceId);
+              return filtered;
+            });
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up subscription');
       supabase.removeChannel(channel);
     };
   }, [session, type]);
@@ -174,6 +150,7 @@ const PreferenceScreen = () => {
 
     try {
       const isSelected = selectedItems.includes(item);
+      console.log('Toggling item:', item, 'currently selected:', isSelected);
       
       if (isSelected) {
         const { error } = await supabase
