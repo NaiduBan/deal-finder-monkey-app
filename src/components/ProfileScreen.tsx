@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, User, Mail, Phone, MapPin, Settings, Bookmark, Bell, Shield, LogOut, Edit2 } from 'lucide-react';
@@ -53,6 +52,14 @@ const ProfileScreen = () => {
       link: '/notifications',
       color: 'text-blue-600',
       bgColor: 'bg-blue-100'
+    },
+    {
+      icon: Settings,
+      label: 'Preferences',
+      description: 'Set your store, brand and category preferences',
+      link: '/preferences/stores',
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-100'
     },
     {
       icon: Shield,

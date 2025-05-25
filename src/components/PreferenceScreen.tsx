@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ChevronLeft, Check, Search, Star, Store, CreditCard, Grid, X, Plus } from 'lucide-react';
+import { ChevronLeft, Check, Search, Star, Store, Tag, X, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -37,20 +37,20 @@ const PreferenceScreen = () => {
           emptyMessage: 'No stores found',
           color: 'from-green-600 to-green-700'
         };
-      case 'banks':
+      case 'categories':
         return {
-          title: 'Your Banks',
-          subtitle: 'Select your banks to see relevant card offers',
-          icon: CreditCard,
-          placeholder: 'Search banks...',
-          emptyMessage: 'No banks found',
+          title: 'Favorite Categories',
+          subtitle: 'Select categories you are interested in',
+          icon: Tag,
+          placeholder: 'Search categories...',
+          emptyMessage: 'No categories found',
           color: 'from-emerald-500 to-green-600'
         };
       default:
         return {
           title: 'Preferences',
           subtitle: 'Select your preferences',
-          icon: Grid,
+          icon: Tag,
           placeholder: 'Search...',
           emptyMessage: 'No items found',
           color: 'from-green-500 to-emerald-600'
@@ -83,7 +83,7 @@ const PreferenceScreen = () => {
               }
             }
           });
-        } else if (type === 'brands') {
+        } else if (type === 'brands' || type === 'categories') {
           offers?.forEach(offer => {
             if (offer.categories) {
               const categories = offer.categories.split(',');
@@ -94,28 +94,6 @@ const PreferenceScreen = () => {
                 }
               });
             }
-          });
-        } else if (type === 'banks') {
-          offers?.forEach(offer => {
-            const fullText = `${offer.terms_and_conditions || ''} ${offer.description || ''} ${offer.long_offer || ''}`.toLowerCase();
-            
-            const bankKeywords = [
-              'hdfc bank', 'icici bank', 'sbi', 'state bank of india', 'axis bank', 
-              'kotak mahindra bank', 'paytm payments bank', 'citi bank', 'citibank',
-              'american express', 'amex', 'standard chartered', 'yes bank', 
-              'indusind bank', 'bank of baroda', 'bob', 'canara bank',
-              'union bank', 'pnb', 'punjab national bank', 'bank of india', 
-              'central bank', 'indian bank', 'rbl bank', 'federal bank'
-            ];
-            
-            bankKeywords.forEach(bank => {
-              if (fullText.includes(bank)) {
-                const bankName = bank.split(' ').map(word => 
-                  word.charAt(0).toUpperCase() + word.slice(1)
-                ).join(' ');
-                itemsMap.set(bankName, (itemsMap.get(bankName) || 0) + 1);
-              }
-            });
           });
         }
 
@@ -147,13 +125,13 @@ const PreferenceScreen = () => {
       try {
         const { data, error } = await supabase
           .from('user_preferences')
-          .select('preference_id')
+          .select('preference_value')
           .eq('user_id', session.user.id)
           .eq('preference_type', type);
 
         if (error) throw error;
 
-        setSelectedItems(data?.map(item => item.preference_id) || []);
+        setSelectedItems(data?.map(item => item.preference_value) || []);
       } catch (error) {
         console.error('Error loading preferences:', error);
       }
@@ -179,9 +157,9 @@ const PreferenceScreen = () => {
         (payload) => {
           console.log('Preference change detected:', payload);
           if (payload.eventType === 'INSERT' && payload.new.preference_type === type) {
-            setSelectedItems(prev => [...prev, payload.new.preference_id]);
+            setSelectedItems(prev => [...prev, payload.new.preference_value]);
           } else if (payload.eventType === 'DELETE' && payload.old.preference_type === type) {
-            setSelectedItems(prev => prev.filter(id => id !== payload.old.preference_id));
+            setSelectedItems(prev => prev.filter(id => id !== payload.old.preference_value));
           }
         }
       )
@@ -204,7 +182,7 @@ const PreferenceScreen = () => {
           .delete()
           .eq('user_id', session.user.id)
           .eq('preference_type', type)
-          .eq('preference_id', item);
+          .eq('preference_value', item);
 
         if (error) throw error;
         
@@ -218,7 +196,7 @@ const PreferenceScreen = () => {
           .insert({
             user_id: session.user.id,
             preference_type: type,
-            preference_id: item
+            preference_value: item
           });
 
         if (error) throw error;
@@ -277,7 +255,7 @@ const PreferenceScreen = () => {
       {/* Header */}
       <div className={`bg-gradient-to-r ${config.color} text-white py-6 px-4 sticky top-0 z-10 shadow-lg`}>
         <div className="flex items-center space-x-3 mb-4">
-          <Link to="/home" className="p-2 hover:bg-white/20 rounded-full transition-colors">
+          <Link to="/profile" className="p-2 hover:bg-white/20 rounded-full transition-colors">
             <ChevronLeft className="w-6 h-6" />
           </Link>
           <div className="flex items-center space-x-3">

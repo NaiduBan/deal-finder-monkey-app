@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -20,6 +19,7 @@ import OfferDetailScreen from "./components/OfferDetailScreen";
 import ChatbotScreen from "./components/ChatbotScreen";
 import ProfileScreen from "./components/ProfileScreen";
 import SettingsScreen from "./components/SettingsScreen";
+import PreferenceScreen from "./components/PreferenceScreen";
 import SavedOffersScreen from "./components/SavedOffersScreen";
 import PointsHistoryScreen from "./components/PointsHistoryScreen";
 import NotificationsScreen from "./components/NotificationsScreen";
@@ -70,6 +70,7 @@ const App = () => (
                       <Route path="/login" element={<LoginScreen />} />
                       <Route path="/home" element={<HomeScreen />} />
                       <Route path="/saved" element={<SavedOffersScreen />} />
+                      <Route path="/preferences/:type" element={<PreferenceScreen />} />
                       <Route path="/category/:categoryId" element={<CategoryScreen />} />
                       <Route path="/offer/:offerId" element={<OfferDetailScreen />} />
                       <Route path="/chatbot" element={<ChatbotScreen />} />
