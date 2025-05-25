@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ChevronLeft, Check, Search, Star, Store, Tag, X, Plus } from 'lucide-react';
@@ -125,13 +124,13 @@ const PreferenceScreen = () => {
       try {
         const { data, error } = await supabase
           .from('user_preferences')
-          .select('preference_value')
+          .select('preference_id')
           .eq('user_id', session.user.id)
           .eq('preference_type', type);
 
         if (error) throw error;
 
-        setSelectedItems(data?.map(item => item.preference_value) || []);
+        setSelectedItems(data?.map(item => item.preference_id) || []);
       } catch (error) {
         console.error('Error loading preferences:', error);
       }
@@ -157,9 +156,9 @@ const PreferenceScreen = () => {
         (payload) => {
           console.log('Preference change detected:', payload);
           if (payload.eventType === 'INSERT' && payload.new.preference_type === type) {
-            setSelectedItems(prev => [...prev, payload.new.preference_value]);
+            setSelectedItems(prev => [...prev, payload.new.preference_id]);
           } else if (payload.eventType === 'DELETE' && payload.old.preference_type === type) {
-            setSelectedItems(prev => prev.filter(id => id !== payload.old.preference_value));
+            setSelectedItems(prev => prev.filter(id => id !== payload.old.preference_id));
           }
         }
       )
@@ -182,7 +181,7 @@ const PreferenceScreen = () => {
           .delete()
           .eq('user_id', session.user.id)
           .eq('preference_type', type)
-          .eq('preference_value', item);
+          .eq('preference_id', item);
 
         if (error) throw error;
         
@@ -196,7 +195,7 @@ const PreferenceScreen = () => {
           .insert({
             user_id: session.user.id,
             preference_type: type,
-            preference_value: item
+            preference_id: item
           });
 
         if (error) throw error;
