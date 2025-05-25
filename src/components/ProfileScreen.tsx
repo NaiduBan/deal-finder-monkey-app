@@ -55,14 +55,6 @@ const ProfileScreen = () => {
       bgColor: 'bg-blue-100'
     },
     {
-      icon: Settings,
-      label: 'Preferences',
-      description: 'Set your store and brand preferences',
-      link: '/preferences',
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100'
-    },
-    {
       icon: Shield,
       label: 'Privacy & Security',
       description: 'Manage your account security',
