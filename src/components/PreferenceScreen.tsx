@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ChevronLeft, Check, Search, Star, Store, Tag, X, Plus } from 'lucide-react';
@@ -15,6 +16,51 @@ const PreferenceScreen = () => {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [availableItems, setAvailableItems] = useState<{ id: string; name: string; count: number }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Configuration based on preference type
+  const getConfig = () => {
+    switch (type) {
+      case 'stores':
+        return {
+          title: 'Store Preferences',
+          subtitle: 'Choose your favorite stores',
+          color: 'from-blue-500 to-blue-600',
+          placeholder: 'Search stores...',
+          emptyMessage: 'No stores found',
+          icon: Store
+        };
+      case 'brands':
+        return {
+          title: 'Brand Preferences',
+          subtitle: 'Select your preferred brands',
+          color: 'from-purple-500 to-purple-600',
+          placeholder: 'Search brands...',
+          emptyMessage: 'No brands found',
+          icon: Star
+        };
+      case 'categories':
+        return {
+          title: 'Category Preferences',
+          subtitle: 'Pick your favorite categories',
+          color: 'from-green-500 to-green-600',
+          placeholder: 'Search categories...',
+          emptyMessage: 'No categories found',
+          icon: Tag
+        };
+      default:
+        return {
+          title: 'Preferences',
+          subtitle: 'Manage your preferences',
+          color: 'from-gray-500 to-gray-600',
+          placeholder: 'Search...',
+          emptyMessage: 'No items found',
+          icon: Tag
+        };
+    }
+  };
+
+  const config = getConfig();
+  const IconComponent = config.icon;
 
   // Fetch available items with counts from Offers_data table
   useEffect(() => {
