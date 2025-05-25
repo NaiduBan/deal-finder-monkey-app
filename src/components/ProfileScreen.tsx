@@ -1,317 +1,216 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Edit3, Save, X, User, Mail, MapPin, Phone, Calendar, LogOut } from "lucide-react";
-import { useAuth } from '@/contexts/AuthContext';
+import { Link } from 'react-router-dom';
+import { ChevronLeft, User, Mail, Phone, MapPin, Settings, Bookmark, Bell, Shield, LogOut, Edit2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/contexts/UserContext';
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const ProfileScreen = () => {
-  const navigate = useNavigate();
-  const { user, userProfile, signOut, updateProfile } = useAuth();
-  const { user: userContext } = useUser();
+  const { user } = useUser();
+  const { session, signOut, userProfile } = useAuth();
   const { toast } = useToast();
-  
-  const [isEditing, setIsEditing] = useState(false);
-  const [editData, setEditData] = useState({
-    name: userProfile?.name || '',
-    phone: userProfile?.phone || '',
-    location: userProfile?.location || ''
-  });
-
-  const handleBack = () => {
-    navigate(-1);
-  };
-
-  const handleEdit = () => {
-    setIsEditing(true);
-    setEditData({
-      name: userProfile?.name || '',
-      phone: userProfile?.phone || '',
-      location: userProfile?.location || ''
-    });
-  };
-
-  const handleSave = async () => {
-    try {
-      await updateProfile(editData);
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Error updating profile:', error);
-    }
-  };
-
-  const handleCancel = () => {
-    setIsEditing(false);
-    setEditData({
-      name: userProfile?.name || '',
-      phone: userProfile?.phone || '',
-      location: userProfile?.location || ''
-    });
-  };
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSignOut = async () => {
     try {
+      setIsLoading(true);
       await signOut();
-      navigate('/login');
+      toast({
+        title: "Signed out successfully",
+        description: "You have been logged out of your account",
+      });
     } catch (error) {
       console.error('Error signing out:', error);
+      toast({
+        title: "Error signing out",
+        description: "There was a problem signing out. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const getInitials = (name?: string) => {
-    if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  };
+  const profileStats = [
+    {
+      label: 'Saved Offers',
+      value: user.savedOffers?.length || 0,
+      icon: Bookmark,
+      color: 'text-green-600',
+      bgColor: 'bg-green-100'
+    }
+  ];
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Unknown';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+  const menuItems = [
+    {
+      icon: Bell,
+      label: 'Notifications',
+      description: 'Manage your notification preferences',
+      link: '/notifications',
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-100'
+    },
+    {
+      icon: Settings,
+      label: 'Preferences',
+      description: 'Set your store and brand preferences',
+      link: '/preferences',
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-100'
+    },
+    {
+      icon: Shield,
+      label: 'Privacy & Security',
+      description: 'Manage your account security',
+      link: '/settings',
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-100'
+    }
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 pb-20">
+    <div className="pb-16 bg-gradient-to-br from-green-50 to-emerald-50 min-h-screen">
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleBack}
-              className="text-white hover:bg-white/20"
-            >
-              <ArrowLeft className="w-6 h-6" />
-            </Button>
+      <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white py-8 px-4 relative overflow-hidden">
+        <div className="absolute inset-0 bg-black/10"></div>
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-6">
+            <Link to="/home" className="p-2 hover:bg-white/20 rounded-full transition-colors">
+              <ChevronLeft className="w-6 h-6" />
+            </Link>
             <h1 className="text-xl font-semibold">Profile</h1>
+            <div className="w-8 h-8"></div>
           </div>
           
-          {user && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleSignOut}
-              className="text-white hover:bg-white/20"
+          {/* Profile Info */}
+          <div className="flex items-center space-x-4">
+            <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
+              <User className="w-10 h-10 text-white" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-white">
+                {userProfile?.name || user.name || 'User'}
+              </h2>
+              <p className="text-white/80 text-sm">
+                {userProfile?.email || user.email || 'user@example.com'}
+              </p>
+              {session?.user && (
+                <Badge className="mt-2 bg-white/20 text-white border-white/30">
+                  Verified Member
+                </Badge>
+              )}
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="text-white border-white/30 hover:bg-white/20 bg-transparent"
             >
-              <LogOut className="w-6 h-6" />
+              <Edit2 className="w-4 h-4 mr-1" />
+              Edit
             </Button>
-          )}
+          </div>
         </div>
       </div>
 
+      {/* Content */}
       <div className="p-4 space-y-6">
-        {/* Profile Card */}
-        <Card className="shadow-lg border-0">
-          <CardHeader className="text-center pb-4">
-            <div className="flex flex-col items-center space-y-4">
-              <Avatar className="w-24 h-24 border-4 border-green-200">
-                <AvatarImage src={userProfile?.avatar_url} />
-                <AvatarFallback className="bg-green-100 text-green-700 text-2xl font-bold">
-                  {getInitials(userProfile?.name)}
-                </AvatarFallback>
-              </Avatar>
-              
-              <div className="text-center">
-                <CardTitle className="text-2xl text-gray-800">
-                  {userProfile?.name || 'Guest User'}
-                </CardTitle>
-                <CardDescription className="text-lg">
-                  {userProfile?.email || 'No email provided'}
-                </CardDescription>
-                {user && (
-                  <Badge variant="secondary" className="mt-2 bg-green-100 text-green-700">
-                    Verified Account
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="space-y-6">
-            {/* Account Stats */}
-            <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">{userContext.savedOffers?.length || 0}</div>
-              <div className="text-sm text-purple-700">Saved Offers</div>
-            </div>
-            
-            <Separator />
-            
-            {/* Profile Information */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-800">Personal Information</h3>
-                {user && !isEditing && (
-                  <Button variant="outline" size="sm" onClick={handleEdit}>
-                    <Edit3 className="w-4 h-4 mr-2" />
-                    Edit
-                  </Button>
-                )}
-                {isEditing && (
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={handleCancel}>
-                      <X className="w-4 h-4" />
-                    </Button>
-                    <Button size="sm" onClick={handleSave} className="bg-green-600 hover:bg-green-700">
-                      <Save className="w-4 h-4" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-              
-              <div className="space-y-4">
-                {/* Name */}
-                <div className="flex items-center space-x-3">
-                  <User className="w-5 h-5 text-gray-400" />
-                  <div className="flex-1">
-                    <Label className="text-sm text-gray-600">Full Name</Label>
-                    {isEditing ? (
-                      <Input
-                        value={editData.name}
-                        onChange={(e) => setEditData(prev => ({ ...prev, name: e.target.value }))}
-                        className="mt-1"
-                        placeholder="Enter your name"
-                      />
-                    ) : (
-                      <div className="text-gray-800 font-medium">
-                        {userProfile?.name || 'Not provided'}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Email */}
-                <div className="flex items-center space-x-3">
-                  <Mail className="w-5 h-5 text-gray-400" />
-                  <div className="flex-1">
-                    <Label className="text-sm text-gray-600">Email Address</Label>
-                    <div className="text-gray-800 font-medium">
-                      {userProfile?.email || 'Not provided'}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Phone */}
-                <div className="flex items-center space-x-3">
-                  <Phone className="w-5 h-5 text-gray-400" />
-                  <div className="flex-1">
-                    <Label className="text-sm text-gray-600">Phone Number</Label>
-                    {isEditing ? (
-                      <Input
-                        value={editData.phone}
-                        onChange={(e) => setEditData(prev => ({ ...prev, phone: e.target.value }))}
-                        className="mt-1"
-                        placeholder="Enter your phone number"
-                        type="tel"
-                      />
-                    ) : (
-                      <div className="text-gray-800 font-medium">
-                        {userProfile?.phone || 'Not provided'}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Location */}
-                <div className="flex items-center space-x-3">
-                  <MapPin className="w-5 h-5 text-gray-400" />
-                  <div className="flex-1">
-                    <Label className="text-sm text-gray-600">Location</Label>
-                    {isEditing ? (
-                      <Input
-                        value={editData.location}
-                        onChange={(e) => setEditData(prev => ({ ...prev, location: e.target.value }))}
-                        className="mt-1"
-                        placeholder="Enter your location"
-                      />
-                    ) : (
-                      <div className="text-gray-800 font-medium">
-                        {userProfile?.location || 'Not provided'}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Member Since */}
-                {userProfile?.created_at && (
-                  <div className="flex items-center space-x-3">
-                    <Calendar className="w-5 h-5 text-gray-400" />
-                    <div className="flex-1">
-                      <Label className="text-sm text-gray-600">Member Since</Label>
-                      <div className="text-gray-800 font-medium">
-                        {formatDate(userProfile.created_at)}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions */}
-        <Card className="shadow-lg border-0">
-          <CardHeader>
-            <CardTitle className="text-lg">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button 
-              variant="outline" 
-              className="w-full justify-start h-12"
-              onClick={() => navigate('/saved')}
-            >
-              <span className="text-2xl mr-3">💾</span>
-              View Saved Offers
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="w-full justify-start h-12"
-              onClick={() => navigate('/preferences')}
-            >
-              <span className="text-2xl mr-3">⚙️</span>
-              Manage Preferences
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="w-full justify-start h-12"
-              onClick={() => navigate('/settings')}
-            >
-              <span className="text-2xl mr-3">🔧</span>
-              Settings
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Authentication Prompt for Guests */}
-        {!user && (
-          <Card className="shadow-lg border-0 bg-gradient-to-r from-green-50 to-emerald-50">
-            <CardContent className="p-6 text-center">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                Sign in for Better Experience
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Create an account to save your preferences, earn points, and get personalized offers.
+        {/* Quick Info */}
+        <div className="grid grid-cols-2 gap-4">
+          <Card className="border-green-200">
+            <CardContent className="p-4 text-center">
+              <Mail className="w-6 h-6 text-green-600 mx-auto mb-2" />
+              <p className="text-sm text-gray-600">Email</p>
+              <p className="font-medium text-gray-900 text-xs">
+                {userProfile?.email || user.email || 'Not provided'}
               </p>
-              <Button 
-                onClick={() => navigate('/login')}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                Sign In / Sign Up
-              </Button>
             </CardContent>
           </Card>
+          
+          <Card className="border-green-200">
+            <CardContent className="p-4 text-center">
+              <MapPin className="w-6 h-6 text-green-600 mx-auto mb-2" />
+              <p className="text-sm text-gray-600">Location</p>
+              <p className="font-medium text-gray-900 text-xs">
+                {userProfile?.location || user.location || 'India'}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Stats */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Your Activity</h3>
+          <div className="grid grid-cols-1 gap-3">
+            {profileStats.map((stat, index) => {
+              const IconComponent = stat.icon;
+              return (
+                <Card key={index} className="border-green-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className={`p-3 rounded-full ${stat.bgColor}`}>
+                          <IconComponent className={`w-6 h-6 ${stat.color}`} />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900">{stat.label}</p>
+                          <p className="text-sm text-gray-600">Track your activity</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Menu Items */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Settings</h3>
+          <div className="space-y-3">
+            {menuItems.map((item, index) => {
+              const IconComponent = item.icon;
+              return (
+                <Link key={index} to={item.link}>
+                  <Card className="border-green-200 hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className={`p-3 rounded-full ${item.bgColor}`}>
+                          <IconComponent className={`w-5 h-5 ${item.color}`} />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">{item.label}</p>
+                          <p className="text-sm text-gray-600">{item.description}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Sign Out */}
+        {session?.user && (
+          <div className="pt-4">
+            <Button 
+              onClick={handleSignOut}
+              disabled={isLoading}
+              variant="outline"
+              className="w-full text-red-600 border-red-200 hover:bg-red-50"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              {isLoading ? 'Signing out...' : 'Sign Out'}
+            </Button>
+          </div>
         )}
       </div>
     </div>
