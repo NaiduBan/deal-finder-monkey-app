@@ -493,17 +493,6 @@ const LoginScreen = () => {
                 </form>
               </TabsContent>
             </Tabs>
-            
-            <div className="mt-6 pt-4 border-t border-gray-200">
-              <Button 
-                type="button"
-                variant="outline"
-                onClick={handleSkipLogin}
-                className="w-full h-12 border-green-600 text-green-600 hover:bg-green-50"
-              >
-                Continue as Guest
-              </Button>
-            </div>
           </CardContent>
         </Card>
       </div>
