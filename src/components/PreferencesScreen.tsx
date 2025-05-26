@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { ChevronLeft, Store, Tag, CreditCard, Check, Plus, X, Search } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ChevronLeft, Store, Tag, CreditCard, Check, Plus, X, Search, Star, Users, BarChart3, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -13,41 +13,42 @@ const PreferencesScreen = () => {
   const { toast } = useToast();
   const { session } = useAuth();
   const { offers } = useData();
-  const [activeTab, setActiveTab] = useState<'stores' | 'categories' | 'banks'>('stores');
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPreferences, setSelectedPreferences] = useState<{[key: string]: string[]}>({
-    stores: [],
-    categories: [],
-    banks: []
+  const [userPreferenceCounts, setUserPreferenceCounts] = useState<{[key: string]: number}>({
+    stores: 0,
+    categories: 0,
+    brands: 0,
+    banks: 0
   });
-  const [availableOptions, setAvailableOptions] = useState<{[key: string]: {name: string, count: number}[]}>({
-    stores: [],
-    categories: [],
-    banks: []
+  const [availableCounts, setAvailableCounts] = useState<{[key: string]: number}>({
+    stores: 0,
+    categories: 0,
+    brands: 0,
+    banks: 0
   });
   const [isLoading, setIsLoading] = useState(true);
 
   // Extract available options from offers data
   useEffect(() => {
-    const extractOptions = () => {
-      const storesMap = new Map<string, number>();
-      const categoriesMap = new Map<string, number>();
-      const banksMap = new Map<string, number>();
+    const extractCounts = () => {
+      const storesSet = new Set<string>();
+      const categoriesSet = new Set<string>();
+      const banksSet = new Set<string>();
 
       offers.forEach(offer => {
         // Extract stores
         if (offer.store) {
-          const store = offer.store.trim();
-          storesMap.set(store, (storesMap.get(store) || 0) + 1);
+          storesSet.add(offer.store.trim());
         }
 
-        // Extract categories
+        // Extract categories (treating as brands)
         if (offer.categories) {
           const cats = offer.categories.split(',');
           cats.forEach(cat => {
             const category = cat.trim();
             if (category) {
-              categoriesMap.set(category, (categoriesMap.get(category) || 0) + 1);
+              categoriesSet.add(category);
             }
           });
         }
@@ -68,48 +69,49 @@ const PreferencesScreen = () => {
             const bankName = bank.split(' ').map(word => 
               word.charAt(0).toUpperCase() + word.slice(1)
             ).join(' ');
-            banksMap.set(bankName, (banksMap.get(bankName) || 0) + 1);
+            banksSet.add(bankName);
           }
         });
       });
 
-      setAvailableOptions({
-        stores: Array.from(storesMap.entries()).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
-        categories: Array.from(categoriesMap.entries()).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
-        banks: Array.from(banksMap.entries()).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count)
+      setAvailableCounts({
+        stores: storesSet.size,
+        categories: categoriesSet.size,
+        brands: categoriesSet.size, // Same as categories for now
+        banks: banksSet.size
       });
     };
 
-    extractOptions();
+    extractCounts();
   }, [offers]);
 
-  // Load user preferences from database
+  // Load user preference counts
   useEffect(() => {
-    const loadPreferences = async () => {
+    const loadPreferenceCounts = async () => {
       if (!session?.user) return;
 
       try {
         setIsLoading(true);
         const { data, error } = await supabase
           .from('user_preferences')
-          .select('preference_type, preference_value')
+          .select('preference_type')
           .eq('user_id', session.user.id);
 
         if (error) throw error;
 
-        const preferences = { stores: [], categories: [], banks: [] };
+        const counts = { stores: 0, categories: 0, brands: 0, banks: 0 };
         data?.forEach(pref => {
-          if (preferences[pref.preference_type as keyof typeof preferences]) {
-            preferences[pref.preference_type as keyof typeof preferences].push(pref.preference_value);
+          if (counts[pref.preference_type as keyof typeof counts] !== undefined) {
+            counts[pref.preference_type as keyof typeof counts]++;
           }
         });
 
-        setSelectedPreferences(preferences);
+        setUserPreferenceCounts(counts);
       } catch (error) {
-        console.error('Error loading preferences:', error);
+        console.error('Error loading preference counts:', error);
         toast({
           title: "Error",
-          description: "Failed to load preferences",
+          description: "Failed to load preference counts",
           variant: "destructive"
         });
       } finally {
@@ -117,7 +119,7 @@ const PreferencesScreen = () => {
       }
     };
 
-    loadPreferences();
+    loadPreferenceCounts();
   }, [session, toast]);
 
   // Real-time subscription for preference changes
@@ -125,7 +127,7 @@ const PreferencesScreen = () => {
     if (!session?.user) return;
 
     const channel = supabase
-      .channel('user-preferences-changes')
+      .channel('user-preferences-overview')
       .on(
         'postgres_changes',
         {
@@ -134,19 +136,31 @@ const PreferencesScreen = () => {
           table: 'user_preferences',
           filter: `user_id=eq.${session.user.id}`
         },
-        (payload) => {
-          console.log('Preference change detected:', payload);
-          if (payload.eventType === 'INSERT') {
-            setSelectedPreferences(prev => ({
-              ...prev,
-              [payload.new.preference_type]: [...prev[payload.new.preference_type as keyof typeof prev], payload.new.preference_value]
-            }));
-          } else if (payload.eventType === 'DELETE') {
-            setSelectedPreferences(prev => ({
-              ...prev,
-              [payload.old.preference_type]: prev[payload.old.preference_type as keyof typeof prev].filter(val => val !== payload.old.preference_value)
-            }));
-          }
+        () => {
+          // Reload counts when preferences change
+          const loadPreferenceCounts = async () => {
+            try {
+              const { data, error } = await supabase
+                .from('user_preferences')
+                .select('preference_type')
+                .eq('user_id', session.user.id);
+
+              if (error) throw error;
+
+              const counts = { stores: 0, categories: 0, brands: 0, banks: 0 };
+              data?.forEach(pref => {
+                if (counts[pref.preference_type as keyof typeof counts] !== undefined) {
+                  counts[pref.preference_type as keyof typeof counts]++;
+                }
+              });
+
+              setUserPreferenceCounts(counts);
+            } catch (error) {
+              console.error('Error reloading preference counts:', error);
+            }
+          };
+
+          loadPreferenceCounts();
         }
       )
       .subscribe();
@@ -156,264 +170,193 @@ const PreferencesScreen = () => {
     };
   }, [session]);
 
-  const togglePreference = async (type: 'stores' | 'categories' | 'banks', value: string) => {
-    if (!session?.user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to save preferences",
-        variant: "destructive"
-      });
-      return;
+  const preferenceTypes = [
+    {
+      id: 'stores',
+      title: 'Stores',
+      subtitle: 'Your favorite stores',
+      icon: Store,
+      color: 'from-emerald-500 to-teal-600',
+      bgColor: 'bg-emerald-50',
+      borderColor: 'border-emerald-200',
+      description: 'Select stores to get personalized offers',
+      route: '/preferences/stores'
+    },
+    {
+      id: 'brands',
+      title: 'Brands',
+      subtitle: 'Preferred brands',
+      icon: Star,
+      color: 'from-purple-500 to-indigo-600',
+      bgColor: 'bg-purple-50',
+      borderColor: 'border-purple-200',
+      description: 'Choose brands you love',
+      route: '/preferences/brands'
+    },
+    {
+      id: 'categories',
+      title: 'Categories',
+      subtitle: 'Favorite categories',
+      icon: Tag,
+      color: 'from-blue-500 to-cyan-600',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200',
+      description: 'Select your interest categories',
+      route: '/preferences/categories'
+    },
+    {
+      id: 'banks',
+      title: 'Banks',
+      subtitle: 'Your banks',
+      icon: CreditCard,
+      color: 'from-orange-500 to-red-600',
+      bgColor: 'bg-orange-50',
+      borderColor: 'border-orange-200',
+      description: 'Add your banks for credit card offers',
+      route: '/preferences/banks'
     }
+  ];
 
-    try {
-      const isSelected = selectedPreferences[type].includes(value);
-      
-      if (isSelected) {
-        const { error } = await supabase
-          .from('user_preferences')
-          .delete()
-          .eq('user_id', session.user.id)
-          .eq('preference_type', type)
-          .eq('preference_value', value);
-
-        if (error) throw error;
-        
-        toast({
-          title: "Preference removed",
-          description: `${value} removed from your ${type}`,
-        });
-      } else {
-        const { error } = await supabase
-          .from('user_preferences')
-          .insert({
-            user_id: session.user.id,
-            preference_type: type,
-            preference_value: value
-          });
-
-        if (error) throw error;
-        
-        toast({
-          title: "Preference added",
-          description: `${value} added to your ${type}`,
-        });
-      }
-    } catch (error) {
-      console.error('Error updating preference:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update preference",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const clearAllPreferences = async (type: 'stores' | 'categories' | 'banks') => {
-    if (!session?.user) return;
-
-    try {
-      const { error } = await supabase
-        .from('user_preferences')
-        .delete()
-        .eq('user_id', session.user.id)
-        .eq('preference_type', type);
-
-      if (error) throw error;
-      
-      toast({
-        title: "Preferences cleared",
-        description: `All ${type} preferences have been removed`,
-      });
-    } catch (error) {
-      console.error('Error clearing preferences:', error);
-      toast({
-        title: "Error",
-        description: "Failed to clear preferences",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const getTabConfig = (tab: 'stores' | 'categories' | 'banks') => {
-    switch (tab) {
-      case 'stores':
-        return {
-          title: 'Preferred Stores',
-          icon: Store,
-          color: 'from-green-500 to-emerald-600',
-          bgColor: 'bg-green-50',
-          textColor: 'text-green-700',
-          borderColor: 'border-green-200',
-          hoverColor: 'hover:border-green-400'
-        };
-      case 'categories':
-        return {
-          title: 'Favorite Categories',
-          icon: Tag,
-          color: 'from-green-600 to-green-700',
-          bgColor: 'bg-green-50',
-          textColor: 'text-green-700',
-          borderColor: 'border-green-200',
-          hoverColor: 'hover:border-green-400'
-        };
-      case 'banks':
-        return {
-          title: 'Your Banks',
-          icon: CreditCard,
-          color: 'from-emerald-500 to-green-600',
-          bgColor: 'bg-green-50',
-          textColor: 'text-green-700',
-          borderColor: 'border-green-200',
-          hoverColor: 'hover:border-green-400'
-        };
-    }
-  };
-
-  const currentConfig = getTabConfig(activeTab);
-  const IconComponent = currentConfig.icon;
-  const filteredOptions = availableOptions[activeTab].filter(option =>
-    option.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredTypes = preferenceTypes.filter(type =>
+    type.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    type.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  const selectedItems = selectedPreferences[activeTab];
-  const selectedFilteredItems = filteredOptions.filter(option => selectedItems.includes(option.name));
-  const unselectedFilteredItems = filteredOptions.filter(option => !selectedItems.includes(option.name));
+
+  const totalSelected = Object.values(userPreferenceCounts).reduce((sum, count) => sum + count, 0);
+  const totalAvailable = Object.values(availableCounts).reduce((sum, count) => sum + count, 0);
 
   return (
-    <div className="pb-16 bg-gradient-to-br from-green-50 to-emerald-50 min-h-screen">
+    <div className="pb-16 bg-gradient-to-br from-indigo-50 via-white to-cyan-50 min-h-screen">
       {/* Header */}
-      <div className={`bg-gradient-to-r ${currentConfig.color} text-white py-6 px-4 sticky top-0 z-10 shadow-lg`}>
+      <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white py-6 px-4 sticky top-0 z-10 shadow-lg">
         <div className="flex items-center space-x-3 mb-4">
-          <Link to="/home" className="p-2 hover:bg-white/20 rounded-full transition-colors">
+          <Link to="/profile" className="p-2 hover:bg-white/20 rounded-full transition-colors">
             <ChevronLeft className="w-6 h-6" />
           </Link>
           <div className="flex items-center space-x-3">
             <div className="p-3 bg-white/20 rounded-full">
-              <IconComponent className="w-6 h-6" />
+              <Users className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">{currentConfig.title}</h1>
-              <p className="text-white/90 text-sm">Select your preferences for personalized offers</p>
+              <h1 className="text-xl font-bold">Preferences</h1>
+              <p className="text-white/90 text-sm">Customize your offer experience</p>
             </div>
           </div>
         </div>
         
-        {/* Stats */}
-        <div className="flex items-center justify-between bg-white/10 rounded-lg p-4">
+        {/* Overall Stats */}
+        <div className="grid grid-cols-3 gap-4 bg-white/15 backdrop-blur-sm rounded-xl p-4 border border-white/20">
           <div className="text-center">
-            <p className="text-2xl font-bold">{selectedItems.length}</p>
-            <p className="text-xs text-white/80">Selected</p>
+            <div className="flex items-center justify-center space-x-1 mb-1">
+              <Check className="w-4 h-4" />
+              <p className="text-2xl font-bold">{totalSelected}</p>
+            </div>
+            <p className="text-xs text-white/80">Total Selected</p>
           </div>
           <div className="text-center">
-            <p className="text-lg font-semibold">{availableOptions[activeTab].length}</p>
+            <div className="flex items-center justify-center space-x-1 mb-1">
+              <BarChart3 className="w-4 h-4" />
+              <p className="text-lg font-semibold">{totalAvailable}</p>
+            </div>
             <p className="text-xs text-white/80">Available</p>
           </div>
-          {selectedItems.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => clearAllPreferences(activeTab)}
-              className="text-white border-white/30 hover:bg-white/20 bg-transparent"
-            >
-              <X className="w-4 h-4 mr-1" />
-              Clear All
-            </Button>
-          )}
+          <div className="text-center">
+            <div className="flex items-center justify-center space-x-1 mb-1">
+              <TrendingUp className="w-4 h-4" />
+              <p className="text-lg font-semibold">{Math.round((totalSelected / Math.max(totalAvailable, 1)) * 100)}%</p>
+            </div>
+            <p className="text-xs text-white/80">Coverage</p>
+          </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="p-4">
-        <div className="flex space-x-2 mb-4 bg-white rounded-lg p-1 shadow-sm">
-          {(['stores', 'categories', 'banks'] as const).map((tab) => {
-            const config = getTabConfig(tab);
-            const TabIcon = config.icon;
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-md transition-all ${
-                  activeTab === tab 
-                    ? 'bg-green-100 text-green-700 font-medium' 
-                    : 'text-gray-600 hover:text-green-600 hover:bg-green-50'
-                }`}
-              >
-                <TabIcon className="w-4 h-4" />
-                <span className="text-sm capitalize">{tab}</span>
-              </button>
-            );
-          })}
-        </div>
-
+      {/* Content */}
+      <div className="p-4 space-y-6">
         {/* Search */}
-        <div className="relative mb-6">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <Input
             type="search"
-            placeholder={`Search ${activeTab}...`}
-            className="pl-11 pr-4 py-3 w-full border-green-200 rounded-xl shadow-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 bg-white"
+            placeholder="Search preference types..."
+            className="pl-11 pr-4 py-3 w-full border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
-        {/* Selected Items */}
-        {selectedFilteredItems.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
-              <Check className="w-5 h-5 mr-2 text-green-600" />
-              Selected ({selectedFilteredItems.length})
-            </h2>
-            <div className="grid grid-cols-1 gap-3">
-              {selectedFilteredItems.map((item) => (
-                <PreferenceItem
-                  key={item.name}
-                  item={item}
-                  isSelected={true}
-                  onClick={() => togglePreference(activeTab, item.name)}
-                />
-              ))}
+        {/* Preference Type Cards */}
+        <div className="grid grid-cols-1 gap-4">
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
             </div>
-          </div>
-        )}
+          ) : (
+            filteredTypes.map((type) => {
+              const IconComponent = type.icon;
+              const selectedCount = userPreferenceCounts[type.id as keyof typeof userPreferenceCounts] || 0;
+              const availableCount = availableCounts[type.id as keyof typeof availableCounts] || 0;
+              const coverage = availableCount > 0 ? Math.round((selectedCount / availableCount) * 100) : 0;
 
-        {/* Available Items */}
-        {unselectedFilteredItems.length > 0 && (
-          <div>
-            <h2 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
-              <Plus className="w-5 h-5 mr-2 text-green-600" />
-              Available ({unselectedFilteredItems.length})
-            </h2>
-            <div className="grid grid-cols-1 gap-3">
-              {isLoading ? (
-                <div className="flex justify-center py-12">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600"></div>
+              return (
+                <div
+                  key={type.id}
+                  className={`bg-white rounded-xl p-6 shadow-md border-2 ${type.borderColor} hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-[1.02]`}
+                  onClick={() => navigate(type.route)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className={`p-4 ${type.bgColor} rounded-xl`}>
+                        <IconComponent className="w-8 h-8 text-gray-700" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-1">{type.title}</h3>
+                        <p className="text-sm text-gray-600 mb-2">{type.description}</p>
+                        <div className="flex items-center space-x-4 text-sm text-gray-500">
+                          <span className="flex items-center space-x-1">
+                            <Check className="w-4 h-4 text-green-600" />
+                            <span>{selectedCount} selected</span>
+                          </span>
+                          <span className="flex items-center space-x-1">
+                            <BarChart3 className="w-4 h-4 text-blue-600" />
+                            <span>{availableCount} available</span>
+                          </span>
+                          <span className="flex items-center space-x-1">
+                            <TrendingUp className="w-4 h-4 text-purple-600" />
+                            <span>{coverage}% coverage</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${type.color} flex items-center justify-center text-white font-bold text-lg shadow-lg`}>
+                        {selectedCount}
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className={`bg-gradient-to-r ${type.color} h-2 rounded-full transition-all duration-500`}
+                          style={{ width: `${coverage}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                unselectedFilteredItems.map((item) => (
-                  <PreferenceItem
-                    key={item.name}
-                    item={item}
-                    isSelected={false}
-                    onClick={() => togglePreference(activeTab, item.name)}
-                  />
-                ))
-              )}
-            </div>
-          </div>
-        )}
+              );
+            })
+          )}
+        </div>
 
         {/* Empty State */}
-        {!isLoading && filteredOptions.length === 0 && (
-          <div className="bg-white p-8 rounded-xl text-center shadow-sm border border-green-100">
-            <div className="p-4 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-              <IconComponent className="w-8 h-8 text-green-600" />
+        {!isLoading && filteredTypes.length === 0 && (
+          <div className="bg-white p-8 rounded-xl text-center shadow-sm border border-gray-100">
+            <div className="p-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <Search className="w-8 h-8 text-gray-600" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No {activeTab} found
+              No preference types found
             </h3>
             <p className="text-gray-500">
-              {searchTerm ? `No ${activeTab} found matching "${searchTerm}"` : `No ${activeTab} available at the moment`}
+              No preference types match your search "{searchTerm}"
             </p>
           </div>
         )}
@@ -421,52 +364,5 @@ const PreferencesScreen = () => {
     </div>
   );
 };
-
-// Individual Preference Item Component
-const PreferenceItem: React.FC<{
-  item: { name: string; count: number };
-  isSelected: boolean;
-  onClick: () => void;
-}> = ({ item, isSelected, onClick }) => (
-  <div
-    className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-      isSelected 
-        ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white border-transparent shadow-lg transform scale-[1.02]' 
-        : 'bg-white border-green-200 hover:border-green-400 hover:shadow-md hover:bg-green-50'
-    }`}
-    onClick={onClick}
-  >
-    <div className="flex items-center justify-between">
-      <div className="flex-1">
-        <h4 className={`font-semibold text-lg ${isSelected ? 'text-white' : 'text-gray-900'}`}>
-          {item.name}
-        </h4>
-        <p className={`text-sm mt-1 ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
-          {item.count} offer{item.count !== 1 ? 's' : ''} available
-        </p>
-      </div>
-      <div className="flex items-center space-x-3">
-        <span className={`text-xs px-3 py-1 rounded-full font-medium ${
-          isSelected 
-            ? 'bg-white/20 text-white' 
-            : 'bg-green-100 text-green-700'
-        }`}>
-          {item.count}
-        </span>
-        <div className={`p-2 rounded-full transition-all ${
-          isSelected 
-            ? 'bg-white/20' 
-            : 'bg-green-100'
-        }`}>
-          {isSelected ? (
-            <Check className="w-5 h-5 text-white" />
-          ) : (
-            <Plus className="w-5 h-5 text-green-600" />
-          )}
-        </div>
-      </div>
-    </div>
-  </div>
-);
 
 export default PreferencesScreen;
