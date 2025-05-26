@@ -1,12 +1,16 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ChevronLeft, Check, Search, Star, Store, Tag, X, Plus } from 'lucide-react';
+import { ChevronLeft, Check, Search, Star, Store, Tag, X, Plus, Filter, SortAsc, SortDesc, TrendingUp, Users, BarChart3, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { Checkbox } from '@/components/ui/checkbox';
+
+type SortOption = 'name' | 'count' | 'popular';
+type SortDirection = 'asc' | 'desc';
 
 const PreferenceScreen = () => {
   const { type } = useParams<{ type: string }>();
@@ -16,6 +20,12 @@ const PreferenceScreen = () => {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [availableItems, setAvailableItems] = useState<{ id: string; name: string; count: number }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<SortOption>('count');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [showSelected, setShowSelected] = useState<'all' | 'selected' | 'unselected'>('all');
+  const [bulkSelectMode, setBulkSelectMode] = useState(false);
+  const [pendingSelection, setPendingSelection] = useState<string[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Configuration based on preference type
   const getConfig = () => {
@@ -27,16 +37,18 @@ const PreferenceScreen = () => {
           color: 'from-blue-500 to-blue-600',
           placeholder: 'Search stores...',
           emptyMessage: 'No stores found',
-          icon: Store
+          icon: Store,
+          description: 'Select stores to get personalized offers and deals'
         };
       case 'brands':
         return {
-          title: 'Brand Preferences',
+          title: 'Brand Preferences', 
           subtitle: 'Select your preferred brands',
           color: 'from-purple-500 to-purple-600',
           placeholder: 'Search brands...',
           emptyMessage: 'No brands found',
-          icon: Star
+          icon: Star,
+          description: 'Choose brands you love to see relevant offers'
         };
       case 'categories':
         return {
@@ -45,7 +57,8 @@ const PreferenceScreen = () => {
           color: 'from-green-500 to-green-600',
           placeholder: 'Search categories...',
           emptyMessage: 'No categories found',
-          icon: Tag
+          icon: Tag,
+          description: 'Select categories that interest you most'
         };
       default:
         return {
@@ -54,7 +67,8 @@ const PreferenceScreen = () => {
           color: 'from-gray-500 to-gray-600',
           placeholder: 'Search...',
           emptyMessage: 'No items found',
-          icon: Tag
+          icon: Tag,
+          description: 'Customize your experience'
         };
     }
   };
@@ -63,60 +77,75 @@ const PreferenceScreen = () => {
   const IconComponent = config.icon;
 
   // Fetch available items with counts from Offers_data table
-  useEffect(() => {
-    const fetchAvailableItems = async () => {
-      try {
-        setIsLoading(true);
-        const { data: offers, error } = await supabase
-          .from('Offers_data')
-          .select('store, categories, terms_and_conditions, description, long_offer');
-        
-        if (error) throw error;
+  const fetchAvailableItems = async () => {
+    try {
+      setIsLoading(true);
+      console.log(`Fetching ${type} data from Offers_data table...`);
+      
+      const { data: offers, error } = await supabase
+        .from('Offers_data')
+        .select('store, categories, terms_and_conditions, description, long_offer');
+      
+      if (error) throw error;
 
-        const itemsMap = new Map<string, number>();
-        
-        if (type === 'stores') {
-          offers?.forEach(offer => {
-            if (offer.store) {
-              const storeName = offer.store.trim();
-              if (storeName) {
-                itemsMap.set(storeName, (itemsMap.get(storeName) || 0) + 1);
-              }
+      const itemsMap = new Map<string, number>();
+      
+      if (type === 'stores') {
+        offers?.forEach(offer => {
+          if (offer.store) {
+            const storeName = offer.store.trim();
+            if (storeName) {
+              itemsMap.set(storeName, (itemsMap.get(storeName) || 0) + 1);
             }
-          });
-        } else if (type === 'brands' || type === 'categories') {
-          offers?.forEach(offer => {
-            if (offer.categories) {
-              const categories = offer.categories.split(',');
-              categories.forEach(cat => {
-                const trimmed = cat.trim();
-                if (trimmed) {
-                  itemsMap.set(trimmed, (itemsMap.get(trimmed) || 0) + 1);
-                }
-              });
-            }
-          });
-        }
-
-        const items = Array.from(itemsMap.entries())
-          .map(([name, count]) => ({ id: name, name, count }))
-          .sort((a, b) => b.count - a.count);
-
-        setAvailableItems(items);
-      } catch (error) {
-        console.error('Error fetching available items:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load available options",
-          variant: "destructive"
+          }
         });
-      } finally {
-        setIsLoading(false);
+      } else if (type === 'brands' || type === 'categories') {
+        offers?.forEach(offer => {
+          if (offer.categories) {
+            const categories = offer.categories.split(',');
+            categories.forEach(cat => {
+              const trimmed = cat.trim();
+              if (trimmed) {
+                itemsMap.set(trimmed, (itemsMap.get(trimmed) || 0) + 1);
+              }
+            });
+          }
+        });
       }
-    };
 
+      const items = Array.from(itemsMap.entries())
+        .map(([name, count]) => ({ id: name, name, count }))
+        .sort((a, b) => b.count - a.count);
+
+      setAvailableItems(items);
+      console.log(`Loaded ${items.length} ${type} items`);
+    } catch (error) {
+      console.error('Error fetching available items:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load available options",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Initial data fetch
+  useEffect(() => {
     fetchAvailableItems();
-  }, [type, toast]);
+  }, [type]);
+
+  // Refresh data
+  const refreshData = async () => {
+    setIsRefreshing(true);
+    await fetchAvailableItems();
+    setIsRefreshing(false);
+    toast({
+      title: "Data refreshed",
+      description: "Latest preferences data has been loaded",
+    });
+  };
 
   // Load user's current preferences
   useEffect(() => {
@@ -143,7 +172,7 @@ const PreferenceScreen = () => {
     loadUserPreferences();
   }, [session, type]);
 
-  // Enhanced real-time subscription for preference changes
+  // Enhanced real-time subscription
   useEffect(() => {
     if (!session?.user || !type) return;
 
@@ -191,8 +220,58 @@ const PreferenceScreen = () => {
     };
   }, [session, type]);
 
+  // Sort and filter logic
+  const sortedAndFilteredItems = useMemo(() => {
+    let filtered = availableItems.filter(item =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // Apply selection filter
+    if (showSelected === 'selected') {
+      filtered = filtered.filter(item => selectedItems.includes(item.id));
+    } else if (showSelected === 'unselected') {
+      filtered = filtered.filter(item => !selectedItems.includes(item.id));
+    }
+
+    // Sort items
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'count':
+          comparison = a.count - b.count;
+          break;
+        case 'popular':
+          comparison = a.count - b.count;
+          break;
+        default:
+          comparison = a.count - b.count;
+      }
+      
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    return filtered;
+  }, [availableItems, searchTerm, selectedItems, sortBy, sortDirection, showSelected]);
+
+  // Separate selected and unselected items for display
+  const selectedFilteredItems = sortedAndFilteredItems.filter(item => selectedItems.includes(item.id));
+  const unselectedFilteredItems = sortedAndFilteredItems.filter(item => !selectedItems.includes(item.id));
+
   const toggleItem = async (item: string) => {
     if (!session?.user || !type) return;
+
+    if (bulkSelectMode) {
+      setPendingSelection(prev => 
+        prev.includes(item) 
+          ? prev.filter(id => id !== item)
+          : [...prev, item]
+      );
+      return;
+    }
 
     try {
       const isSelected = selectedItems.includes(item);
@@ -238,6 +317,56 @@ const PreferenceScreen = () => {
     }
   };
 
+  const applyBulkSelection = async () => {
+    if (!session?.user || !type) return;
+
+    try {
+      // Remove existing selections
+      const toRemove = selectedItems.filter(id => !pendingSelection.includes(id));
+      if (toRemove.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('user_preferences')
+          .delete()
+          .eq('user_id', session.user.id)
+          .eq('preference_type', type)
+          .in('preference_id', toRemove);
+
+        if (deleteError) throw deleteError;
+      }
+
+      // Add new selections
+      const toAdd = pendingSelection.filter(id => !selectedItems.includes(id));
+      if (toAdd.length > 0) {
+        const { error: insertError } = await supabase
+          .from('user_preferences')
+          .insert(
+            toAdd.map(id => ({
+              user_id: session.user.id,
+              preference_type: type,
+              preference_id: id
+            }))
+          );
+
+        if (insertError) throw insertError;
+      }
+
+      setBulkSelectMode(false);
+      setPendingSelection([]);
+      
+      toast({
+        title: "Bulk selection applied",
+        description: `Updated ${toAdd.length + toRemove.length} preferences`,
+      });
+    } catch (error) {
+      console.error('Error applying bulk selection:', error);
+      toast({
+        title: "Error",
+        description: "Failed to apply bulk selection",
+        variant: "destructive"
+      });
+    }
+  };
+
   const clearAllPreferences = async () => {
     if (!session?.user || !type) return;
 
@@ -264,13 +393,14 @@ const PreferenceScreen = () => {
     }
   };
 
-  const filteredItems = availableItems.filter(item =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Separate selected and unselected items
-  const selectedFilteredItems = filteredItems.filter(item => selectedItems.includes(item.id));
-  const unselectedFilteredItems = filteredItems.filter(item => !selectedItems.includes(item.id));
+  const toggleSort = (newSortBy: SortOption) => {
+    if (sortBy === newSortBy) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(newSortBy);
+      setSortDirection('desc');
+    }
+  };
 
   return (
     <div className="pb-16 bg-gradient-to-br from-green-50 to-emerald-50 min-h-screen">
@@ -280,165 +410,322 @@ const PreferenceScreen = () => {
           <Link to="/profile" className="p-2 hover:bg-white/20 rounded-full transition-colors">
             <ChevronLeft className="w-6 h-6" />
           </Link>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 flex-1">
             <div className="p-3 bg-white/20 rounded-full">
               <IconComponent className="w-6 h-6" />
             </div>
-            <div>
+            <div className="flex-1">
               <h1 className="text-xl font-bold">{config.title}</h1>
               <p className="text-white/90 text-sm">{config.subtitle}</p>
+              <p className="text-white/75 text-xs mt-1">{config.description}</p>
             </div>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={refreshData}
+            disabled={isRefreshing}
+            className="text-white hover:bg-white/20"
+          >
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
         
-        {/* Stats */}
-        <div className="flex items-center justify-between bg-white/10 rounded-lg p-4">
+        {/* Enhanced Stats */}
+        <div className="grid grid-cols-3 gap-4 bg-white/10 rounded-lg p-4">
           <div className="text-center">
-            <p className="text-2xl font-bold">{selectedItems.length}</p>
+            <div className="flex items-center justify-center space-x-1 mb-1">
+              <Check className="w-4 h-4" />
+              <p className="text-2xl font-bold">{selectedItems.length}</p>
+            </div>
             <p className="text-xs text-white/80">Selected</p>
           </div>
           <div className="text-center">
-            <p className="text-lg font-semibold">{availableItems.length}</p>
+            <div className="flex items-center justify-center space-x-1 mb-1">
+              <BarChart3 className="w-4 h-4" />
+              <p className="text-lg font-semibold">{availableItems.length}</p>
+            </div>
             <p className="text-xs text-white/80">Available</p>
           </div>
-          {selectedItems.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={clearAllPreferences}
-              className="text-white border-white/30 hover:bg-white/20 bg-transparent"
-            >
-              <X className="w-4 h-4 mr-1" />
-              Clear All
-            </Button>
+          <div className="text-center">
+            <div className="flex items-center justify-center space-x-1 mb-1">
+              <TrendingUp className="w-4 h-4" />
+              <p className="text-lg font-semibold">{Math.round((selectedItems.length / Math.max(availableItems.length, 1)) * 100)}%</p>
+            </div>
+            <p className="text-xs text-white/80">Coverage</p>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center space-x-2 mt-4">
+          {!bulkSelectMode ? (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setBulkSelectMode(true)}
+                className="text-white border-white/30 hover:bg-white/20 bg-transparent"
+              >
+                <Users className="w-4 h-4 mr-1" />
+                Bulk Select
+              </Button>
+              {selectedItems.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearAllPreferences}
+                  className="text-white border-white/30 hover:bg-white/20 bg-transparent"
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Clear All
+                </Button>
+              )}
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={applyBulkSelection}
+                className="text-white border-white/30 hover:bg-white/20 bg-transparent"
+              >
+                <Check className="w-4 h-4 mr-1" />
+                Apply ({pendingSelection.length})
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setBulkSelectMode(false);
+                  setPendingSelection([]);
+                }}
+                className="text-white border-white/30 hover:bg-white/20 bg-transparent"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Cancel
+              </Button>
+            </>
           )}
         </div>
       </div>
 
       {/* Content */}
       <div className="p-4 space-y-6">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <Input
-            type="search"
-            placeholder={config.placeholder}
-            className="pl-11 pr-4 py-3 w-full border-green-200 rounded-xl shadow-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 bg-white"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        {/* Search and Filters */}
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Input
+              type="search"
+              placeholder={config.placeholder}
+              className="pl-11 pr-4 py-3 w-full border-green-200 rounded-xl shadow-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 bg-white"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {/* Filters and Sort */}
+          <div className="flex flex-wrap gap-2 items-center justify-between">
+            <div className="flex gap-2">
+              <Button
+                variant={showSelected === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShowSelected('all')}
+                className="text-xs"
+              >
+                All ({sortedAndFilteredItems.length})
+              </Button>
+              <Button
+                variant={showSelected === 'selected' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShowSelected('selected')}
+                className="text-xs"
+              >
+                Selected ({selectedFilteredItems.length})
+              </Button>
+              <Button
+                variant={showSelected === 'unselected' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShowSelected('unselected')}
+                className="text-xs"
+              >
+                Available ({unselectedFilteredItems.length})
+              </Button>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => toggleSort('name')}
+                className="text-xs"
+              >
+                Name {sortBy === 'name' && (sortDirection === 'asc' ? <SortAsc className="w-3 h-3 ml-1" /> : <SortDesc className="w-3 h-3 ml-1" />)}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => toggleSort('count')}
+                className="text-xs"
+              >
+                Count {sortBy === 'count' && (sortDirection === 'asc' ? <SortAsc className="w-3 h-3 ml-1" /> : <SortDesc className="w-3 h-3 ml-1" />)}
+              </Button>
+            </div>
+          </div>
         </div>
 
-        {/* Selected Items Section */}
-        {selectedFilteredItems.length > 0 && (
-          <div>
-            <h2 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
-              <Check className="w-5 h-5 mr-2 text-green-600" />
-              Selected ({selectedFilteredItems.length})
-            </h2>
-            <div className="grid grid-cols-1 gap-3">
-              {selectedFilteredItems.map((item) => (
-                <PreferenceItem
-                  key={item.id}
-                  item={item}
-                  isSelected={true}
-                  onClick={() => toggleItem(item.id)}
-                />
-              ))}
+        {/* Items List */}
+        <div className="space-y-4">
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600"></div>
             </div>
-          </div>
-        )}
-
-        {/* Available Items Section */}
-        {unselectedFilteredItems.length > 0 && (
-          <div>
-            <h2 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
-              <Plus className="w-5 h-5 mr-2 text-green-600" />
-              Available ({unselectedFilteredItems.length})
-            </h2>
-            <div className="grid grid-cols-1 gap-3">
-              {isLoading ? (
-                <div className="flex justify-center py-12">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600"></div>
+          ) : (
+            <>
+              {/* Show selected items first when showing all */}
+              {showSelected === 'all' && selectedFilteredItems.length > 0 && (
+                <div>
+                  <h2 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
+                    <Check className="w-5 h-5 mr-2 text-green-600" />
+                    Selected ({selectedFilteredItems.length})
+                  </h2>
+                  <div className="grid grid-cols-1 gap-3">
+                    {selectedFilteredItems.map((item) => (
+                      <PreferenceItem
+                        key={item.id}
+                        item={item}
+                        isSelected={true}
+                        isBulkMode={bulkSelectMode}
+                        isPendingSelection={pendingSelection.includes(item.id)}
+                        onClick={() => toggleItem(item.id)}
+                      />
+                    ))}
+                  </div>
                 </div>
-              ) : (
-                unselectedFilteredItems.map((item) => (
-                  <PreferenceItem
-                    key={item.id}
-                    item={item}
-                    isSelected={false}
-                    onClick={() => toggleItem(item.id)}
-                  />
-                ))
               )}
-            </div>
-          </div>
-        )}
 
-        {/* Empty State */}
-        {!isLoading && filteredItems.length === 0 && (
-          <div className="bg-white p-8 rounded-xl text-center shadow-sm border border-green-100">
-            <div className="p-4 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-              <IconComponent className="w-8 h-8 text-green-600" />
+              {/* Show unselected items */}
+              {((showSelected === 'all' && unselectedFilteredItems.length > 0) || 
+                (showSelected === 'unselected' && unselectedFilteredItems.length > 0) ||
+                (showSelected === 'selected' && selectedFilteredItems.length > 0)) && (
+                <div>
+                  {showSelected === 'all' && (
+                    <h2 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
+                      <Plus className="w-5 h-5 mr-2 text-green-600" />
+                      Available ({unselectedFilteredItems.length})
+                    </h2>
+                  )}
+                  <div className="grid grid-cols-1 gap-3">
+                    {(showSelected === 'selected' ? selectedFilteredItems : 
+                      showSelected === 'unselected' ? unselectedFilteredItems : 
+                      unselectedFilteredItems).map((item) => (
+                      <PreferenceItem
+                        key={item.id}
+                        item={item}
+                        isSelected={selectedItems.includes(item.id)}
+                        isBulkMode={bulkSelectMode}
+                        isPendingSelection={pendingSelection.includes(item.id)}
+                        onClick={() => toggleItem(item.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Empty State */}
+          {!isLoading && sortedAndFilteredItems.length === 0 && (
+            <div className="bg-white p-8 rounded-xl text-center shadow-sm border border-green-100">
+              <div className="p-4 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <IconComponent className="w-8 h-8 text-green-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {config.emptyMessage}
+              </h3>
+              <p className="text-gray-500">
+                {searchTerm ? `No ${type} found matching "${searchTerm}"` : `No ${type} available at the moment`}
+              </p>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {config.emptyMessage}
-            </h3>
-            <p className="text-gray-500">
-              {searchTerm ? `No ${type} found matching "${searchTerm}"` : `No ${type} available at the moment`}
-            </p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
 };
 
-// Individual Preference Item Component
+// Enhanced Individual Preference Item Component
 const PreferenceItem: React.FC<{
   item: { id: string; name: string; count: number };
   isSelected: boolean;
+  isBulkMode: boolean;
+  isPendingSelection: boolean;
   onClick: () => void;
-}> = ({ item, isSelected, onClick }) => (
-  <div
-    className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-      isSelected 
-        ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white border-transparent shadow-lg transform scale-[1.02]' 
-        : 'bg-white border-green-200 hover:border-green-400 hover:shadow-md hover:bg-green-50'
-    }`}
-    onClick={onClick}
-  >
-    <div className="flex items-center justify-between">
-      <div className="flex-1">
-        <h4 className={`font-semibold text-lg ${isSelected ? 'text-white' : 'text-gray-900'}`}>
-          {item.name}
-        </h4>
-        <p className={`text-sm mt-1 ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
-          {item.count} offer{item.count !== 1 ? 's' : ''} available
-        </p>
-      </div>
-      <div className="flex items-center space-x-3">
-        <span className={`text-xs px-3 py-1 rounded-full font-medium ${
-          isSelected 
-            ? 'bg-white/20 text-white' 
-            : 'bg-green-100 text-green-700'
-        }`}>
-          {item.count}
-        </span>
-        <div className={`p-2 rounded-full transition-all ${
-          isSelected 
-            ? 'bg-white/20' 
-            : 'bg-green-100'
-        }`}>
-          {isSelected ? (
-            <Check className="w-5 h-5 text-white" />
-          ) : (
-            <Plus className="w-5 h-5 text-green-600" />
+}> = ({ item, isSelected, isBulkMode, isPendingSelection, onClick }) => {
+  const displaySelected = isBulkMode ? isPendingSelection : isSelected;
+  
+  return (
+    <div
+      className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+        displaySelected 
+          ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white border-transparent shadow-lg transform scale-[1.02]' 
+          : 'bg-white border-green-200 hover:border-green-400 hover:shadow-md hover:bg-green-50'
+      }`}
+      onClick={onClick}
+    >
+      <div className="flex items-center justify-between">
+        {isBulkMode && (
+          <div className="mr-3">
+            <Checkbox 
+              checked={isPendingSelection}
+              className={displaySelected ? 'border-white' : 'border-green-300'}
+            />
+          </div>
+        )}
+        <div className="flex-1">
+          <h4 className={`font-semibold text-lg ${displaySelected ? 'text-white' : 'text-gray-900'}`}>
+            {item.name}
+          </h4>
+          <div className="flex items-center justify-between mt-1">
+            <p className={`text-sm ${displaySelected ? 'text-white/80' : 'text-gray-500'}`}>
+              {item.count} offer{item.count !== 1 ? 's' : ''} available
+            </p>
+            {item.count > 50 && (
+              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                displaySelected 
+                  ? 'bg-white/20 text-white' 
+                  : 'bg-orange-100 text-orange-700'
+              }`}>
+                Popular
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center space-x-3">
+          <span className={`text-xs px-3 py-1 rounded-full font-medium ${
+            displaySelected 
+              ? 'bg-white/20 text-white' 
+              : 'bg-green-100 text-green-700'
+          }`}>
+            {item.count}
+          </span>
+          {!isBulkMode && (
+            <div className={`p-2 rounded-full transition-all ${
+              displaySelected 
+                ? 'bg-white/20' 
+                : 'bg-green-100'
+            }`}>
+              {displaySelected ? (
+                <Check className="w-5 h-5 text-white" />
+              ) : (
+                <Plus className="w-5 h-5 text-green-600" />
+              )}
+            </div>
           )}
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default PreferenceScreen;
