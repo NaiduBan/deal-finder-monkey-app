@@ -98,8 +98,8 @@ export default {
 					'100%': { transform: 'scale(1)', opacity: '1' }
 				},
 				'fade-in': {
-					from: { opacity: '0' },
-					to: { opacity: '1' }
+					from: { opacity: '0', transform: 'translateY(20px) scale(0.9)' },
+					to: { opacity: '1', transform: 'translateY(0) scale(1)' }
 				},
 				'fade-up': {
 					from: { opacity: '0', transform: 'translateY(10px)' },
@@ -114,7 +114,7 @@ export default {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'splash-logo': 'splash-logo 1s ease-out forwards',
-				'fade-in': 'fade-in 0.3s ease-out',
+				'fade-in': 'fade-in 0.6s ease-out forwards',
 				'fade-up': 'fade-up 0.5s ease-out',
 				'pulse': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite'
 			}

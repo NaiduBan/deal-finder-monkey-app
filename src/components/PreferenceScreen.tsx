@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ChevronLeft, Check, Search, Star, Store, Tag, X, Plus, Filter, SortAsc, SortDesc, TrendingUp, Users, BarChart3, RefreshCw } from 'lucide-react';
+import { ChevronLeft, Check, Search, Star, Store, Tag, X, Plus, Filter, SortAsc, SortDesc, TrendingUp, Users, BarChart3, RefreshCw, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -35,6 +35,7 @@ const PreferenceScreen = () => {
           title: 'Store Preferences',
           subtitle: 'Choose your favorite stores',
           color: 'from-blue-500 to-blue-600',
+          bubbleColor: 'from-blue-400 to-blue-500',
           placeholder: 'Search stores...',
           emptyMessage: 'No stores found',
           icon: Store,
@@ -45,6 +46,7 @@ const PreferenceScreen = () => {
           title: 'Brand Preferences', 
           subtitle: 'Select your preferred brands',
           color: 'from-purple-500 to-purple-600',
+          bubbleColor: 'from-purple-400 to-purple-500',
           placeholder: 'Search brands...',
           emptyMessage: 'No brands found',
           icon: Star,
@@ -55,6 +57,7 @@ const PreferenceScreen = () => {
           title: 'Category Preferences',
           subtitle: 'Pick your favorite categories',
           color: 'from-green-500 to-green-600',
+          bubbleColor: 'from-green-400 to-green-500',
           placeholder: 'Search categories...',
           emptyMessage: 'No categories found',
           icon: Tag,
@@ -65,6 +68,7 @@ const PreferenceScreen = () => {
           title: 'Preferences',
           subtitle: 'Manage your preferences',
           color: 'from-gray-500 to-gray-600',
+          bubbleColor: 'from-gray-400 to-gray-500',
           placeholder: 'Search...',
           emptyMessage: 'No items found',
           icon: Tag,
@@ -136,7 +140,6 @@ const PreferenceScreen = () => {
     fetchAvailableItems();
   }, [type]);
 
-  // Refresh data
   const refreshData = async () => {
     setIsRefreshing(true);
     await fetchAvailableItems();
@@ -147,7 +150,6 @@ const PreferenceScreen = () => {
     });
   };
 
-  // Load user's current preferences
   useEffect(() => {
     const loadUserPreferences = async () => {
       if (!session?.user || !type) return;
@@ -172,7 +174,6 @@ const PreferenceScreen = () => {
     loadUserPreferences();
   }, [session, type]);
 
-  // Enhanced real-time subscription
   useEffect(() => {
     if (!session?.user || !type) return;
 
@@ -220,20 +221,17 @@ const PreferenceScreen = () => {
     };
   }, [session, type]);
 
-  // Sort and filter logic
   const sortedAndFilteredItems = useMemo(() => {
     let filtered = availableItems.filter(item =>
       item.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // Apply selection filter
     if (showSelected === 'selected') {
       filtered = filtered.filter(item => selectedItems.includes(item.id));
     } else if (showSelected === 'unselected') {
       filtered = filtered.filter(item => !selectedItems.includes(item.id));
     }
 
-    // Sort items
     filtered.sort((a, b) => {
       let comparison = 0;
       
@@ -257,7 +255,6 @@ const PreferenceScreen = () => {
     return filtered;
   }, [availableItems, searchTerm, selectedItems, sortBy, sortDirection, showSelected]);
 
-  // Separate selected and unselected items for display
   const selectedFilteredItems = sortedAndFilteredItems.filter(item => selectedItems.includes(item.id));
   const unselectedFilteredItems = sortedAndFilteredItems.filter(item => !selectedItems.includes(item.id));
 
@@ -321,7 +318,6 @@ const PreferenceScreen = () => {
     if (!session?.user || !type) return;
 
     try {
-      // Remove existing selections
       const toRemove = selectedItems.filter(id => !pendingSelection.includes(id));
       if (toRemove.length > 0) {
         const { error: deleteError } = await supabase
@@ -334,7 +330,6 @@ const PreferenceScreen = () => {
         if (deleteError) throw deleteError;
       }
 
-      // Add new selections
       const toAdd = pendingSelection.filter(id => !selectedItems.includes(id));
       if (toAdd.length > 0) {
         const { error: insertError } = await supabase
@@ -403,19 +398,30 @@ const PreferenceScreen = () => {
   };
 
   return (
-    <div className="pb-16 bg-gradient-to-br from-green-50 to-emerald-50 min-h-screen">
+    <div className="pb-16 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 min-h-screen relative overflow-hidden">
+      {/* Animated background bubbles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-10 left-10 w-20 h-20 bg-gradient-to-r from-blue-200 to-purple-200 rounded-full opacity-30 animate-pulse"></div>
+        <div className="absolute top-40 right-20 w-32 h-32 bg-gradient-to-r from-green-200 to-blue-200 rounded-full opacity-20 animate-bounce" style={{ animationDelay: '1s', animationDuration: '3s' }}></div>
+        <div className="absolute bottom-40 left-20 w-24 h-24 bg-gradient-to-r from-purple-200 to-pink-200 rounded-full opacity-25 animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute bottom-20 right-10 w-16 h-16 bg-gradient-to-r from-yellow-200 to-orange-200 rounded-full opacity-30 animate-bounce" style={{ animationDelay: '0.5s', animationDuration: '2.5s' }}></div>
+      </div>
+
       {/* Header */}
-      <div className={`bg-gradient-to-r ${config.color} text-white py-6 px-4 sticky top-0 z-10 shadow-lg`}>
+      <div className={`bg-gradient-to-r ${config.color} text-white py-6 px-4 sticky top-0 z-10 shadow-lg backdrop-blur-sm`}>
         <div className="flex items-center space-x-3 mb-4">
           <Link to="/profile" className="p-2 hover:bg-white/20 rounded-full transition-colors">
             <ChevronLeft className="w-6 h-6" />
           </Link>
           <div className="flex items-center space-x-3 flex-1">
-            <div className="p-3 bg-white/20 rounded-full">
+            <div className="p-3 bg-white/20 rounded-full animate-pulse">
               <IconComponent className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <h1 className="text-xl font-bold">{config.title}</h1>
+              <div className="flex items-center space-x-2">
+                <h1 className="text-xl font-bold">{config.title}</h1>
+                <Sparkles className="w-5 h-5 text-yellow-300 animate-pulse" />
+              </div>
               <p className="text-white/90 text-sm">{config.subtitle}</p>
               <p className="text-white/75 text-xs mt-1">{config.description}</p>
             </div>
@@ -431,23 +437,23 @@ const PreferenceScreen = () => {
           </Button>
         </div>
         
-        {/* Enhanced Stats */}
-        <div className="grid grid-cols-3 gap-4 bg-white/10 rounded-lg p-4">
-          <div className="text-center">
+        {/* Enhanced Stats with floating animation */}
+        <div className="grid grid-cols-3 gap-4 bg-white/15 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
+          <div className="text-center transform hover:scale-105 transition-transform">
             <div className="flex items-center justify-center space-x-1 mb-1">
-              <Check className="w-4 h-4" />
+              <Check className="w-4 h-4 animate-bounce" />
               <p className="text-2xl font-bold">{selectedItems.length}</p>
             </div>
             <p className="text-xs text-white/80">Selected</p>
           </div>
-          <div className="text-center">
+          <div className="text-center transform hover:scale-105 transition-transform">
             <div className="flex items-center justify-center space-x-1 mb-1">
               <BarChart3 className="w-4 h-4" />
               <p className="text-lg font-semibold">{availableItems.length}</p>
             </div>
             <p className="text-xs text-white/80">Available</p>
           </div>
-          <div className="text-center">
+          <div className="text-center transform hover:scale-105 transition-transform">
             <div className="flex items-center justify-center space-x-1 mb-1">
               <TrendingUp className="w-4 h-4" />
               <p className="text-lg font-semibold">{Math.round((selectedItems.length / Math.max(availableItems.length, 1)) * 100)}%</p>
@@ -464,7 +470,7 @@ const PreferenceScreen = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setBulkSelectMode(true)}
-                className="text-white border-white/30 hover:bg-white/20 bg-transparent"
+                className="text-white border-white/30 hover:bg-white/20 bg-transparent backdrop-blur-sm"
               >
                 <Users className="w-4 h-4 mr-1" />
                 Bulk Select
@@ -474,7 +480,7 @@ const PreferenceScreen = () => {
                   variant="outline"
                   size="sm"
                   onClick={clearAllPreferences}
-                  className="text-white border-white/30 hover:bg-white/20 bg-transparent"
+                  className="text-white border-white/30 hover:bg-white/20 bg-transparent backdrop-blur-sm"
                 >
                   <X className="w-4 h-4 mr-1" />
                   Clear All
@@ -487,7 +493,7 @@ const PreferenceScreen = () => {
                 variant="outline"
                 size="sm"
                 onClick={applyBulkSelection}
-                className="text-white border-white/30 hover:bg-white/20 bg-transparent"
+                className="text-white border-white/30 hover:bg-white/20 bg-transparent backdrop-blur-sm"
               >
                 <Check className="w-4 h-4 mr-1" />
                 Apply ({pendingSelection.length})
@@ -499,7 +505,7 @@ const PreferenceScreen = () => {
                   setBulkSelectMode(false);
                   setPendingSelection([]);
                 }}
-                className="text-white border-white/30 hover:bg-white/20 bg-transparent"
+                className="text-white border-white/30 hover:bg-white/20 bg-transparent backdrop-blur-sm"
               >
                 <X className="w-4 h-4 mr-1" />
                 Cancel
@@ -510,7 +516,7 @@ const PreferenceScreen = () => {
       </div>
 
       {/* Content */}
-      <div className="p-4 space-y-6">
+      <div className="p-4 space-y-6 relative z-10">
         {/* Search and Filters */}
         <div className="space-y-4">
           <div className="relative">
@@ -518,7 +524,7 @@ const PreferenceScreen = () => {
             <Input
               type="search"
               placeholder={config.placeholder}
-              className="pl-11 pr-4 py-3 w-full border-green-200 rounded-xl shadow-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 bg-white"
+              className="pl-11 pr-4 py-3 w-full border-none rounded-2xl shadow-lg bg-white/80 backdrop-blur-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -531,7 +537,7 @@ const PreferenceScreen = () => {
                 variant={showSelected === 'all' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setShowSelected('all')}
-                className="text-xs"
+                className="text-xs rounded-full bg-white/80 backdrop-blur-sm border-none shadow-md hover:shadow-lg transition-all"
               >
                 All ({sortedAndFilteredItems.length})
               </Button>
@@ -539,7 +545,7 @@ const PreferenceScreen = () => {
                 variant={showSelected === 'selected' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setShowSelected('selected')}
-                className="text-xs"
+                className="text-xs rounded-full bg-white/80 backdrop-blur-sm border-none shadow-md hover:shadow-lg transition-all"
               >
                 Selected ({selectedFilteredItems.length})
               </Button>
@@ -547,7 +553,7 @@ const PreferenceScreen = () => {
                 variant={showSelected === 'unselected' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setShowSelected('unselected')}
-                className="text-xs"
+                className="text-xs rounded-full bg-white/80 backdrop-blur-sm border-none shadow-md hover:shadow-lg transition-all"
               >
                 Available ({unselectedFilteredItems.length})
               </Button>
@@ -558,7 +564,7 @@ const PreferenceScreen = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => toggleSort('name')}
-                className="text-xs"
+                className="text-xs rounded-full bg-white/80 backdrop-blur-sm border-none shadow-md hover:shadow-lg transition-all"
               >
                 Name {sortBy === 'name' && (sortDirection === 'asc' ? <SortAsc className="w-3 h-3 ml-1" /> : <SortDesc className="w-3 h-3 ml-1" />)}
               </Button>
@@ -566,7 +572,7 @@ const PreferenceScreen = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => toggleSort('count')}
-                className="text-xs"
+                className="text-xs rounded-full bg-white/80 backdrop-blur-sm border-none shadow-md hover:shadow-lg transition-all"
               >
                 Count {sortBy === 'count' && (sortDirection === 'asc' ? <SortAsc className="w-3 h-3 ml-1" /> : <SortDesc className="w-3 h-3 ml-1" />)}
               </Button>
@@ -574,58 +580,65 @@ const PreferenceScreen = () => {
           </div>
         </div>
 
-        {/* Items List */}
-        <div className="space-y-4">
+        {/* Bubble Items Layout */}
+        <div className="space-y-6">
           {isLoading ? (
             <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600"></div>
+              <div className="relative">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent absolute top-0"></div>
+              </div>
             </div>
           ) : (
             <>
-              {/* Show selected items first when showing all */}
+              {/* Selected items as bubbles */}
               {showSelected === 'all' && selectedFilteredItems.length > 0 && (
                 <div>
-                  <h2 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
+                  <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                     <Check className="w-5 h-5 mr-2 text-green-600" />
-                    Selected ({selectedFilteredItems.length})
+                    Selected Bubbles ({selectedFilteredItems.length})
                   </h2>
-                  <div className="grid grid-cols-1 gap-3">
-                    {selectedFilteredItems.map((item) => (
-                      <PreferenceItem
+                  <div className="flex flex-wrap gap-3">
+                    {selectedFilteredItems.map((item, index) => (
+                      <BubbleItem
                         key={item.id}
                         item={item}
                         isSelected={true}
                         isBulkMode={bulkSelectMode}
                         isPendingSelection={pendingSelection.includes(item.id)}
                         onClick={() => toggleItem(item.id)}
+                        config={config}
+                        animationDelay={index * 0.1}
                       />
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Show unselected items */}
+              {/* Available items as bubbles */}
               {((showSelected === 'all' && unselectedFilteredItems.length > 0) || 
                 (showSelected === 'unselected' && unselectedFilteredItems.length > 0) ||
                 (showSelected === 'selected' && selectedFilteredItems.length > 0)) && (
                 <div>
                   {showSelected === 'all' && (
-                    <h2 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
-                      <Plus className="w-5 h-5 mr-2 text-green-600" />
-                      Available ({unselectedFilteredItems.length})
+                    <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                      <Plus className="w-5 h-5 mr-2 text-blue-600" />
+                      Available Bubbles ({unselectedFilteredItems.length})
                     </h2>
                   )}
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="flex flex-wrap gap-3">
                     {(showSelected === 'selected' ? selectedFilteredItems : 
                       showSelected === 'unselected' ? unselectedFilteredItems : 
-                      unselectedFilteredItems).map((item) => (
-                      <PreferenceItem
+                      unselectedFilteredItems).map((item, index) => (
+                      <BubbleItem
                         key={item.id}
                         item={item}
                         isSelected={selectedItems.includes(item.id)}
                         isBulkMode={bulkSelectMode}
                         isPendingSelection={pendingSelection.includes(item.id)}
                         onClick={() => toggleItem(item.id)}
+                        config={config}
+                        animationDelay={index * 0.1}
                       />
                     ))}
                   </div>
@@ -636,9 +649,9 @@ const PreferenceScreen = () => {
 
           {/* Empty State */}
           {!isLoading && sortedAndFilteredItems.length === 0 && (
-            <div className="bg-white p-8 rounded-xl text-center shadow-sm border border-green-100">
-              <div className="p-4 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <IconComponent className="w-8 h-8 text-green-600" />
+            <div className="bg-white/80 backdrop-blur-sm p-8 rounded-3xl text-center shadow-lg border border-white/20">
+              <div className="p-6 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center animate-pulse">
+                <IconComponent className="w-10 h-10 text-blue-600" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 {config.emptyMessage}
@@ -654,75 +667,90 @@ const PreferenceScreen = () => {
   );
 };
 
-// Enhanced Individual Preference Item Component
-const PreferenceItem: React.FC<{
+// Enhanced Bubble Item Component
+const BubbleItem: React.FC<{
   item: { id: string; name: string; count: number };
   isSelected: boolean;
   isBulkMode: boolean;
   isPendingSelection: boolean;
   onClick: () => void;
-}> = ({ item, isSelected, isBulkMode, isPendingSelection, onClick }) => {
+  config: any;
+  animationDelay: number;
+}> = ({ item, isSelected, isBulkMode, isPendingSelection, onClick, config, animationDelay }) => {
   const displaySelected = isBulkMode ? isPendingSelection : isSelected;
+  
+  // Generate bubble size based on count
+  const getBubbleSize = (count: number) => {
+    if (count > 100) return 'w-32 h-16';
+    if (count > 50) return 'w-28 h-14';
+    if (count > 20) return 'w-24 h-12';
+    return 'w-20 h-10';
+  };
+
+  const bubbleSize = getBubbleSize(item.count);
   
   return (
     <div
-      className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-        displaySelected 
-          ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white border-transparent shadow-lg transform scale-[1.02]' 
-          : 'bg-white border-green-200 hover:border-green-400 hover:shadow-md hover:bg-green-50'
-      }`}
+      className={`${bubbleSize} cursor-pointer transition-all duration-300 transform hover:scale-110 hover:-translate-y-1 animate-fade-in relative group`}
       onClick={onClick}
+      style={{ 
+        animationDelay: `${animationDelay}s`,
+        animationFillMode: 'both'
+      }}
     >
-      <div className="flex items-center justify-between">
+      <div
+        className={`w-full h-full rounded-full flex items-center justify-center text-center px-3 py-2 shadow-lg hover:shadow-xl transition-all duration-300 border-2 ${
+          displaySelected 
+            ? `bg-gradient-to-r ${config.bubbleColor} text-white border-white shadow-2xl animate-pulse` 
+            : 'bg-white/90 backdrop-blur-sm border-gray-200 hover:border-blue-300 text-gray-800 hover:bg-white'
+        }`}
+      >
         {isBulkMode && (
-          <div className="mr-3">
+          <div className="absolute -top-2 -right-2 z-10">
             <Checkbox 
               checked={isPendingSelection}
-              className={displaySelected ? 'border-white' : 'border-green-300'}
+              className={`${displaySelected ? 'border-white bg-white' : 'border-gray-300'} rounded-full w-5 h-5`}
             />
           </div>
         )}
-        <div className="flex-1">
-          <h4 className={`font-semibold text-lg ${displaySelected ? 'text-white' : 'text-gray-900'}`}>
-            {item.name}
-          </h4>
-          <div className="flex items-center justify-between mt-1">
-            <p className={`text-sm ${displaySelected ? 'text-white/80' : 'text-gray-500'}`}>
-              {item.count} offer{item.count !== 1 ? 's' : ''} available
-            </p>
-            {item.count > 50 && (
-              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+        
+        <div className="flex flex-col items-center space-y-1">
+          <span className={`font-semibold text-xs leading-tight ${displaySelected ? 'text-white' : 'text-gray-800'}`}>
+            {item.name.length > 12 ? `${item.name.substring(0, 12)}...` : item.name}
+          </span>
+          <div className="flex items-center space-x-1">
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+              displaySelected 
+                ? 'bg-white/30 text-white' 
+                : 'bg-blue-100 text-blue-700'
+            }`}>
+              {item.count}
+            </span>
+            {!isBulkMode && (
+              <div className={`p-1 rounded-full transition-all ${
                 displaySelected 
-                  ? 'bg-white/20 text-white' 
-                  : 'bg-orange-100 text-orange-700'
+                  ? 'bg-white/30' 
+                  : 'bg-blue-100 group-hover:bg-blue-200'
               }`}>
-                Popular
-              </span>
+                {displaySelected ? (
+                  <Check className="w-3 h-3 text-white" />
+                ) : (
+                  <Plus className="w-3 h-3 text-blue-600" />
+                )}
+              </div>
             )}
           </div>
         </div>
-        <div className="flex items-center space-x-3">
-          <span className={`text-xs px-3 py-1 rounded-full font-medium ${
-            displaySelected 
-              ? 'bg-white/20 text-white' 
-              : 'bg-green-100 text-green-700'
-          }`}>
-            {item.count}
-          </span>
-          {!isBulkMode && (
-            <div className={`p-2 rounded-full transition-all ${
-              displaySelected 
-                ? 'bg-white/20' 
-                : 'bg-green-100'
-            }`}>
-              {displaySelected ? (
-                <Check className="w-5 h-5 text-white" />
-              ) : (
-                <Plus className="w-5 h-5 text-green-600" />
-              )}
-            </div>
-          )}
-        </div>
+        
+        {/* Floating animation effect */}
+        {displaySelected && (
+          <div className="absolute inset-0 rounded-full animate-ping bg-white/20"></div>
+        )}
+      </div>
+      
+      {/* Tooltip on hover */}
+      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap z-20">
+        {item.name} ({item.count} offers)
       </div>
     </div>
   );
