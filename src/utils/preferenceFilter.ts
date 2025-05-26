@@ -7,21 +7,31 @@ export interface UserPreferences {
   banks: string[];
 }
 
+export const convertToUserPreferences = (preferences: {[key: string]: string[]}): UserPreferences => {
+  return {
+    stores: preferences.stores || [],
+    categories: preferences.categories || [],
+    banks: preferences.banks || []
+  };
+};
+
 export const filterOffersByPreferences = (
   offers: Offer[],
-  preferences: UserPreferences
+  preferences: {[key: string]: string[]}
 ): Offer[] => {
+  const userPrefs = convertToUserPreferences(preferences);
+  
   // If no preferences are set, return all offers
-  const hasAnyPreferences = Object.values(preferences).some(arr => arr.length > 0);
+  const hasAnyPreferences = Object.values(userPrefs).some(arr => arr.length > 0);
   if (!hasAnyPreferences) {
     console.log('No preferences set, returning all offers');
     return offers;
   }
 
   console.log('Filtering offers with preferences:', {
-    stores: preferences.stores.length,
-    categories: preferences.categories.length,
-    banks: preferences.banks.length,
+    stores: userPrefs.stores.length,
+    categories: userPrefs.categories.length,
+    banks: userPrefs.banks.length,
     totalOffers: offers.length
   });
 
@@ -29,8 +39,8 @@ export const filterOffersByPreferences = (
     let matchesPreference = false;
 
     // Check store preferences
-    if (preferences.stores.length > 0 && offer.store) {
-      const storeMatches = preferences.stores.some(prefStore => 
+    if (userPrefs.stores.length > 0 && offer.store) {
+      const storeMatches = userPrefs.stores.some(prefStore => 
         offer.store.toLowerCase().includes(prefStore.toLowerCase()) ||
         prefStore.toLowerCase().includes(offer.store.toLowerCase())
       );
@@ -40,9 +50,9 @@ export const filterOffersByPreferences = (
     }
 
     // Check category preferences
-    if (preferences.categories.length > 0 && offer.categories) {
+    if (userPrefs.categories.length > 0 && offer.categories) {
       const offerCategories = offer.categories.split(',').map(cat => cat.trim().toLowerCase());
-      const categoryMatches = preferences.categories.some(prefCategory => 
+      const categoryMatches = userPrefs.categories.some(prefCategory => 
         offerCategories.some(offerCat => 
           offerCat.includes(prefCategory.toLowerCase()) ||
           prefCategory.toLowerCase().includes(offerCat)
@@ -54,9 +64,9 @@ export const filterOffersByPreferences = (
     }
 
     // Check bank preferences in offer content
-    if (preferences.banks.length > 0) {
+    if (userPrefs.banks.length > 0) {
       const offerText = `${offer.description || ''} ${offer.termsAndConditions || ''} ${offer.longOffer || ''}`.toLowerCase();
-      const bankMatches = preferences.banks.some(prefBank => 
+      const bankMatches = userPrefs.banks.some(prefBank => 
         offerText.includes(prefBank.toLowerCase())
       );
       if (bankMatches) {
@@ -74,9 +84,10 @@ export const filterOffersByPreferences = (
 export const getPreferenceStats = (
   allOffers: Offer[],
   filteredOffers: Offer[],
-  preferences: UserPreferences
+  preferences: {[key: string]: string[]}
 ) => {
-  const hasPreferences = Object.values(preferences).some(arr => arr.length > 0);
+  const userPrefs = convertToUserPreferences(preferences);
+  const hasPreferences = Object.values(userPrefs).some(arr => arr.length > 0);
   
   return {
     totalOffers: allOffers.length,
@@ -84,9 +95,9 @@ export const getPreferenceStats = (
     filteringActive: hasPreferences,
     filterPercentage: hasPreferences ? Math.round((filteredOffers.length / allOffers.length) * 100) : 100,
     preferencesCount: {
-      stores: preferences.stores.length,
-      categories: preferences.categories.length,
-      banks: preferences.banks.length
+      stores: userPrefs.stores.length,
+      categories: userPrefs.categories.length,
+      banks: userPrefs.banks.length
     }
   };
 };

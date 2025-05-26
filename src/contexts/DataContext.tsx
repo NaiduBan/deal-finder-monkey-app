@@ -1,8 +1,9 @@
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { Offer, Category } from '@/types';
 import { fetchOffers, fetchCategories, searchOffers } from '@/services/supabaseService';
 import { useUser } from './UserContext';
-import { filterOffersByPreferences } from '@/utils/preferenceFilter';
+import { filterOffersByPreferences, convertToUserPreferences } from '@/utils/preferenceFilter';
 
 interface DataContextType {
   offers: Offer[];
