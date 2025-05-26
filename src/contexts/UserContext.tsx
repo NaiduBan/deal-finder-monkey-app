@@ -8,13 +8,10 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface UserContextType {
   user: User;
-  userPreferences: {[key: string]: string[]};
   saveOffer: (offerId: string) => void;
   unsaveOffer: (offerId: string) => void;
   isOfferSaved: (offerId: string) => boolean;
   updateLocation: (location: string) => void;
-  refreshUserPreferences: () => Promise<void>;
-  hasPreferences: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -27,14 +24,14 @@ const getInitialUser = (): User => {
       return {
         ...parsedUser,
         savedOffers: parsedUser.savedOffers || [],
-        points: 0
+        points: 0 // Remove points completely
       };
     } else {
       return {
         ...mockUser,
         location: 'India',
         savedOffers: [],
-        points: 0
+        points: 0 // Remove points completely
       };
     }
   } catch (error) {
@@ -43,23 +40,15 @@ const getInitialUser = (): User => {
       ...mockUser,
       location: 'India',
       savedOffers: [],
-      points: 0
+      points: 0 // Remove points completely
     };
   }
 };
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User>(getInitialUser);
-  const [userPreferences, setUserPreferences] = useState<{[key: string]: string[]}>({
-    stores: [],
-    categories: [],
-    banks: []
-  });
   const { toast } = useToast();
   const { session, userProfile } = useAuth();
-
-  // Compute if user has any preferences
-  const hasPreferences = Object.values(userPreferences).some(arr => arr.length > 0);
 
   // Sync with auth context
   useEffect(() => {
@@ -72,7 +61,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           name: userProfile.name || '',
           phone: userProfile.phone || '',
           location: userProfile.location || 'India',
-          points: 0
+          points: 0 // Remove points completely
         };
         
         localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -104,47 +93,17 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       };
       
       fetchSavedOffers();
-      refreshUserPreferences();
     } else if (!session) {
       const guestUser = {
         ...mockUser,
         location: 'India',
         savedOffers: [],
-        points: 0
+        points: 0 // Remove points completely
       };
       setUser(guestUser);
-      setUserPreferences({ stores: [], categories: [], banks: [] });
       localStorage.setItem('user', JSON.stringify(guestUser));
     }
   }, [session, userProfile]);
-
-  // Fetch user preferences from database
-  const refreshUserPreferences = async () => {
-    if (!session?.user) return;
-
-    try {
-      console.log('Fetching user preferences for user:', session.user.id);
-      const { data, error } = await supabase
-        .from('user_preferences')
-        .select('preference_type, preference_value')
-        .eq('user_id', session.user.id);
-
-      if (error) throw error;
-
-      const preferences = { stores: [], categories: [], banks: [] };
-      data?.forEach(pref => {
-        const type = pref.preference_type as keyof typeof preferences;
-        if (preferences[type]) {
-          preferences[type].push(pref.preference_value);
-        }
-      });
-
-      console.log('User preferences loaded:', preferences);
-      setUserPreferences(preferences);
-    } catch (error) {
-      console.error('Error loading preferences:', error);
-    }
-  };
 
   // Real-time subscription for saved offers
   useEffect(() => {
@@ -191,43 +150,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, [session]);
 
-  // Real-time subscription for user preferences
-  useEffect(() => {
-    if (!session?.user) return;
-
-    const channel = supabase
-      .channel('user-preferences-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_preferences',
-          filter: `user_id=eq.${session.user.id}`
-        },
-        (payload) => {
-          console.log('User preference change detected:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            setUserPreferences(prev => ({
-              ...prev,
-              [payload.new.preference_type]: [...prev[payload.new.preference_type as keyof typeof prev], payload.new.preference_value]
-            }));
-          } else if (payload.eventType === 'DELETE') {
-            setUserPreferences(prev => ({
-              ...prev,
-              [payload.old.preference_type]: prev[payload.old.preference_type as keyof typeof prev].filter(val => val !== payload.old.preference_value)
-            }));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [session]);
-
   const saveOffer = async (offerId: string) => {
     console.log('Saving offer:', offerId);
     
@@ -243,18 +165,15 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         return updatedUser;
       });
       
-      // If user is authenticated, save to Supabase with proper conflict handling
+      // If user is authenticated, save to Supabase
       if (session?.user) {
         try {
           console.log('Saving to Supabase:', offerId, 'User ID:', session.user.id);
           const { error } = await supabase
             .from('saved_offers')
-            .upsert({
+            .insert({
               user_id: session.user.id,
               offer_id: offerId
-            }, {
-              onConflict: 'user_id,offer_id',
-              ignoreDuplicates: true
             });
             
           if (error) {
@@ -385,13 +304,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <UserContext.Provider value={{ 
       user, 
-      userPreferences,
       saveOffer, 
       unsaveOffer, 
       isOfferSaved,
-      updateLocation,
-      refreshUserPreferences,
-      hasPreferences
+      updateLocation
     }}>
       {children}
     </UserContext.Provider>
