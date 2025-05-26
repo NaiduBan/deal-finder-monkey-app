@@ -36,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Function to fetch user profile from profiles table
   const fetchUserProfile = async (userId: string) => {
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
@@ -67,7 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updated_at: new Date().toISOString()
       };
 
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('profiles')
         .upsert(profileData, { onConflict: 'id' })
         .select()
@@ -111,16 +111,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setUserProfile(newProfile);
               }
             }
+            if (mounted) {
+              setLoading(false);
+            }
           }, 0);
         } else if (event === 'SIGNED_OUT') {
           setUserProfile(null);
           localStorage.removeItem('user');
+          if (mounted) {
+            setLoading(false);
+          }
           setTimeout(() => {
             toast({
               title: "Logged out",
               description: "You've been successfully logged out.",
             });
           }, 0);
+        } else if (event === 'TOKEN_REFRESHED') {
+          // Handle token refresh
+          console.log('Token refreshed');
         }
       }
     );
@@ -169,7 +178,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
       
-      // Auth state change will handle session cleanup
+      // Clear all local state
+      setSession(null);
+      setUser(null);
+      setUserProfile(null);
+      localStorage.removeItem('user');
+      
     } catch (error: any) {
       toast({
         title: "Error signing out",
@@ -202,7 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return;
     
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('profiles')
         .update({
           ...updates,

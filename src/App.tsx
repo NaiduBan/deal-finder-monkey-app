@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -24,6 +25,7 @@ import SavedOffersScreen from "./components/SavedOffersScreen";
 import PointsHistoryScreen from "./components/PointsHistoryScreen";
 import NotificationsScreen from "./components/NotificationsScreen";
 import BottomNavigation from "./components/BottomNavigation";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -68,16 +70,86 @@ const App = () => (
                     <Routes>
                       <Route path="/splash" element={<SplashScreen />} />
                       <Route path="/login" element={<LoginScreen />} />
-                      <Route path="/home" element={<HomeScreen />} />
-                      <Route path="/saved" element={<SavedOffersScreen />} />
-                      <Route path="/preferences/:type" element={<PreferenceScreen />} />
-                      <Route path="/category/:categoryId" element={<CategoryScreen />} />
-                      <Route path="/offer/:offerId" element={<OfferDetailScreen />} />
-                      <Route path="/chatbot" element={<ChatbotScreen />} />
-                      <Route path="/profile" element={<ProfileScreen />} />
-                      <Route path="/settings" element={<SettingsScreen />} />
-                      <Route path="/points" element={<PointsHistoryScreen />} />
-                      <Route path="/notifications" element={<NotificationsScreen />} />
+                      <Route 
+                        path="/home" 
+                        element={
+                          <ProtectedRoute>
+                            <HomeScreen />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/saved" 
+                        element={
+                          <ProtectedRoute>
+                            <SavedOffersScreen />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/preferences/:type" 
+                        element={
+                          <ProtectedRoute>
+                            <PreferenceScreen />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/category/:categoryId" 
+                        element={
+                          <ProtectedRoute>
+                            <CategoryScreen />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/offer/:offerId" 
+                        element={
+                          <ProtectedRoute>
+                            <OfferDetailScreen />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/chatbot" 
+                        element={
+                          <ProtectedRoute>
+                            <ChatbotScreen />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/profile" 
+                        element={
+                          <ProtectedRoute>
+                            <ProfileScreen />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/settings" 
+                        element={
+                          <ProtectedRoute>
+                            <SettingsScreen />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/points" 
+                        element={
+                          <ProtectedRoute>
+                            <PointsHistoryScreen />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/notifications" 
+                        element={
+                          <ProtectedRoute>
+                            <NotificationsScreen />
+                          </ProtectedRoute>
+                        } 
+                      />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>

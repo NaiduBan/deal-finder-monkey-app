@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -35,25 +34,12 @@ const LoginScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [locationDetected, setLocationDetected] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
-  const [authChecked, setAuthChecked] = useState(false);
 
   // Check if user is already logged in
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        if (session) {
-          console.log("User already authenticated, redirecting to home");
-          navigate('/home');
-        }
-      } catch (error) {
-        console.error("Error checking session:", error);
-      } finally {
-        setAuthChecked(true);
-      }
-    };
-    
-    if (!authLoading) {
-      checkSession();
+    if (session && !authLoading) {
+      console.log("User already authenticated, redirecting to home");
+      navigate('/home', { replace: true });
     }
   }, [navigate, session, authLoading]);
 
@@ -178,7 +164,7 @@ const LoginScreen = () => {
         description: "Welcome back!",
       });
       
-      navigate('/home');
+      navigate('/home', { replace: true });
       
     } catch (error: any) {
       console.error('Authentication error:', error);
@@ -287,7 +273,7 @@ const LoginScreen = () => {
       });
       
       if (!signInError) {
-        navigate('/home');
+        navigate('/home', { replace: true });
       } else {
         // Switch to login tab if auto-login fails
         setActiveTab('login');
@@ -307,11 +293,7 @@ const LoginScreen = () => {
     }
   };
 
-  const handleSkipLogin = () => {
-    navigate('/home');
-  };
-
-  if (!authChecked || authLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-500 via-green-400 to-emerald-500">
         <div className="text-white text-center">
