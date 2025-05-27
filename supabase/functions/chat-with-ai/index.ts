@@ -14,9 +14,9 @@ serve(async (req) => {
   }
 
   try {
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAIApiKey) {
-      throw new Error('OPENAI_API_KEY is not set');
+    const mistralApiKey = Deno.env.get('MISTRAL_API_KEY');
+    if (!mistralApiKey) {
+      throw new Error('MISTRAL_API_KEY is not set');
     }
 
     const supabaseClient = createClient(
@@ -46,14 +46,14 @@ Guidelines:
 - Keep responses concise but helpful
 - Focus on offers and deals that match user preferences when possible`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
+        'Authorization': `Bearer ${mistralApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'mistral-large-latest',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: message }
