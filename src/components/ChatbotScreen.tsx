@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, ChevronLeft, Bot, User, Sparkles, MessageCircle } from 'lucide-react';
+import { Send, ChevronLeft, Bot, User, Sparkles, MessageCircle, Zap, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
@@ -15,7 +15,7 @@ const ChatbotScreen = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
-      text: "Hi there! 👋 I'm your OffersMonkey Assistant powered by Mistral AI. I can help you find the best deals, answer questions about offers, and provide personalized recommendations based on your preferences. What would you like to know?",
+      text: "Hello! 👋 I'm your OffersMonkey AI Assistant powered by Mistral AI. I'm here to help you discover amazing deals, find the best offers, and provide personalized recommendations based on your preferences. What can I help you find today?",
       isUser: false,
       timestamp: new Date()
     }
@@ -195,63 +195,76 @@ const ChatbotScreen = () => {
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-monkeyGreen to-green-600 text-white p-4 shadow-lg">
-        <div className="flex items-center justify-between">
+    <div className="flex flex-col h-screen bg-gray-50">
+      {/* Modern Header */}
+      <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="flex items-center justify-between p-4">
           <div className="flex items-center space-x-3">
-            <Link to="/home" className="hover:bg-white/10 p-2 rounded-lg transition-colors">
-              <ChevronLeft className="w-5 h-5" />
+            <Link to="/home" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <ChevronLeft className="w-5 h-5 text-gray-600" />
             </Link>
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-lg">
-                <MessageCircle className="w-6 h-6 text-white" />
+              <div className="relative">
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center">
+                  <Bot className="w-5 h-5 text-white" />
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
               </div>
               <div>
-                <h1 className="text-xl font-bold">AI Assistant</h1>
-                <div className="flex items-center space-x-2">
-                  <Sparkles className="w-3 h-3 text-yellow-300" />
-                  <p className="text-sm text-green-100">Powered by Mistral AI</p>
+                <h1 className="text-lg font-semibold text-gray-900">AI Assistant</h1>
+                <div className="flex items-center space-x-1">
+                  <Sparkles className="w-3 h-3 text-purple-500" />
+                  <p className="text-xs text-gray-500">Powered by Mistral AI</p>
                 </div>
               </div>
             </div>
           </div>
-          <div className="text-right">
-            <div className="w-3 h-3 bg-green-400 rounded-full mb-1 animate-pulse"></div>
-            <p className="text-xs text-green-100">Online</p>
+          <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 px-2 py-1 bg-green-50 rounded-full">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-xs text-green-700 font-medium">Online</span>
+            </div>
           </div>
         </div>
       </div>
       
-      {/* Messages container */}
-      <ScrollArea className="flex-1 bg-gradient-to-b from-gray-50 to-gray-100">
-        <div className="p-4 space-y-6">
+      {/* Messages Area */}
+      <ScrollArea className="flex-1 p-4">
+        <div className="max-w-4xl mx-auto space-y-6">
           {messages.map((message) => (
             <div
               key={message.id}
               className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`flex items-start space-x-3 max-w-[85%] ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
+              <div className={`flex items-start space-x-3 max-w-[80%] ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
                 {!message.isUser && (
-                  <div className="w-10 h-10 bg-gradient-to-br from-monkeyGreen to-green-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
-                    <Bot className="w-5 h-5 text-white" />
+                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Bot className="w-4 h-4 text-white" />
                   </div>
                 )}
                 <div
-                  className={`rounded-2xl px-5 py-3 shadow-md ${
+                  className={`rounded-2xl px-4 py-3 ${
                     message.isUser
-                      ? 'bg-gradient-to-r from-monkeyGreen to-green-600 text-white rounded-br-sm'
-                      : 'bg-white text-gray-800 rounded-bl-sm border border-gray-200'
+                      ? 'bg-blue-600 text-white rounded-br-md'
+                      : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md shadow-sm'
                   }`}
                 >
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
-                  <p className={`text-xs mt-2 ${message.isUser ? 'text-green-100' : 'text-gray-400'}`}>
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
+                  <div className="flex items-center justify-between mt-2">
+                    <p className={`text-xs ${message.isUser ? 'text-blue-100' : 'text-gray-400'}`}>
+                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                    {!message.isUser && (
+                      <div className="flex items-center space-x-1">
+                        <Zap className="w-3 h-3 text-purple-500" />
+                        <span className="text-xs text-purple-600 font-medium">AI</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {message.isUser && (
-                  <div className="w-10 h-10 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
-                    <User className="w-5 h-5 text-white" />
+                  <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <User className="w-4 h-4 text-white" />
                   </div>
                 )}
               </div>
@@ -260,38 +273,44 @@ const ChatbotScreen = () => {
           
           {isTyping && (
             <div className="flex justify-start">
-              <div className="flex items-start space-x-3 max-w-[85%]">
-                <div className="w-10 h-10 bg-gradient-to-br from-monkeyGreen to-green-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
-                  <Bot className="w-5 h-5 text-white" />
+              <div className="flex items-start space-x-3 max-w-[80%]">
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Bot className="w-4 h-4 text-white" />
                 </div>
-                <div className="bg-white text-gray-800 rounded-2xl rounded-bl-sm px-5 py-3 shadow-md border border-gray-200">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce delay-150"></div>
-                    <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce delay-300"></div>
+                <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
+                  <div className="flex items-center space-x-2">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce delay-100"></div>
+                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce delay-200"></div>
+                    </div>
+                    <span className="text-xs text-gray-500">AI is thinking...</span>
                   </div>
                 </div>
               </div>
             </div>
           )}
           
-          {/* Suggested questions for new users */}
+          {/* Suggested Questions */}
           {messages.length === 1 && (
-            <div className="space-y-4 mt-6">
+            <div className="space-y-4 mt-8">
               <div className="text-center">
-                <p className="text-sm text-gray-500 mb-3">💡 Try asking:</p>
+                <h3 className="text-sm font-medium text-gray-900 mb-2">💡 Quick Questions</h3>
+                <p className="text-xs text-gray-500">Get started with these popular questions</p>
               </div>
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {suggestedQuestions.map((question, index) => (
                   <Button
                     key={index}
                     variant="outline"
                     size="sm"
-                    className="w-full text-left justify-start bg-white hover:bg-monkeyGreen hover:text-white border-gray-200 text-gray-700 transition-all duration-200 shadow-sm"
+                    className="h-auto p-3 text-left justify-start bg-white hover:bg-blue-50 hover:border-blue-300 border-gray-200 text-gray-700 transition-all duration-200"
                     onClick={() => setInput(question)}
                   >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    {question}
+                    <div className="flex items-center space-x-2">
+                      <MessageCircle className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                      <span className="text-sm">{question}</span>
+                    </div>
                   </Button>
                 ))}
               </div>
@@ -302,38 +321,55 @@ const ChatbotScreen = () => {
         </div>
       </ScrollArea>
       
-      {/* Input area */}
-      <div className="p-4 bg-white border-t border-gray-200 shadow-lg">
-        <form onSubmit={handleSendMessage} className="flex space-x-3">
-          <div className="flex-1">
-            <Input
-              placeholder="Ask about deals, offers, or anything else..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className="border-gray-300 focus:border-monkeyGreen focus:ring-monkeyGreen bg-white rounded-full py-3 px-4 shadow-sm"
-              disabled={isLoading || !session?.user}
-            />
-          </div>
-          <Button 
-            type="submit" 
-            size="icon" 
-            className="bg-gradient-to-r from-monkeyGreen to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-full shadow-md transition-all duration-200 w-12 h-12"
-            disabled={!input.trim() || isLoading || !session?.user}
-          >
-            {isLoading ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
-        </form>
-        
-        {!session?.user && (
-          <p className="text-xs text-gray-500 text-center mt-3">
-            Please <Link to="/auth" className="text-monkeyGreen underline font-medium">sign in</Link> to use the AI assistant
-          </p>
-        )}
+      {/* Input Area */}
+      <div className="border-t border-gray-200 bg-white p-4">
+        <div className="max-w-4xl mx-auto">
+          <form onSubmit={handleSendMessage} className="flex space-x-3">
+            <div className="flex-1 relative">
+              <Input
+                placeholder="Ask me about deals, offers, or anything else..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                className="pr-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 bg-gray-50 rounded-xl py-3 px-4"
+                disabled={isLoading || !session?.user}
+              />
+              {input && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <Clock className="w-4 h-4 text-gray-400" />
+                </div>
+              )}
+            </div>
+            <Button 
+              type="submit" 
+              size="icon" 
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm transition-all duration-200 w-12 h-12"
+              disabled={!input.trim() || isLoading || !session?.user}
+            >
+              {isLoading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </form>
+          
+          {!session?.user && (
+            <div className="mt-3 text-center">
+              <p className="text-xs text-gray-500">
+                Please <Link to="/auth" className="text-blue-600 underline font-medium">sign in</Link> to use the AI assistant
+              </p>
+            </div>
+          )}
+          
+          {session?.user && (
+            <div className="mt-3 text-center">
+              <p className="text-xs text-gray-400">
+                Powered by Mistral AI • Press Enter to send
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
