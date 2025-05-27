@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Bell, Search, AlertCircle } from 'lucide-react';
@@ -48,39 +47,46 @@ const HomeScreen = () => {
     };
   }, [searchQuery]);
 
-  // Extract categories from today's offers
+  // Extract categories from today's offers and filter out categories with no offers
   useEffect(() => {
     if (offers && offers.length > 0) {
-      const uniqueCategories = new Set<string>();
+      const categoryCount = new Map<string, number>();
+      
+      // Count offers per category
       offers.forEach(offer => {
         if (offer.category) {
           const categories = offer.category.split(',').map(cat => cat.trim());
           categories.forEach(cat => {
-            if (cat) uniqueCategories.add(cat);
+            if (cat) {
+              categoryCount.set(cat, (categoryCount.get(cat) || 0) + 1);
+            }
           });
         }
       });
 
-      const categoryObjects: Category[] = Array.from(uniqueCategories).map(categoryName => {
-        const matchingCategory = allCategories.find(c => 
-          c.name.toLowerCase() === categoryName.toLowerCase() ||
-          c.id.toLowerCase() === categoryName.toLowerCase().replace(/\s+/g, '-')
-        );
+      // Only include categories that have at least 3 offers
+      const categoryObjects: Category[] = Array.from(categoryCount.entries())
+        .filter(([_, count]) => count >= 3) // Filter out categories with less than 3 offers
+        .map(([categoryName, _]) => {
+          const matchingCategory = allCategories.find(c => 
+            c.name.toLowerCase() === categoryName.toLowerCase() ||
+            c.id.toLowerCase() === categoryName.toLowerCase().replace(/\s+/g, '-')
+          );
 
-        if (matchingCategory) {
-          return matchingCategory;
-        }
+          if (matchingCategory) {
+            return matchingCategory;
+          }
 
-        return {
-          id: categoryName.toLowerCase().replace(/\s+/g, '-'),
-          name: categoryName,
-          icon: getCategoryIcon(categoryName),
-        };
-      });
+          return {
+            id: categoryName.toLowerCase().replace(/\s+/g, '-'),
+            name: categoryName,
+            icon: getCategoryIcon(categoryName),
+          };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .slice(0, 12); // Limit to 12 categories to avoid clutter
 
-      categoryObjects.sort((a, b) => a.name.localeCompare(b.name));
-      
-      console.log('Generated dynamic categories:', categoryObjects);
+      console.log('Generated dynamic categories with offer counts:', categoryObjects);
       setDynamicCategories(categoryObjects);
     } else {
       setDynamicCategories([]);
@@ -295,7 +301,7 @@ const HomeScreen = () => {
                   </div>
                 ))
               ) : (
-                <div className="text-gray-500 py-2">No categories available from Offers_data table</div>
+                <div className="text-gray-500 py-2">No categories with sufficient offers available</div>
               )}
             </div>
           )}

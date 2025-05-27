@@ -205,7 +205,7 @@ const ChatbotScreen = () => {
             </Link>
             <div className="flex items-center space-x-3">
               <div className="relative">
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center">
+                <div className="w-10 h-10 bg-gradient-to-br from-monkeyGreen to-green-600 rounded-full flex items-center justify-center">
                   <Bot className="w-5 h-5 text-white" />
                 </div>
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
@@ -213,7 +213,7 @@ const ChatbotScreen = () => {
               <div>
                 <h1 className="text-lg font-semibold text-gray-900">AI Assistant</h1>
                 <div className="flex items-center space-x-1">
-                  <Sparkles className="w-3 h-3 text-purple-500" />
+                  <Sparkles className="w-3 h-3 text-monkeyGreen" />
                   <p className="text-xs text-gray-500">Powered by Mistral AI</p>
                 </div>
               </div>
@@ -230,7 +230,7 @@ const ChatbotScreen = () => {
       
       {/* Messages Area */}
       <ScrollArea className="flex-1 p-4">
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-4xl mx-auto space-y-6 pb-20">
           {messages.map((message) => (
             <div
               key={message.id}
@@ -238,26 +238,26 @@ const ChatbotScreen = () => {
             >
               <div className={`flex items-start space-x-3 max-w-[80%] ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
                 {!message.isUser && (
-                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 bg-gradient-to-br from-monkeyGreen to-green-600 rounded-full flex items-center justify-center flex-shrink-0">
                     <Bot className="w-4 h-4 text-white" />
                   </div>
                 )}
                 <div
                   className={`rounded-2xl px-4 py-3 ${
                     message.isUser
-                      ? 'bg-blue-600 text-white rounded-br-md'
+                      ? 'bg-monkeyGreen text-white rounded-br-md'
                       : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md shadow-sm'
                   }`}
                 >
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
                   <div className="flex items-center justify-between mt-2">
-                    <p className={`text-xs ${message.isUser ? 'text-blue-100' : 'text-gray-400'}`}>
+                    <p className={`text-xs ${message.isUser ? 'text-green-100' : 'text-gray-400'}`}>
                       {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                     {!message.isUser && (
                       <div className="flex items-center space-x-1">
-                        <Zap className="w-3 h-3 text-purple-500" />
-                        <span className="text-xs text-purple-600 font-medium">AI</span>
+                        <Zap className="w-3 h-3 text-monkeyGreen" />
+                        <span className="text-xs text-monkeyGreen font-medium">AI</span>
                       </div>
                     )}
                   </div>
@@ -274,15 +274,15 @@ const ChatbotScreen = () => {
           {isTyping && (
             <div className="flex justify-start">
               <div className="flex items-start space-x-3 max-w-[80%]">
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 bg-gradient-to-br from-monkeyGreen to-green-600 rounded-full flex items-center justify-center flex-shrink-0">
                   <Bot className="w-4 h-4 text-white" />
                 </div>
                 <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
                   <div className="flex items-center space-x-2">
                     <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce delay-100"></div>
-                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce delay-200"></div>
+                      <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce delay-100"></div>
+                      <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce delay-200"></div>
                     </div>
                     <span className="text-xs text-gray-500">AI is thinking...</span>
                   </div>
@@ -304,11 +304,11 @@ const ChatbotScreen = () => {
                     key={index}
                     variant="outline"
                     size="sm"
-                    className="h-auto p-3 text-left justify-start bg-white hover:bg-blue-50 hover:border-blue-300 border-gray-200 text-gray-700 transition-all duration-200"
+                    className="h-auto p-3 text-left justify-start bg-white hover:bg-green-50 hover:border-monkeyGreen border-gray-200 text-gray-700 transition-all duration-200"
                     onClick={() => setInput(question)}
                   >
                     <div className="flex items-center space-x-2">
-                      <MessageCircle className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                      <MessageCircle className="w-4 h-4 text-monkeyGreen flex-shrink-0" />
                       <span className="text-sm">{question}</span>
                     </div>
                   </Button>
@@ -321,8 +321,8 @@ const ChatbotScreen = () => {
         </div>
       </ScrollArea>
       
-      {/* Input Area */}
-      <div className="border-t border-gray-200 bg-white p-4">
+      {/* Input Area - Fixed positioning with proper spacing */}
+      <div className="fixed bottom-16 left-0 right-0 border-t border-gray-200 bg-white p-4 z-20">
         <div className="max-w-4xl mx-auto">
           <form onSubmit={handleSendMessage} className="flex space-x-3">
             <div className="flex-1 relative">
@@ -331,7 +331,7 @@ const ChatbotScreen = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                className="pr-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 bg-gray-50 rounded-xl py-3 px-4"
+                className="pr-12 border-gray-300 focus:border-monkeyGreen focus:ring-monkeyGreen bg-gray-50 rounded-xl py-3 px-4"
                 disabled={isLoading || !session?.user}
               />
               {input && (
@@ -343,7 +343,7 @@ const ChatbotScreen = () => {
             <Button 
               type="submit" 
               size="icon" 
-              className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm transition-all duration-200 w-12 h-12"
+              className="bg-monkeyGreen hover:bg-green-700 text-white rounded-xl shadow-sm transition-all duration-200 w-12 h-12"
               disabled={!input.trim() || isLoading || !session?.user}
             >
               {isLoading ? (
@@ -357,7 +357,7 @@ const ChatbotScreen = () => {
           {!session?.user && (
             <div className="mt-3 text-center">
               <p className="text-xs text-gray-500">
-                Please <Link to="/auth" className="text-blue-600 underline font-medium">sign in</Link> to use the AI assistant
+                Please <Link to="/auth" className="text-monkeyGreen underline font-medium">sign in</Link> to use the AI assistant
               </p>
             </div>
           )}
