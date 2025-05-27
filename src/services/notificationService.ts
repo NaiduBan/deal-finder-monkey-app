@@ -134,6 +134,7 @@ export async function createBulkNotifications(
       return 0;
     }
 
+    // Handle the case where data might be null
     return Array.isArray(data) ? data.length : (data ? 1 : 0);
   } catch (error) {
     console.error('Exception creating bulk notifications:', error);

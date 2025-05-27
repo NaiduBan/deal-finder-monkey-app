@@ -37,10 +37,14 @@ export async function triggerDailyNotifications(): Promise<boolean> {
   try {
     console.log('Triggering daily notifications...');
     
-    const response = await fetch(`${supabase.supabaseUrl}/functions/v1/send-daily-notifications`, {
+    // Use the correct Supabase URL from environment
+    const supabaseUrl = "https://vtxtnyivbmvcmxuuqknn.supabase.co";
+    const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ0eHRueWl2Ym12Y214dXVxa25uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgwOTczMDcsImV4cCI6MjA2MzY3MzMwN30.MDY79onfEFsVP5hczJSQJspEZg4ie3HeJ9utbTsVWHA";
+    
+    const response = await fetch(`${supabaseUrl}/functions/v1/send-daily-notifications`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${supabase.supabaseKey}`,
+        'Authorization': `Bearer ${supabaseAnonKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ trigger: 'manual' })
