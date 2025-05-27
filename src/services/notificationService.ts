@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 interface CreateNotificationParams {
@@ -127,7 +126,8 @@ export async function createBulkNotifications(
         message: notif.message,
         type: notif.type,
         offer_id: notif.offerId || null
-      })));
+      })))
+      .select();
 
     if (error) {
       console.error('Error creating bulk notifications:', error);
@@ -139,7 +139,7 @@ export async function createBulkNotifications(
       return 0;
     }
 
-    return Array.isArray(data) ? data.length : 1;
+    return data.length;
   } catch (error) {
     console.error('Exception creating bulk notifications:', error);
     return 0;
