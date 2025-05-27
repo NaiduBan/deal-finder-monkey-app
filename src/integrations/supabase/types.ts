@@ -30,6 +30,39 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_notifications: {
+        Row: {
+          created_at: string
+          email_sent: boolean | null
+          id: string
+          notification_date: string
+          notification_sent: boolean | null
+          offer_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_sent?: boolean | null
+          id?: string
+          notification_date?: string
+          notification_sent?: boolean | null
+          offer_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_sent?: boolean | null
+          id?: string
+          notification_date?: string
+          notification_sent?: boolean | null
+          offer_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       linkmydeals_offers: {
         Row: {
           categories: string | null
