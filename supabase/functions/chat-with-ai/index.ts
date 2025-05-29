@@ -32,19 +32,40 @@ serve(async (req) => {
 
     const { message, context } = await req.json();
 
-    // Enhanced system prompt with user context
-    const systemPrompt = `You are OffersMonkey Assistant, a helpful AI that helps users find the best deals and offers. You have access to the user's preferences and saved offers.
+    // Search for relevant offers based on the user's message
+    const offerData = await searchRelevantOffers(supabaseClient, message);
+
+    // Enhanced system prompt with user context and offer data
+    const systemPrompt = `You are OffersMonkey Assistant, a helpful AI that helps users find the best deals and offers. You have access to the user's preferences, saved offers, and real-time offer data.
 
 Context about the user:
 ${context ? JSON.stringify(context, null, 2) : 'No additional context available'}
 
+Available Offers Data:
+${offerData.length > 0 ? JSON.stringify(offerData, null, 2) : 'No relevant offers found for this query'}
+
 Guidelines:
-- Be friendly and enthusiastic about deals
-- Provide specific, actionable advice
-- If asked about deals, be specific about stores, categories, and savings
+- Be friendly and enthusiastic about deals 🐒
+- When users ask about offers, deals, coupons, or discounts, provide specific information from the available offers data
+- Always include the store name, offer description, and savings when available
+- If there's a coupon code, mention it clearly with instructions on how to use it
+- Include smartlinks when available for users to access the deals
+- If offer has an expiry date, mention it
 - Use emojis appropriately to make responses engaging
 - Keep responses concise but helpful
-- Focus on offers and deals that match user preferences when possible`;
+- Focus on offers and deals that match user preferences when possible
+- When no specific offers are found, provide general advice about finding deals
+- Format offer information clearly with store names, discounts, and links
+- Always encourage users to check the terms and conditions
+
+Response Format for Offers:
+🏪 **Store Name**
+💰 **Offer:** Brief description
+🎟️ **Code:** COUPONCODE (if available)
+📅 **Valid:** Until expiry date (if available)
+🔗 **Get Deal:** [smartlink] (if available)
+
+If multiple offers are found, list them in a clear, organized way.`;
 
     const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
       method: 'POST',
@@ -58,7 +79,7 @@ Guidelines:
           { role: 'system', content: systemPrompt },
           { role: 'user', content: message }
         ],
-        max_tokens: 500,
+        max_tokens: 800,
         temperature: 0.7,
       }),
     });
@@ -86,3 +107,56 @@ Guidelines:
     });
   }
 });
+
+// Function to search for relevant offers based on user query
+async function searchRelevantOffers(supabaseClient: any, userMessage: string): Promise<any[]> {
+  try {
+    const searchTerms = extractSearchTerms(userMessage.toLowerCase());
+    
+    if (searchTerms.length === 0) {
+      // If no specific search terms, return some featured or recent offers
+      const { data, error } = await supabaseClient
+        .from('Offers_data')
+        .select('*')
+        .or('featured.eq.true,featured.eq.1')
+        .limit(5);
+      
+      return error ? [] : (data || []);
+    }
+
+    let query = supabaseClient.from('Offers_data').select('*');
+    
+    // Build search query for multiple terms
+    const searchConditions = searchTerms.map(term => 
+      `title.ilike.%${term}%,description.ilike.%${term}%,store.ilike.%${term}%,categories.ilike.%${term}%,long_offer.ilike.%${term}%`
+    ).join(',');
+    
+    query = query.or(searchConditions).limit(10);
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error searching offers:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error in searchRelevantOffers:', error);
+    return [];
+  }
+}
+
+// Function to extract search terms from user message
+function extractSearchTerms(message: string): string[] {
+  const commonWords = ['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'shall', 'must', 'show', 'find', 'get', 'give', 'tell', 'me', 'i', 'you', 'we', 'they', 'it', 'this', 'that', 'these', 'those', 'a', 'an', 'some', 'any', 'all', 'best', 'good', 'great', 'deals', 'offers', 'coupons', 'discounts'];
+  
+  // Extract meaningful words (longer than 2 characters and not common words)
+  const words = message
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter(word => word.length > 2 && !commonWords.includes(word.toLowerCase()))
+    .slice(0, 5); // Limit to 5 search terms
+  
+  return words;
+}
