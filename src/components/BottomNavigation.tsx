@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Bookmark, MessageCircle, User, SlidersHorizontal } from 'lucide-react';
@@ -51,10 +52,10 @@ const BottomNavigation = () => {
     );
   }
 
-  // Desktop top navigation
+  // Desktop top navigation - full width
   return (
     <div className="fixed top-0 left-0 right-0 z-20 bg-white border-b shadow-sm">
-      <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="w-full px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo and branding */}
           <div className="flex items-center space-x-3">
