@@ -8,12 +8,14 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const PreferencesScreen = () => {
   const { toast } = useToast();
   const { session } = useAuth();
   const { offers } = useData();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState('');
   const [userPreferenceCounts, setUserPreferenceCounts] = useState<{[key: string]: number}>({
     stores: 0,
@@ -34,6 +36,7 @@ const PreferencesScreen = () => {
     const extractCounts = () => {
       const storesSet = new Set<string>();
       const categoriesSet = new Set<string>();
+      const brandsSet = new Set<string>();
       const banksSet = new Set<string>();
 
       offers.forEach(offer => {
@@ -42,33 +45,61 @@ const PreferencesScreen = () => {
           storesSet.add(offer.store.trim());
         }
 
-        // Extract categories (treating as brands)
+        // Extract categories and brands from categories field
         if (offer.categories) {
           const cats = offer.categories.split(',');
           cats.forEach(cat => {
             const category = cat.trim();
             if (category) {
               categoriesSet.add(category);
+              brandsSet.add(category); // Treating categories as brands for now
             }
           });
         }
 
-        // Extract banks from text content
-        const fullText = `${offer.description || ''} ${offer.termsAndConditions || ''} ${offer.longOffer || ''}`.toLowerCase();
-        const bankKeywords = [
-          'hdfc bank', 'icici bank', 'sbi', 'state bank of india', 'axis bank', 
-          'kotak mahindra bank', 'paytm payments bank', 'citi bank', 'citibank',
-          'american express', 'amex', 'standard chartered', 'yes bank', 
-          'indusind bank', 'bank of baroda', 'bob', 'canara bank',
-          'union bank', 'pnb', 'punjab national bank', 'bank of india', 
-          'central bank', 'indian bank', 'rbl bank', 'federal bank'
+        // Extract banks from text content with better detection
+        const fullText = `${offer.title || ''} ${offer.description || ''} ${offer.termsAndConditions || ''} ${offer.longOffer || ''}`.toLowerCase();
+        
+        // Enhanced bank detection
+        const bankPatterns = [
+          'hdfc', 'icici', 'sbi', 'state bank', 'axis', 'kotak', 'paytm', 'citi', 'citibank',
+          'american express', 'amex', 'standard chartered', 'yes bank', 'indusind', 
+          'bank of baroda', 'bob', 'canara', 'union bank', 'pnb', 'punjab national',
+          'bank of india', 'central bank', 'indian bank', 'rbl', 'federal bank',
+          'idfc', 'bandhan', 'dbs', 'hsbc', 'uco bank', 'indian overseas bank'
         ];
         
-        bankKeywords.forEach(bank => {
-          if (fullText.includes(bank)) {
-            const bankName = bank.split(' ').map(word => 
-              word.charAt(0).toUpperCase() + word.slice(1)
-            ).join(' ');
+        bankPatterns.forEach(pattern => {
+          if (fullText.includes(pattern)) {
+            let bankName = pattern;
+            // Normalize bank names
+            if (pattern === 'hdfc') bankName = 'HDFC Bank';
+            else if (pattern === 'icici') bankName = 'ICICI Bank';
+            else if (pattern === 'sbi' || pattern === 'state bank') bankName = 'State Bank of India';
+            else if (pattern === 'axis') bankName = 'Axis Bank';
+            else if (pattern === 'kotak') bankName = 'Kotak Mahindra Bank';
+            else if (pattern === 'paytm') bankName = 'Paytm Payments Bank';
+            else if (pattern === 'citi' || pattern === 'citibank') bankName = 'Citi Bank';
+            else if (pattern === 'american express' || pattern === 'amex') bankName = 'American Express';
+            else if (pattern === 'standard chartered') bankName = 'Standard Chartered';
+            else if (pattern === 'yes bank') bankName = 'YES Bank';
+            else if (pattern === 'indusind') bankName = 'IndusInd Bank';
+            else if (pattern === 'bank of baroda' || pattern === 'bob') bankName = 'Bank of Baroda';
+            else if (pattern === 'canara') bankName = 'Canara Bank';
+            else if (pattern === 'union bank') bankName = 'Union Bank of India';
+            else if (pattern === 'pnb' || pattern === 'punjab national') bankName = 'Punjab National Bank';
+            else if (pattern === 'bank of india') bankName = 'Bank of India';
+            else if (pattern === 'central bank') bankName = 'Central Bank of India';
+            else if (pattern === 'indian bank') bankName = 'Indian Bank';
+            else if (pattern === 'rbl') bankName = 'RBL Bank';
+            else if (pattern === 'federal bank') bankName = 'Federal Bank';
+            else if (pattern === 'idfc') bankName = 'IDFC First Bank';
+            else if (pattern === 'bandhan') bankName = 'Bandhan Bank';
+            else if (pattern === 'dbs') bankName = 'DBS Bank';
+            else if (pattern === 'hsbc') bankName = 'HSBC Bank';
+            else if (pattern === 'uco bank') bankName = 'UCO Bank';
+            else if (pattern === 'indian overseas bank') bankName = 'Indian Overseas Bank';
+            
             banksSet.add(bankName);
           }
         });
@@ -77,7 +108,7 @@ const PreferencesScreen = () => {
       setAvailableCounts({
         stores: storesSet.size,
         categories: categoriesSet.size,
-        brands: categoriesSet.size, // Same as categories for now
+        brands: brandsSet.size,
         banks: banksSet.size
       });
     };
@@ -226,69 +257,71 @@ const PreferencesScreen = () => {
   const totalAvailable = Object.values(availableCounts).reduce((sum, count) => sum + count, 0);
 
   return (
-    <div className="pb-16 bg-gradient-to-br from-indigo-50 via-white to-cyan-50 min-h-screen">
+    <div className={`bg-gradient-to-br from-indigo-50 via-white to-cyan-50 min-h-screen ${isMobile ? 'pb-16' : 'pt-20'}`}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white py-6 px-4 sticky top-0 z-10 shadow-lg">
-        <div className="flex items-center space-x-3 mb-4">
-          <Link to="/profile" className="p-2 hover:bg-white/20 rounded-full transition-colors">
-            <ChevronLeft className="w-6 h-6" />
-          </Link>
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-white/20 rounded-full">
-              <Users className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">Preferences</h1>
-              <p className="text-white/90 text-sm">Customize your offer experience</p>
+      <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white sticky top-0 z-10 shadow-lg">
+        <div className={`${isMobile ? 'py-6 px-4' : 'py-8 px-6 max-w-7xl mx-auto'}`}>
+          <div className={`flex items-center space-x-3 ${isMobile ? 'mb-4' : 'mb-6'}`}>
+            <Link to="/profile" className="p-2 hover:bg-white/20 rounded-full transition-colors">
+              <ChevronLeft className={isMobile ? 'w-6 h-6' : 'w-7 h-7'} />
+            </Link>
+            <div className="flex items-center space-x-3">
+              <div className={`p-3 bg-white/20 rounded-full ${isMobile ? 'p-3' : 'p-4'}`}>
+                <Users className={isMobile ? 'w-6 h-6' : 'w-7 h-7'} />
+              </div>
+              <div>
+                <h1 className={`font-bold ${isMobile ? 'text-xl' : 'text-2xl'}`}>Preferences</h1>
+                <p className={`text-white/90 ${isMobile ? 'text-sm' : 'text-base'}`}>Customize your offer experience</p>
+              </div>
             </div>
           </div>
-        </div>
-        
-        {/* Overall Stats */}
-        <div className="grid grid-cols-3 gap-4 bg-white/15 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-1 mb-1">
-              <Check className="w-4 h-4" />
-              <p className="text-2xl font-bold">{totalSelected}</p>
+          
+          {/* Overall Stats */}
+          <div className={`grid grid-cols-3 gap-4 bg-white/15 backdrop-blur-sm rounded-xl border border-white/20 ${isMobile ? 'p-4' : 'p-6'}`}>
+            <div className="text-center">
+              <div className={`flex items-center justify-center space-x-1 ${isMobile ? 'mb-1' : 'mb-2'}`}>
+                <Check className={isMobile ? 'w-4 h-4' : 'w-5 h-5'} />
+                <p className={`font-bold ${isMobile ? 'text-2xl' : 'text-3xl'}`}>{totalSelected}</p>
+              </div>
+              <p className={`text-white/80 ${isMobile ? 'text-xs' : 'text-sm'}`}>Total Selected</p>
             </div>
-            <p className="text-xs text-white/80">Total Selected</p>
-          </div>
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-1 mb-1">
-              <BarChart3 className="w-4 h-4" />
-              <p className="text-lg font-semibold">{totalAvailable}</p>
+            <div className="text-center">
+              <div className={`flex items-center justify-center space-x-1 ${isMobile ? 'mb-1' : 'mb-2'}`}>
+                <BarChart3 className={isMobile ? 'w-4 h-4' : 'w-5 h-5'} />
+                <p className={`font-semibold ${isMobile ? 'text-lg' : 'text-xl'}`}>{totalAvailable}</p>
+              </div>
+              <p className={`text-white/80 ${isMobile ? 'text-xs' : 'text-sm'}`}>Available</p>
             </div>
-            <p className="text-xs text-white/80">Available</p>
-          </div>
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-1 mb-1">
-              <TrendingUp className="w-4 h-4" />
-              <p className="text-lg font-semibold">{Math.round((totalSelected / Math.max(totalAvailable, 1)) * 100)}%</p>
+            <div className="text-center">
+              <div className={`flex items-center justify-center space-x-1 ${isMobile ? 'mb-1' : 'mb-2'}`}>
+                <TrendingUp className={isMobile ? 'w-4 h-4' : 'w-5 h-5'} />
+                <p className={`font-semibold ${isMobile ? 'text-lg' : 'text-xl'}`}>{Math.round((totalSelected / Math.max(totalAvailable, 1)) * 100)}%</p>
+              </div>
+              <p className={`text-white/80 ${isMobile ? 'text-xs' : 'text-sm'}`}>Coverage</p>
             </div>
-            <p className="text-xs text-white/80">Coverage</p>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="p-4 space-y-6">
+      <div className={`space-y-6 ${isMobile ? 'p-4' : 'p-6 max-w-7xl mx-auto'}`}>
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 ${isMobile ? 'w-5 h-5' : 'w-6 h-6'}`} />
           <Input
             type="search"
             placeholder="Search preference types..."
-            className="pl-11 pr-4 py-3 w-full border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+            className={`border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white ${isMobile ? 'pl-11 pr-4 py-3' : 'pl-12 pr-5 py-4 text-base'}`}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
         {/* Preference Type Cards */}
-        <div className="grid grid-cols-1 gap-4">
+        <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
           {isLoading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+            <div className="flex justify-center py-12 col-span-full">
+              <div className={`animate-spin rounded-full border-4 border-blue-500 border-t-transparent ${isMobile ? 'h-12 w-12' : 'h-16 w-16'}`}></div>
             </div>
           ) : (
             filteredTypes.map((type) => {
@@ -300,28 +333,28 @@ const PreferencesScreen = () => {
               return (
                 <div
                   key={type.id}
-                  className={`bg-white rounded-xl p-6 shadow-md border-2 ${type.borderColor} hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-[1.02]`}
+                  className={`bg-white rounded-xl shadow-md border-2 ${type.borderColor} hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-[1.02] ${isMobile ? 'p-6' : 'p-8'}`}
                   onClick={() => navigate(type.route)}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className={`p-4 ${type.bgColor} rounded-xl`}>
-                        <IconComponent className="w-8 h-8 text-gray-700" />
+                    <div className="flex items-center space-x-4 flex-1">
+                      <div className={`${type.bgColor} rounded-xl ${isMobile ? 'p-4' : 'p-5'}`}>
+                        <IconComponent className={`text-gray-700 ${isMobile ? 'w-8 h-8' : 'w-10 h-10'}`} />
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1">{type.title}</h3>
-                        <p className="text-sm text-gray-600 mb-2">{type.description}</p>
-                        <div className="flex items-center space-x-4 text-sm text-gray-500">
+                        <h3 className={`font-semibold text-gray-900 mb-1 ${isMobile ? 'text-lg' : 'text-xl'}`}>{type.title}</h3>
+                        <p className={`text-gray-600 mb-2 ${isMobile ? 'text-sm' : 'text-base'}`}>{type.description}</p>
+                        <div className={`flex items-center space-x-4 text-gray-500 ${isMobile ? 'text-sm' : 'text-base'}`}>
                           <span className="flex items-center space-x-1">
-                            <Check className="w-4 h-4 text-green-600" />
+                            <Check className={`text-green-600 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
                             <span>{selectedCount} selected</span>
                           </span>
                           <span className="flex items-center space-x-1">
-                            <BarChart3 className="w-4 h-4 text-blue-600" />
+                            <BarChart3 className={`text-blue-600 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
                             <span>{availableCount} available</span>
                           </span>
                           <span className="flex items-center space-x-1">
-                            <TrendingUp className="w-4 h-4 text-purple-600" />
+                            <TrendingUp className={`text-purple-600 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
                             <span>{coverage}% coverage</span>
                           </span>
                         </div>
@@ -329,10 +362,10 @@ const PreferencesScreen = () => {
                     </div>
                     
                     <div className="flex flex-col items-center space-y-2">
-                      <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${type.color} flex items-center justify-center text-white font-bold text-lg shadow-lg`}>
+                      <div className={`rounded-full bg-gradient-to-r ${type.color} flex items-center justify-center text-white font-bold shadow-lg ${isMobile ? 'w-16 h-16 text-lg' : 'w-20 h-20 text-xl'}`}>
                         {selectedCount}
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className={`bg-gray-200 rounded-full h-2 ${isMobile ? 'w-16' : 'w-20'}`}>
                         <div 
                           className={`bg-gradient-to-r ${type.color} h-2 rounded-full transition-all duration-500`}
                           style={{ width: `${coverage}%` }}
@@ -348,14 +381,14 @@ const PreferencesScreen = () => {
 
         {/* Empty State */}
         {!isLoading && filteredTypes.length === 0 && (
-          <div className="bg-white p-8 rounded-xl text-center shadow-sm border border-gray-100">
-            <div className="p-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-              <Search className="w-8 h-8 text-gray-600" />
+          <div className={`bg-white rounded-xl text-center shadow-sm border border-gray-100 ${isMobile ? 'p-8' : 'p-12'}`}>
+            <div className={`bg-gradient-to-br from-gray-100 to-gray-200 rounded-full mx-auto mb-4 flex items-center justify-center ${isMobile ? 'w-16 h-16 p-4' : 'w-20 h-20 p-5'}`}>
+              <Search className={`text-gray-600 ${isMobile ? 'w-8 h-8' : 'w-10 h-10'}`} />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <h3 className={`font-medium text-gray-900 mb-2 ${isMobile ? 'text-lg' : 'text-xl'}`}>
               No preference types found
             </h3>
-            <p className="text-gray-500">
+            <p className={`text-gray-500 ${isMobile ? 'text-sm' : 'text-base'}`}>
               No preference types match your search "{searchTerm}"
             </p>
           </div>
