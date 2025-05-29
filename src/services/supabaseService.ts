@@ -320,6 +320,144 @@ export async function unsaveOfferForUser(userId: string, offerId: string): Promi
   }
 }
 
+// Function to fetch user preferences
+export async function fetchUserPreferences(userId: string, preferenceType: string = 'all'): Promise<any[]> {
+  try {
+    if (!userId) {
+      throw new Error('User ID is required to fetch preferences');
+    }
+    
+    console.log(`Fetching ${preferenceType} preferences for user ${userId}`);
+    
+    let query = (supabase as any)
+      .from('user_preferences')
+      .select('*')
+      .eq('user_id', userId);
+      
+    if (preferenceType !== 'all') {
+      query = query.eq('preference_type', preferenceType);
+    }
+    
+    const { data, error } = await query;
+      
+    if (error) {
+      console.error('Error fetching user preferences:', error);
+      throw error;
+    }
+    
+    console.log(`Found ${data?.length || 0} preferences of type ${preferenceType}`);
+    return data || [];
+  } catch (error) {
+    console.error('Error in fetchUserPreferences:', error);
+    return [];
+  }
+}
+
+// Function to save user preference
+export async function saveUserPreference(userId: string, preferenceType: string, preferenceId: string): Promise<boolean> {
+  try {
+    if (!userId || !preferenceType || !preferenceId) {
+      throw new Error('User ID, preference type, and preference ID are required');
+    }
+    
+    console.log(`Saving preference for user ${userId}: ${preferenceType} - ${preferenceId}`);
+    
+    const { data: existingPreference, error: checkError } = await (supabase as any)
+      .from('user_preferences')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('preference_type', preferenceType)
+      .eq('preference_id', preferenceId)
+      .single();
+      
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking existing preference:', checkError);
+      return false;
+    }
+    
+    if (existingPreference) {
+      console.log('Preference already exists, skipping save operation');
+      return true;
+    }
+    
+    const { error } = await (supabase as any)
+      .from('user_preferences')
+      .insert({
+        user_id: userId,
+        preference_type: preferenceType,
+        preference_id: preferenceId
+      });
+      
+    if (error) {
+      console.error('Error saving user preference:', error);
+      return false;
+    }
+    
+    console.log('Preference saved successfully');
+    return true;
+  } catch (error) {
+    console.error('Error in saveUserPreference:', error);
+    return false;
+  }
+}
+
+// Function to remove user preference
+export async function removeUserPreference(userId: string, preferenceType: string, preferenceId: string): Promise<boolean> {
+  try {
+    if (!userId || !preferenceType || !preferenceId) {
+      throw new Error('User ID, preference type, and preference ID are required');
+    }
+    
+    console.log(`Removing preference for user ${userId}: ${preferenceType} - ${preferenceId}`);
+    
+    const { error } = await (supabase as any)
+      .from('user_preferences')
+      .delete()
+      .eq('user_id', userId)
+      .eq('preference_type', preferenceType)
+      .eq('preference_id', preferenceId);
+      
+    if (error) {
+      console.error('Error removing user preference:', error);
+      return false;
+    }
+    
+    console.log('Preference removed successfully');
+    return true;
+  } catch (error) {
+    console.error('Error in removeUserPreference:', error);
+    return false;
+  }
+}
+
+// Function to remove all preferences of a specific type for a user
+export async function removeAllUserPreferencesOfType(userId: string, preferenceType: string): Promise<boolean> {
+  try {
+    if (!userId || !preferenceType) {
+      throw new Error('User ID and preference type are required');
+    }
+    
+    console.log(`Removing all ${preferenceType} preferences for user ${userId}`);
+    
+    const { error } = await (supabase as any)
+      .from('user_preferences')
+      .delete()
+      .eq('user_id', userId)
+      .eq('preference_type', preferenceType);
+      
+    if (error) {
+      console.error(`Error removing all ${preferenceType} preferences:`, error);
+      return false;
+    }
+    
+    console.log(`All ${preferenceType} preferences removed successfully`);
+    return true;
+  } catch (error) {
+    console.error('Error in removeAllUserPreferencesOfType:', error);
+    return false;
+  }
+}
+
 // Function to search offers
 export async function searchOffers(query: string): Promise<Offer[]> {
   try {
@@ -408,4 +546,56 @@ export async function searchOffers(query: string): Promise<Offer[]> {
     console.error('Error in searchOffers:', error);
     return [];
   }
+}
+
+// Function to apply preferences to offers
+export function applyPreferencesToOffers(offers: Offer[], preferences: {[key: string]: string[]}): Offer[] {
+  if (!preferences || Object.keys(preferences).length === 0 || 
+      (preferences.stores?.length === 0 && preferences.brands?.length === 0 && preferences.banks?.length === 0)) {
+    console.log('No preferences to filter by, returning all offers');
+    return offers;
+  }
+  
+  console.log(`Filtering ${offers.length} offers with preferences:`, 
+    `stores: ${preferences.stores?.length || 0}, ` +
+    `brands: ${preferences.brands?.length || 0}, ` + 
+    `banks: ${preferences.banks?.length || 0}`
+  );
+  
+  const filteredOffers = offers.filter(offer => {
+    // Check store preferences
+    if (preferences.stores && preferences.stores.length > 0 && offer.store) {
+      for (const prefValue of preferences.stores) {
+        if (prefValue && offer.store.toLowerCase().includes(prefValue.toLowerCase())) {
+          return true;
+        }
+      }
+    }
+    
+    // Check brand/category preferences
+    if (preferences.brands && preferences.brands.length > 0 && offer.category) {
+      for (const prefValue of preferences.brands) {
+        if (prefValue && offer.category.toLowerCase().includes(prefValue.toLowerCase())) {
+          return true;
+        }
+      }
+    }
+    
+    // Check bank preferences
+    if (preferences.banks && preferences.banks.length > 0 && 
+       (offer.description || offer.termsAndConditions || offer.longOffer)) {
+      const fullText = `${offer.description || ''} ${offer.termsAndConditions || ''} ${offer.longOffer || ''}`.toLowerCase();
+      
+      for (const prefValue of preferences.banks) {
+        if (prefValue && fullText.includes(prefValue.toLowerCase())) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  });
+  
+  console.log(`Filtered down to ${filteredOffers.length} offers matching preferences`);
+  return filteredOffers;
 }

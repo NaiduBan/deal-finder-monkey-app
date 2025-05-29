@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Bell, Search, AlertCircle } from 'lucide-react';
@@ -9,6 +8,8 @@ import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
 import OfferCard from './OfferCard';
 import CategoryItem from './CategoryItem';
+import { supabase } from '@/integrations/supabase/client';
+import { applyPreferencesToOffers } from '@/services/supabaseService';
 import { Category } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -27,9 +28,15 @@ const HomeScreen = () => {
   } = useData();
   
   const [searchQuery, setSearchQuery] = useState('');
+  const [userPreferences, setUserPreferences] = useState<{[key: string]: string[]}>({
+    brands: [],
+    stores: [],
+    banks: []
+  });
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [dynamicCategories, setDynamicCategories] = useState<Category[]>([]);
+  const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
 
   // Debounce search input
   useEffect(() => {
@@ -104,6 +111,47 @@ const HomeScreen = () => {
     return 'shopping-bag';
   };
 
+  // Fetch user preferences when component mounts
+  useEffect(() => {
+    const fetchUserPreferences = async () => {
+      try {
+        console.log("Fetching user preferences...");
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          const { data, error } = await supabase
+            .from('user_preferences')
+            .select('*')
+            .eq('user_id', session.user.id);
+            
+          if (error) {
+            console.error('Error fetching user preferences:', error);
+          } else if (data) {
+            const preferences: {[key: string]: string[]} = {
+              brands: data.filter(p => p.preference_type === 'brands').map(p => p.preference_id),
+              stores: data.filter(p => p.preference_type === 'stores').map(p => p.preference_id),
+              banks: data.filter(p => p.preference_type === 'banks').map(p => p.preference_id)
+            };
+            
+            setUserPreferences(preferences);
+            console.log('Loaded preferences:', preferences);
+
+            if (preferences.brands.length > 0 || preferences.stores.length > 0 || preferences.banks.length > 0) {
+              console.log('User has personalization preferences applied');
+            }
+          }
+          
+          setHasLoadedPreferences(true);
+        }
+      } catch (error) {
+        console.error('Error loading user preferences:', error);
+        setHasLoadedPreferences(true);
+      }
+    };
+    
+    fetchUserPreferences();
+  }, []);
+
   useEffect(() => {
     console.log("Home Screen Rendered");
     console.log("Offers loaded:", offers ? offers.length : 0);
@@ -112,8 +160,10 @@ const HomeScreen = () => {
     console.log("Is loading:", isDataLoading);
     console.log("Error:", error);
     console.log("Using mock data:", isUsingMockData);
+    console.log("User preferences:", userPreferences);
     console.log("Selected category:", selectedCategory);
-  }, [offers, filteredOffers, dynamicCategories, isDataLoading, error, isUsingMockData, selectedCategory]);
+    console.log("Has loaded preferences:", hasLoadedPreferences);
+  }, [offers, filteredOffers, dynamicCategories, isDataLoading, error, isUsingMockData, userPreferences, selectedCategory, hasLoadedPreferences]);
 
   const loadMoreOffers = () => {
     setIsLoading(true);
@@ -123,7 +173,7 @@ const HomeScreen = () => {
   };
   
   // Enhanced search functionality with category filtering on top of already filtered offers
-  const displayedOffers = (filteredOffers || []).filter(offer => {
+  const displayedOffers = filteredOffers.filter(offer => {
     if (selectedCategory && offer.category) {
       const categoryMatch = offer.category.toLowerCase().includes(selectedCategory.toLowerCase()) ||
                            selectedCategory.toLowerCase().includes(offer.category.toLowerCase());
@@ -215,6 +265,26 @@ const HomeScreen = () => {
             </Alert>
           )}
           
+          {/* Personalization badge */}
+          {hasLoadedPreferences && (
+            userPreferences.brands.length > 0 || 
+            userPreferences.stores.length > 0 || 
+            userPreferences.banks.length > 0
+          ) && (
+            <div className="bg-monkeyGreen/10 p-3 rounded-lg flex justify-between items-center mb-6">
+              <div>
+                <h3 className="font-medium text-monkeyGreen">Personalized for You</h3>
+                <p className="text-xs text-gray-600">Offers are filtered based on your preferences</p>
+              </div>
+              <Link 
+                to="/preferences/brands" 
+                className="bg-monkeyGreen text-white text-sm px-3 py-1 rounded-full"
+              >
+                Edit
+              </Link>
+            </div>
+          )}
+          
           {/* Search Bar */}
           <div className="relative mb-6">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -230,7 +300,10 @@ const HomeScreen = () => {
           {/* Categories carousel with active state */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-3">
-              <h2 className="font-bold text-lg">Categories</h2>
+              <h2 className="font-bold text-lg">For You</h2>
+              <Link to="/preferences/brands" className="text-monkeyGreen text-sm">
+                Set preferences
+              </Link>
             </div>
             
             {isDataLoading ? (
@@ -356,6 +429,15 @@ const HomeScreen = () => {
                             >
                               Refresh Data
                             </button>
+                            
+                            {offers.length > 0 && (
+                              <Link 
+                                to="/preferences/brands" 
+                                className="border border-monkeyGreen text-monkeyGreen px-4 py-2 rounded-lg text-center"
+                              >
+                                Adjust Preferences
+                              </Link>
+                            )}
                           </div>
                         </div>
                       )
@@ -397,6 +479,14 @@ const HomeScreen = () => {
                 {displayedOffers.filter(offer => !offer.isAmazon).length === 0 && (
                   <div className="bg-white p-6 rounded-lg text-center shadow-sm">
                     <p className="text-gray-500">No nearby offers found</p>
+                    {offers.length > 0 && (
+                      <Link 
+                        to="/preferences/stores" 
+                        className="mt-4 text-monkeyGreen block underline"
+                      >
+                        Adjust store preferences
+                      </Link>
+                    )}
                   </div>
                 )}
               </TabsContent>
@@ -417,6 +507,14 @@ const HomeScreen = () => {
                 {displayedOffers.filter(offer => offer.isAmazon).length === 0 && (
                   <div className="bg-white p-6 rounded-lg text-center shadow-sm">
                     <p className="text-gray-500">No Amazon offers found</p>
+                    {offers.length > 0 && (
+                      <Link 
+                        to="/preferences/stores" 
+                        className="mt-4 text-monkeyGreen block underline"
+                      >
+                        Adjust store preferences
+                      </Link>
+                    )}
                   </div>
                 )}
               </TabsContent>

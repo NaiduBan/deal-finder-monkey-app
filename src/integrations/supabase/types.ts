@@ -30,30 +30,6 @@ export type Database = {
         }
         Relationships: []
       }
-      chat_messages: {
-        Row: {
-          created_at: string
-          id: string
-          message: string
-          response: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          message: string
-          response?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          message?: string
-          response?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       daily_notifications: {
         Row: {
           created_at: string

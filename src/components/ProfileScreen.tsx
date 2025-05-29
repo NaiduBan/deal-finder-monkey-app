@@ -1,273 +1,295 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { User, Settings, Heart, Bell, Award, LogOut, Edit, Camera, MapPin, Phone, Mail, Calendar, Briefcase } from 'lucide-react';
+import { ChevronLeft, User, Mail, Phone, MapPin, Settings, Bookmark, Bell, Shield, LogOut, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
-import { useAuth } from '@/contexts/AuthContext';
+import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/contexts/UserContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const ProfileScreen = () => {
-  const { session, signOut } = useAuth();
   const { user } = useUser();
+  const { session, signOut, userProfile } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const [profileData, setProfileData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const loadProfile = async () => {
-      if (!session?.user) return;
-
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error loading profile:', error);
-        } else {
-          setProfileData(data);
-        }
-      } catch (error) {
-        console.error('Error loading profile:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadProfile();
-  }, [session]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSignOut = async () => {
     try {
+      setIsLoading(true);
       await signOut();
       toast({
         title: "Signed out successfully",
         description: "You have been logged out of your account",
       });
     } catch (error) {
+      console.error('Error signing out:', error);
       toast({
         title: "Error signing out",
         description: "There was a problem signing out. Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
+  const profileStats = [
+    {
+      label: 'Saved Offers',
+      value: user.savedOffers?.length || 0,
+      icon: Bookmark,
+      color: 'text-green-600',
+      bgColor: 'bg-green-100'
+    }
+  ];
 
   const menuItems = [
     {
-      icon: Settings,
-      title: 'Settings',
-      subtitle: 'Manage your account',
-      link: '/settings',
+      icon: Bell,
+      label: 'Notifications',
+      description: 'Manage your notification preferences',
+      link: '/notifications',
       color: 'text-blue-600',
       bgColor: 'bg-blue-100'
     },
     {
-      icon: Heart,
-      title: 'Saved Offers',
-      subtitle: `${user.savedOffers?.length || 0} saved offers`,
-      link: '/saved',
-      color: 'text-red-600',
-      bgColor: 'bg-red-100'
-    },
-    {
-      icon: Bell,
-      title: 'Notifications',
-      subtitle: 'Manage notifications',
-      link: '/notifications',
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-100'
-    },
-    {
-      icon: Award,
-      title: 'Points History',
-      subtitle: 'View your rewards',
-      link: '/points',
+      icon: Settings,
+      label: 'Preferences',
+      description: 'Set your store, brand and category preferences',
+      link: '/preferences/stores',
       color: 'text-purple-600',
       bgColor: 'bg-purple-100'
+    },
+    {
+      icon: Shield,
+      label: 'Privacy & Security',
+      description: 'Manage your account security',
+      link: '/settings',
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-100'
     }
   ];
 
-  if (isLoading) {
-    return (
-      <div className={`bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen ${isMobile ? 'pb-16' : 'pt-20'} flex items-center justify-center`}>
-        <div className={`animate-spin rounded-full border-4 border-blue-500 border-t-transparent ${isMobile ? 'h-12 w-12' : 'h-16 w-16'}`}></div>
-      </div>
-    );
-  }
-
   return (
-    <div className={`bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen ${isMobile ? 'pb-16' : 'pt-20'}`}>
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white sticky top-0 z-10 shadow-lg">
-        <div className={`${isMobile ? 'py-8 px-4' : 'py-12 px-6 max-w-7xl mx-auto'}`}>
-          <div className={`flex items-center space-x-4 ${isMobile ? '' : 'justify-center'}`}>
-            <div className="relative">
-              <Avatar className={isMobile ? 'h-20 w-20' : 'h-32 w-32'}>
-                <AvatarImage src={profileData?.avatar_url || user.avatar} />
-                <AvatarFallback className="text-white bg-white/20 text-2xl font-bold">
-                  {getInitials(profileData?.name || user.name || user.email || 'U')}
-                </AvatarFallback>
-              </Avatar>
-              <Button
+    <div className={`bg-gradient-to-br from-green-50 to-emerald-50 min-h-screen ${isMobile ? 'pb-16' : 'pt-20'}`}>
+      {/* Mobile Header */}
+      {isMobile && (
+        <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white py-8 px-4 relative overflow-hidden">
+          <div className="absolute inset-0 bg-black/10"></div>
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-6">
+              <Link to="/home" className="p-2 hover:bg-white/20 rounded-full transition-colors">
+                <ChevronLeft className="w-6 h-6" />
+              </Link>
+              <h1 className="text-xl font-semibold">Profile</h1>
+              <div className="w-8 h-8"></div>
+            </div>
+            
+            {/* Profile Info */}
+            <div className="flex items-center space-x-4">
+              <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
+                <User className="w-10 h-10 text-white" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold text-white">
+                  {userProfile?.name || user.name || 'User'}
+                </h2>
+                <p className="text-white/80 text-sm">
+                  {userProfile?.email || user.email || 'user@example.com'}
+                </p>
+                {session?.user && (
+                  <Badge className="mt-2 bg-white/20 text-white border-white/30">
+                    Verified Member
+                  </Badge>
+                )}
+              </div>
+              <Button 
+                variant="outline" 
                 size="sm"
-                className="absolute -bottom-2 -right-2 rounded-full h-8 w-8 p-0 bg-white text-blue-600 hover:bg-gray-100"
-              >
-                <Camera className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex-1">
-              <h1 className={`font-bold text-white ${isMobile ? 'text-2xl' : 'text-4xl'}`}>
-                {profileData?.name || user.name || 'User'}
-              </h1>
-              <p className={`text-blue-100 ${isMobile ? 'text-sm' : 'text-lg'} flex items-center mt-1`}>
-                <Mail className={`mr-2 ${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
-                {profileData?.email || user.email}
-              </p>
-              {profileData?.phone && (
-                <p className={`text-blue-100 ${isMobile ? 'text-sm' : 'text-base'} flex items-center mt-1`}>
-                  <Phone className={`mr-2 ${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
-                  {profileData.phone}
-                </p>
-              )}
-              {profileData?.location && (
-                <p className={`text-blue-100 ${isMobile ? 'text-sm' : 'text-base'} flex items-center mt-1`}>
-                  <MapPin className={`mr-2 ${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
-                  {profileData.location}
-                </p>
-              )}
-            </div>
-            {!isMobile && (
-              <Button
-                variant="outline"
-                onClick={handleSignOut}
                 className="text-white border-white/30 hover:bg-white/20 bg-transparent"
               >
-                <LogOut className="h-5 w-5 mr-2" />
-                Sign Out
+                <Edit2 className="w-4 h-4 mr-1" />
+                Edit
               </Button>
-            )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Desktop Header */}
+      {!isMobile && (
+        <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white">
+          <div className="max-w-[1440px] mx-auto px-6 py-12">
+            <div className="flex items-center space-x-6 mb-8">
+              <Link to="/home" className="p-3 hover:bg-white/20 rounded-full transition-colors">
+                <ChevronLeft className="w-6 h-6" />
+              </Link>
+              <div>
+                <h1 className="text-4xl font-bold text-white">Profile</h1>
+                <p className="text-white/80 text-lg mt-2">Manage your account and preferences</p>
+              </div>
+            </div>
+            
+            {/* Desktop Profile Info */}
+            <div className="flex items-center space-x-8">
+              <div className="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center">
+                <User className="w-16 h-16 text-white" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-3xl font-bold text-white mb-2">
+                  {userProfile?.name || user.name || 'User'}
+                </h2>
+                <p className="text-white/80 text-lg mb-4">
+                  {userProfile?.email || user.email || 'user@example.com'}
+                </p>
+                {session?.user && (
+                  <Badge className="bg-white/20 text-white border-white/30 px-4 py-2 text-sm">
+                    Verified Member
+                  </Badge>
+                )}
+              </div>
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="text-white border-white/30 hover:bg-white/20 bg-transparent"
+              >
+                <Edit2 className="w-5 h-5 mr-2" />
+                Edit Profile
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Content */}
-      <div className={`space-y-6 ${isMobile ? 'p-4' : 'p-8 max-w-7xl mx-auto'}`}>
-        {/* Additional Info Cards */}
-        {(profileData?.occupation || profileData?.company || profileData?.date_of_birth) && (
-          <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-3'}`}>
-            {profileData?.occupation && (
-              <Card className="border-blue-200">
-                <CardContent className={isMobile ? 'p-4' : 'p-6'}>
-                  <div className="flex items-center space-x-3">
-                    <div className="p-3 bg-blue-100 rounded-lg">
-                      <Briefcase className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Occupation</p>
-                      <p className="font-semibold text-gray-900">{profileData.occupation}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+      <div className={`space-y-8 ${isMobile ? 'p-4' : 'w-full'}`}>
+        <div className={`${!isMobile ? 'max-w-[1440px] mx-auto px-6 py-8' : ''}`}>
+          {/* Quick Info */}
+          <div className={`grid gap-6 mb-8 ${isMobile ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'}`}>
+            <Card className="border-green-200">
+              <CardContent className={`text-center ${isMobile ? 'p-4' : 'p-6'}`}>
+                <Mail className={`text-green-600 mx-auto mb-3 ${isMobile ? 'w-6 h-6' : 'w-8 h-8'}`} />
+                <p className={`text-gray-600 mb-2 ${isMobile ? 'text-sm' : 'text-base'}`}>Email</p>
+                <p className={`font-medium text-gray-900 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                  {userProfile?.email || user.email || 'Not provided'}
+                </p>
+              </CardContent>
+            </Card>
             
-            {profileData?.company && (
-              <Card className="border-blue-200">
-                <CardContent className={isMobile ? 'p-4' : 'p-6'}>
-                  <div className="flex items-center space-x-3">
-                    <div className="p-3 bg-green-100 rounded-lg">
-                      <Briefcase className="h-6 w-6 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Company</p>
-                      <p className="font-semibold text-gray-900">{profileData.company}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            
-            {profileData?.date_of_birth && (
-              <Card className="border-blue-200">
-                <CardContent className={isMobile ? 'p-4' : 'p-6'}>
-                  <div className="flex items-center space-x-3">
-                    <div className="p-3 bg-purple-100 rounded-lg">
-                      <Calendar className="h-6 w-6 text-purple-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Date of Birth</p>
-                      <p className="font-semibold text-gray-900">
-                        {new Date(profileData.date_of_birth).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
+            <Card className="border-green-200">
+              <CardContent className={`text-center ${isMobile ? 'p-4' : 'p-6'}`}>
+                <MapPin className={`text-green-600 mx-auto mb-3 ${isMobile ? 'w-6 h-6' : 'w-8 h-8'}`} />
+                <p className={`text-gray-600 mb-2 ${isMobile ? 'text-sm' : 'text-base'}`}>Location</p>
+                <p className={`font-medium text-gray-900 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                  {userProfile?.location || user.location || 'India'}
+                </p>
+              </CardContent>
+            </Card>
 
-        {/* Menu Items */}
-        <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
-          {menuItems.map((item) => {
-            const IconComponent = item.icon;
-            return (
-              <Link key={item.title} to={item.link}>
-                <Card className="hover:shadow-md transition-shadow border-gray-200 hover:border-blue-300">
-                  <CardContent className={isMobile ? 'p-6' : 'p-8'}>
-                    <div className="flex items-center space-x-4">
-                      <div className={`p-4 rounded-lg ${item.bgColor}`}>
-                        <IconComponent className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} ${item.color}`} />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className={`font-semibold text-gray-900 ${isMobile ? 'text-lg' : 'text-xl'}`}>
-                          {item.title}
-                        </h3>
-                        <p className={`text-gray-600 ${isMobile ? 'text-sm' : 'text-base'}`}>
-                          {item.subtitle}
-                        </p>
-                      </div>
-                    </div>
+            {!isMobile && (
+              <>
+                <Card className="border-green-200">
+                  <CardContent className="p-6 text-center">
+                    <Bookmark className="w-8 h-8 text-green-600 mx-auto mb-3" />
+                    <p className="text-gray-600 mb-2">Saved Offers</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {user.savedOffers?.length || 0}
+                    </p>
                   </CardContent>
                 </Card>
-              </Link>
-            );
-          })}
-        </div>
+                
+                <Card className="border-green-200">
+                  <CardContent className="p-6 text-center">
+                    <Shield className="w-8 h-8 text-green-600 mx-auto mb-3" />
+                    <p className="text-gray-600 mb-2">Member Since</p>
+                    <p className="font-medium text-gray-900 text-sm">
+                      Dec 2024
+                    </p>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </div>
 
-        {/* Sign Out Button for Mobile */}
-        {isMobile && (
-          <Card className="border-red-200">
-            <CardContent className="p-6">
-              <Button
-                variant="destructive"
+          {/* Stats - Mobile only */}
+          {isMobile && (
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Your Activity</h3>
+              <div className="grid grid-cols-1 gap-3">
+                {profileStats.map((stat, index) => {
+                  const IconComponent = stat.icon;
+                  return (
+                    <Card key={index} className="border-green-200">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className={`p-3 rounded-full ${stat.bgColor}`}>
+                              <IconComponent className={`w-6 h-6 ${stat.color}`} />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900">{stat.label}</p>
+                              <p className="text-sm text-gray-600">Track your activity</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Menu Items */}
+          <div>
+            <h3 className={`font-semibold text-gray-900 mb-6 ${isMobile ? 'text-lg' : 'text-2xl'}`}>Settings & Preferences</h3>
+            <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+              {menuItems.map((item, index) => {
+                const IconComponent = item.icon;
+                return (
+                  <Link key={index} to={item.link}>
+                    <Card className="border-green-200 hover:shadow-lg transition-all duration-200 hover:border-green-300">
+                      <CardContent className={isMobile ? 'p-4' : 'p-6'}>
+                        <div className="flex items-center space-x-4">
+                          <div className={`rounded-full ${item.bgColor} ${isMobile ? 'p-3' : 'p-4'}`}>
+                            <IconComponent className={`${item.color} ${isMobile ? 'w-5 h-5' : 'w-6 h-6'}`} />
+                          </div>
+                          <div className="flex-1">
+                            <p className={`font-semibold text-gray-900 ${isMobile ? 'text-base' : 'text-lg'}`}>{item.label}</p>
+                            <p className={`text-gray-600 ${isMobile ? 'text-sm' : 'text-base'}`}>{item.description}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Sign Out */}
+          {session?.user && (
+            <div className="pt-8">
+              <Button 
                 onClick={handleSignOut}
-                className="w-full"
+                disabled={isLoading}
+                variant="outline"
+                size={isMobile ? "default" : "lg"}
+                className={`text-red-600 border-red-200 hover:bg-red-50 ${isMobile ? 'w-full' : 'w-auto px-8'}`}
               >
-                <LogOut className="h-5 w-5 mr-2" />
-                Sign Out
+                <LogOut className="w-4 h-4 mr-2" />
+                {isLoading ? 'Signing out...' : 'Sign Out'}
               </Button>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
