@@ -232,8 +232,8 @@ const HomeScreen = () => {
         </div>
       )}
       
-      {/* Main content */}
-      <div className={`space-y-6 ${isMobile ? 'p-4' : 'max-w-7xl mx-auto px-6 py-8'}`}>
+      {/* Main content - full width on desktop, padded on mobile */}
+      <div className={`space-y-6 ${isMobile ? 'p-4' : 'px-6 py-8'}`}>
         {/* Desktop welcome section */}
         {!isMobile && (
           <div className="flex items-center justify-between">
@@ -400,7 +400,7 @@ const HomeScreen = () => {
                   )}
                   
                   {!error && displayedOffers.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
                       {displayedOffers.map((offer) => (
                         <Link key={offer.id} to={`/offer/${offer.id}`}>
                           <OfferCard offer={offer} />
@@ -459,7 +459,7 @@ const HomeScreen = () => {
             </TabsContent>
             
             <TabsContent value="nearby" className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
                 {displayedOffers.filter(offer => !offer.isAmazon).map((offer) => (
                   <Link key={offer.id} to={`/offer/${offer.id}`}>
                     <OfferCard offer={offer} />
@@ -483,7 +483,7 @@ const HomeScreen = () => {
             </TabsContent>
             
             <TabsContent value="amazon" className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
                 {displayedOffers.filter(offer => offer.isAmazon).map((offer) => (
                   <Link key={offer.id} to={`/offer/${offer.id}`}>
                     <OfferCard offer={offer} />
