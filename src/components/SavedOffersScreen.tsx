@@ -9,11 +9,13 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Offer } from '@/types';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const SavedOffersScreen = () => {
   const { user, unsaveOffer } = useUser();
   const { session } = useAuth();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
   const [savedOffers, setSavedOffers] = useState<Offer[]>([]);
@@ -249,127 +251,149 @@ const SavedOffersScreen = () => {
   });
 
   return (
-    <div className="pb-16 bg-monkeyBackground min-h-screen">
-      {/* Header */}
-      <div className="bg-monkeyGreen text-white py-4 px-4 sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Link to="/home">
-              <ChevronLeft className="w-5 h-5" />
-            </Link>
-            <h1 className="text-lg font-medium">Saved Offers</h1>
-          </div>
-          <Button 
-            variant="ghost" 
-            className="text-white p-1 h-auto"
-            onClick={() => setFilterOpen(!filterOpen)}
-          >
-            <Filter className="w-5 h-5" />
-          </Button>
-        </div>
-
-        {/* Filter/Sort options */}
-        {filterOpen && (
-          <div className="mt-3 bg-white text-gray-800 p-3 rounded-lg">
-            <h3 className="font-medium mb-2">Sort by:</h3>
-            <div className="grid grid-cols-2 gap-2">
-              <Button 
-                variant={sortBy === 'newest' ? 'default' : 'outline'} 
-                size="sm" 
-                onClick={() => setSortBy('newest')}
-                className="text-xs"
-              >
-                Newest
-              </Button>
-              <Button 
-                variant={sortBy === 'price-low' ? 'default' : 'outline'} 
-                size="sm" 
-                onClick={() => setSortBy('price-low')}
-                className="text-xs"
-              >
-                Price: Low to High
-              </Button>
-              <Button 
-                variant={sortBy === 'price-high' ? 'default' : 'outline'} 
-                size="sm" 
-                onClick={() => setSortBy('price-high')}
-                className="text-xs"
-              >
-                Price: High to Low
-              </Button>
-              <Button 
-                variant={sortBy === 'expiring' ? 'default' : 'outline'} 
-                size="sm" 
-                onClick={() => setSortBy('expiring')}
-                className="text-xs"
-              >
-                Expiring Soon
-              </Button>
+    <div className={`bg-monkeyBackground min-h-screen ${isMobile ? 'pb-16' : 'pt-20'}`}>
+      {/* Mobile Header - only show on mobile */}
+      {isMobile && (
+        <div className="bg-monkeyGreen text-white py-4 px-4 sticky top-0 z-10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Link to="/home">
+                <ChevronLeft className="w-5 h-5" />
+              </Link>
+              <h1 className="text-lg font-medium">Saved Offers</h1>
             </div>
+            <Button 
+              variant="ghost" 
+              className="text-white p-1 h-auto"
+              onClick={() => setFilterOpen(!filterOpen)}
+            >
+              <Filter className="w-5 h-5" />
+            </Button>
           </div>
-        )}
-      </div>
 
-      {/* Main content */}
-      <div className="p-4 space-y-6">
-        <Tabs defaultValue="all" className="w-full">
-          <TabsList className="w-full">
-            <TabsTrigger value="all" className="flex-1">All Saved</TabsTrigger>
-            <TabsTrigger value="local" className="flex-1">Local</TabsTrigger>
-            <TabsTrigger value="online" className="flex-1">Online</TabsTrigger>
-          </TabsList>
+          {/* Filter/Sort options */}
+          {filterOpen && (
+            <div className="mt-3 bg-white text-gray-800 p-3 rounded-lg">
+              <h3 className="font-medium mb-2">Sort by:</h3>
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  variant={sortBy === 'newest' ? 'default' : 'outline'} 
+                  size="sm" 
+                  onClick={() => setSortBy('newest')}
+                  className="text-xs"
+                >
+                  Newest
+                </Button>
+                <Button 
+                  variant={sortBy === 'price-low' ? 'default' : 'outline'} 
+                  size="sm" 
+                  onClick={() => setSortBy('price-low')}
+                  className="text-xs"
+                >
+                  Price: Low to High
+                </Button>
+                <Button 
+                  variant={sortBy === 'price-high' ? 'default' : 'outline'} 
+                  size="sm" 
+                  onClick={() => setSortBy('price-high')}
+                  className="text-xs"
+                >
+                  Price: High to Low
+                </Button>
+                <Button 
+                  variant={sortBy === 'expiring' ? 'default' : 'outline'} 
+                  size="sm" 
+                  onClick={() => setSortBy('expiring')}
+                  className="text-xs"
+                >
+                  Expiring Soon
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
-          <TabsContent value="all" className="mt-4">
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-monkeyGreen"></div>
-              </div>
-            ) : sortedOffers.length > 0 ? (
-              <div className="grid grid-cols-2 gap-4">
-                {sortedOffers.map((offer) => (
-                  <div key={offer.id} className="relative">
-                    <Link to={`/offer/${offer.id}`}>
-                      <OfferCard offer={offer} />
-                      <div className="absolute top-2 right-2 flex space-x-1">
-                        <Button 
-                          variant="secondary" 
-                          size="icon" 
-                          className="h-7 w-7 bg-white/80 hover:bg-white"
-                          onClick={(e) => handleShare(offer.id, e)}
-                        >
-                          <Share2 className="w-4 h-4 text-gray-700" />
-                        </Button>
-                        <Button 
-                          variant="secondary" 
-                          size="icon" 
-                          className="h-7 w-7 bg-white/80 hover:bg-white"
-                          onClick={(e) => handleUnsave(offer.id, e)}
-                        >
-                          <Bookmark className="w-4 h-4 text-gray-700 fill-gray-700" />
-                        </Button>
-                      </div>
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white p-8 rounded-lg shadow-sm text-center">
-                <Bookmark className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium mb-2">No saved offers</h3>
-                <p className="text-gray-500 mb-4">You haven't saved any offers yet.</p>
-                <Link to="/home">
-                  <Button>Discover offers</Button>
+      {/* Main content - desktop with max-width container */}
+      <div className={`space-y-6 ${isMobile ? 'p-4' : 'w-full'}`}>
+        <div className={`${!isMobile ? 'max-w-[1440px] mx-auto px-6 py-8' : ''}`}>
+          {/* Desktop header */}
+          {!isMobile && (
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center space-x-4">
+                <Link to="/home" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                  <ChevronLeft className="w-6 h-6 text-gray-700" />
                 </Link>
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">Saved Offers</h1>
+                  <p className="text-gray-600 mt-1">Your bookmarked deals and offers</p>
+                </div>
               </div>
-            )}
-          </TabsContent>
+              <div className="flex items-center space-x-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setFilterOpen(!filterOpen)}
+                  className="flex items-center space-x-2"
+                >
+                  <Filter className="w-4 h-4" />
+                  <span>Filter & Sort</span>
+                </Button>
+              </div>
+            </div>
+          )}
 
-          <TabsContent value="local" className="mt-4">
-            {sortedOffers.filter(offer => !offer.isAmazon).length > 0 ? (
-              <div className="grid grid-cols-2 gap-4">
-                {sortedOffers
-                  .filter(offer => !offer.isAmazon)
-                  .map((offer) => (
+          {/* Desktop Filter/Sort options */}
+          {!isMobile && filterOpen && (
+            <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
+              <h3 className="font-semibold mb-4 text-gray-900">Sort by:</h3>
+              <div className="flex flex-wrap gap-3">
+                <Button 
+                  variant={sortBy === 'newest' ? 'default' : 'outline'} 
+                  onClick={() => setSortBy('newest')}
+                >
+                  Newest First
+                </Button>
+                <Button 
+                  variant={sortBy === 'price-low' ? 'default' : 'outline'} 
+                  onClick={() => setSortBy('price-low')}
+                >
+                  Price: Low to High
+                </Button>
+                <Button 
+                  variant={sortBy === 'price-high' ? 'default' : 'outline'} 
+                  onClick={() => setSortBy('price-high')}
+                >
+                  Price: High to Low
+                </Button>
+                <Button 
+                  variant={sortBy === 'expiring' ? 'default' : 'outline'} 
+                  onClick={() => setSortBy('expiring')}
+                >
+                  Expiring Soon
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <Tabs defaultValue="all" className="w-full">
+            <TabsList className={`${isMobile ? 'w-full' : 'w-fit'} bg-white`}>
+              <TabsTrigger value="all" className={isMobile ? 'flex-1' : ''}>All Saved</TabsTrigger>
+              <TabsTrigger value="local" className={isMobile ? 'flex-1' : ''}>Local</TabsTrigger>
+              <TabsTrigger value="online" className={isMobile ? 'flex-1' : ''}>Online</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="all" className="mt-6">
+              {isLoading ? (
+                <div className="flex justify-center py-12">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-monkeyGreen"></div>
+                </div>
+              ) : sortedOffers.length > 0 ? (
+                <div className={`grid gap-4 ${
+                  isMobile 
+                    ? 'grid-cols-2' 
+                    : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                }`}>
+                  {sortedOffers.map((offer) => (
                     <div key={offer.id} className="relative">
                       <Link to={`/offer/${offer.id}`}>
                         <OfferCard offer={offer} />
@@ -394,52 +418,106 @@ const SavedOffersScreen = () => {
                       </Link>
                     </div>
                   ))}
-              </div>
-            ) : (
-              <div className="bg-white p-8 rounded-lg shadow-sm text-center">
-                <p className="text-gray-500">No local saved offers</p>
-              </div>
-            )}
-          </TabsContent>
+                </div>
+              ) : (
+                <div className="bg-white p-12 rounded-lg shadow-sm text-center">
+                  <Bookmark className="w-20 h-20 mx-auto text-gray-300 mb-6" />
+                  <h3 className="text-xl font-semibold mb-3 text-gray-900">No saved offers</h3>
+                  <p className="text-gray-500 mb-6 max-w-md mx-auto">You haven't saved any offers yet. Start exploring and bookmark your favorite deals!</p>
+                  <Link to="/home">
+                    <Button size="lg">Discover Offers</Button>
+                  </Link>
+                </div>
+              )}
+            </TabsContent>
 
-          <TabsContent value="online" className="mt-4">
-            {sortedOffers.filter(offer => offer.isAmazon).length > 0 ? (
-              <div className="grid grid-cols-2 gap-4">
-                {sortedOffers
-                  .filter(offer => offer.isAmazon)
-                  .map((offer) => (
-                    <div key={offer.id} className="relative">
-                      <Link to={`/offer/${offer.id}`}>
-                        <OfferCard offer={offer} />
-                        <div className="absolute top-2 right-2 flex space-x-1">
-                          <Button 
-                            variant="secondary" 
-                            size="icon" 
-                            className="h-7 w-7 bg-white/80 hover:bg-white"
-                            onClick={(e) => handleShare(offer.id, e)}
-                          >
-                            <Share2 className="w-4 h-4 text-gray-700" />
-                          </Button>
-                          <Button 
-                            variant="secondary" 
-                            size="icon" 
-                            className="h-7 w-7 bg-white/80 hover:bg-white"
-                            onClick={(e) => handleUnsave(offer.id, e)}
-                          >
-                            <Bookmark className="w-4 h-4 text-gray-700 fill-gray-700" />
-                          </Button>
-                        </div>
-                      </Link>
-                    </div>
-                  ))}
-              </div>
-            ) : (
-              <div className="bg-white p-8 rounded-lg shadow-sm text-center">
-                <p className="text-gray-500">No online saved offers</p>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="local" className="mt-6">
+              {sortedOffers.filter(offer => !offer.isAmazon).length > 0 ? (
+                <div className={`grid gap-4 ${
+                  isMobile 
+                    ? 'grid-cols-2' 
+                    : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                }`}>
+                  {sortedOffers
+                    .filter(offer => !offer.isAmazon)
+                    .map((offer) => (
+                      <div key={offer.id} className="relative">
+                        <Link to={`/offer/${offer.id}`}>
+                          <OfferCard offer={offer} />
+                          <div className="absolute top-2 right-2 flex space-x-1">
+                            <Button 
+                              variant="secondary" 
+                              size="icon" 
+                              className="h-7 w-7 bg-white/80 hover:bg-white"
+                              onClick={(e) => handleShare(offer.id, e)}
+                            >
+                              <Share2 className="w-4 h-4 text-gray-700" />
+                            </Button>
+                            <Button 
+                              variant="secondary" 
+                              size="icon" 
+                              className="h-7 w-7 bg-white/80 hover:bg-white"
+                              onClick={(e) => handleUnsave(offer.id, e)}
+                            >
+                              <Bookmark className="w-4 h-4 text-gray-700 fill-gray-700" />
+                            </Button>
+                          </div>
+                        </Link>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <div className="bg-white p-12 rounded-lg shadow-sm text-center">
+                  <p className="text-gray-500 text-lg">No local saved offers</p>
+                  <p className="text-gray-400 mt-2">Save some local store offers to see them here</p>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="online" className="mt-6">
+              {sortedOffers.filter(offer => offer.isAmazon).length > 0 ? (
+                <div className={`grid gap-4 ${
+                  isMobile 
+                    ? 'grid-cols-2' 
+                    : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                }`}>
+                  {sortedOffers
+                    .filter(offer => offer.isAmazon)
+                    .map((offer) => (
+                      <div key={offer.id} className="relative">
+                        <Link to={`/offer/${offer.id}`}>
+                          <OfferCard offer={offer} />
+                          <div className="absolute top-2 right-2 flex space-x-1">
+                            <Button 
+                              variant="secondary" 
+                              size="icon" 
+                              className="h-7 w-7 bg-white/80 hover:bg-white"
+                              onClick={(e) => handleShare(offer.id, e)}
+                            >
+                              <Share2 className="w-4 h-4 text-gray-700" />
+                            </Button>
+                            <Button 
+                              variant="secondary" 
+                              size="icon" 
+                              className="h-7 w-7 bg-white/80 hover:bg-white"
+                              onClick={(e) => handleUnsave(offer.id, e)}
+                            >
+                              <Bookmark className="w-4 h-4 text-gray-700 fill-gray-700" />
+                            </Button>
+                          </div>
+                        </Link>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <div className="bg-white p-12 rounded-lg shadow-sm text-center">
+                  <p className="text-gray-500 text-lg">No online saved offers</p>
+                  <p className="text-gray-400 mt-2">Save some online offers to see them here</p>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </div>
   );
