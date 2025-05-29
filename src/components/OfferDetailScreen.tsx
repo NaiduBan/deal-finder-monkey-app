@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ExternalLink, Copy, Check, Heart, Share2, Calendar, Tag, Store, Percent, Clock, MapPin } from 'lucide-react';
@@ -9,7 +8,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useData } from '@/contexts/DataContext';
 import { useUser } from '@/contexts/UserContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { saveOfferForUser, unsaveOfferForUser } from '@/services/supabaseService';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const OfferDetailScreen = () => {
@@ -17,7 +15,7 @@ const OfferDetailScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { offers } = useData();
-  const { user, updateSavedOffers } = useUser();
+  const { user, saveOffer, unsaveOffer, isOfferSaved } = useUser();
   const { session } = useAuth();
   const isMobile = useIsMobile();
   const [copied, setCopied] = useState(false);
@@ -35,7 +33,7 @@ const OfferDetailScreen = () => {
     return null;
   }
 
-  const isSaved = user.savedOffers?.includes(offer.id) || false;
+  const isSaved = isOfferSaved(offer.id);
 
   const handleCopyCode = () => {
     if (offer.code) {
@@ -62,23 +60,9 @@ const OfferDetailScreen = () => {
     setIsLoading(true);
     try {
       if (isSaved) {
-        const success = await unsaveOfferForUser(session.user.id, offer.id);
-        if (success) {
-          updateSavedOffers(user.savedOffers?.filter(id => id !== offer.id) || []);
-          toast({
-            title: "Offer removed",
-            description: "Offer has been removed from your saved list",
-          });
-        }
+        await unsaveOffer(offer.id);
       } else {
-        const success = await saveOfferForUser(session.user.id, offer.id);
-        if (success) {
-          updateSavedOffers([...(user.savedOffers || []), offer.id]);
-          toast({
-            title: "Offer saved!",
-            description: "Offer has been added to your saved list",
-          });
-        }
+        await saveOffer(offer.id);
       }
     } catch (error) {
       toast({
