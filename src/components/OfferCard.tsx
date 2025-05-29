@@ -4,6 +4,7 @@ import { Offer } from '@/types';
 import { Bookmark, BookmarkCheck, Tag } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface OfferCardProps {
   offer: Offer;
@@ -12,6 +13,7 @@ interface OfferCardProps {
 const OfferCard = ({ offer }: OfferCardProps) => {
   const { isOfferSaved, saveOffer, unsaveOffer } = useUser();
   const { session } = useAuth();
+  const isMobile = useIsMobile();
   const isSaved = isOfferSaved(offer.id);
 
   const handleSaveToggle = (e: React.MouseEvent) => {
@@ -26,9 +28,13 @@ const OfferCard = ({ offer }: OfferCardProps) => {
   };
 
   return (
-    <div className="offer-card h-full flex flex-col bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-      {/* Image Container - Fixed aspect ratio with object-contain for full visibility */}
-      <div className="aspect-square relative bg-gray-50">
+    <div className={`offer-card h-full flex flex-col bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow ${
+      !isMobile ? 'w-full max-w-[400px]' : ''
+    }`}>
+      {/* Image Container - Different aspect ratios for mobile and desktop */}
+      <div className={`relative bg-gray-50 ${
+        isMobile ? 'aspect-square' : 'aspect-[5/2]'
+      }`}>
         <img 
           src={offer.imageUrl || "/placeholder.svg"} 
           alt={offer.title || "Offer"} 
