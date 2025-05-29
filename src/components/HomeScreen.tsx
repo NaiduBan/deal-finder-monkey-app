@@ -11,10 +11,12 @@ import CategoryItem from './CategoryItem';
 import { supabase } from '@/integrations/supabase/client';
 import { applyPreferencesToOffers } from '@/services/supabaseService';
 import { Category } from '@/types';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useUser();
+  const isMobile = useIsMobile();
   const { 
     offers, 
     filteredOffers,
@@ -209,27 +211,49 @@ const HomeScreen = () => {
   };
 
   return (
-    <div className="pb-16 bg-monkeyBackground min-h-screen">
-      {/* Header with location */}
-      <div className="bg-monkeyGreen text-white py-4 px-4 sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-1">
-            <MapPin className="w-4 h-4" />
-            <span className="text-sm">{user.location}</span>
+    <div className={`bg-monkeyBackground min-h-screen ${isMobile ? 'pb-16' : 'pt-20'}`}>
+      {/* Mobile Header with location - only show on mobile */}
+      {isMobile && (
+        <div className="bg-monkeyGreen text-white py-4 px-4 sticky top-0 z-10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-1">
+              <MapPin className="w-4 h-4" />
+              <span className="text-sm">{user.location}</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Link to="/notifications" className="flex items-center">
+                <Bell className="w-5 h-5 text-white" />
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-monkeyYellow text-[10px] text-black absolute translate-x-3 -translate-y-2">
+                  3
+                </span>
+              </Link>
+            </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <Link to="/notifications" className="flex items-center">
-              <Bell className="w-5 h-5 text-white" />
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-monkeyYellow text-[10px] text-black absolute translate-x-3 -translate-y-2">
+        </div>
+      )}
+      
+      {/* Main content */}
+      <div className={`space-y-6 ${isMobile ? 'p-4' : 'max-w-7xl mx-auto px-6 py-8'}`}>
+        {/* Desktop welcome section */}
+        {!isMobile && (
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Welcome back!</h1>
+              <div className="flex items-center space-x-2 mt-2">
+                <MapPin className="w-4 h-4 text-gray-500" />
+                <span className="text-gray-600">{user.location}</span>
+              </div>
+            </div>
+            <Link to="/notifications" className="flex items-center bg-monkeyGreen text-white px-4 py-2 rounded-lg hover:bg-monkeyGreen/90 transition-colors">
+              <Bell className="w-5 h-5 mr-2" />
+              <span>Notifications</span>
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-monkeyYellow text-xs text-black ml-2">
                 3
               </span>
             </Link>
           </div>
-        </div>
-      </div>
-      
-      {/* Main content */}
-      <div className="p-4 space-y-6">
+        )}
+        
         {/* Data source alert */}
         {isUsingMockData && (
           <Alert className="bg-amber-50 border-amber-200">
