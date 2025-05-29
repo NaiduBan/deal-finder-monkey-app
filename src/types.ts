@@ -46,14 +46,9 @@ export interface Category {
 export interface User {
   id: string;
   name: string;
-  email: string; // Add email property to fix the error
+  email: string;
   phone: string;
   location: string;
-  preferences: {
-    brands: string[];
-    stores: string[];
-    banks: string[];
-  };
   savedOffers: string[];
   points: number;
 }

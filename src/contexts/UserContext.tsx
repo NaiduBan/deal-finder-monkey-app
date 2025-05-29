@@ -9,6 +9,7 @@ interface User {
   email: string;
   name?: string;
   avatar?: string;
+  location: string;
   savedOffers: string[];
 }
 
@@ -29,6 +30,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User>({
     id: '',
     email: '',
+    location: 'Mumbai, India', // Default location
     savedOffers: []
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -50,6 +52,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         email: session.user.email || '',
         name: session.user.user_metadata?.name || '',
         avatar: session.user.user_metadata?.avatar_url || '',
+        location: 'Mumbai, India', // Default location for now
         savedOffers
       });
 
