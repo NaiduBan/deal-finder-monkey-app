@@ -27,8 +27,8 @@ const OfferCard = ({ offer }: OfferCardProps) => {
 
   return (
     <div className="offer-card h-full flex flex-col bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-      {/* Image Container - 480x192 aspect ratio (2.5:1) */}
-      <div className="relative bg-gray-50" style={{ aspectRatio: '2.5/1' }}>
+      {/* Image Container - Fixed aspect ratio with object-contain for full visibility */}
+      <div className="aspect-square relative bg-gray-50">
         <img 
           src={offer.imageUrl || "/placeholder.svg"} 
           alt={offer.title || "Offer"} 
