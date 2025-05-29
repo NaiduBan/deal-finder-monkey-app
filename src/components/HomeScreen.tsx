@@ -400,7 +400,7 @@ const HomeScreen = () => {
                   )}
                   
                   {!error && displayedOffers.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
                       {displayedOffers.map((offer) => (
                         <Link key={offer.id} to={`/offer/${offer.id}`}>
                           <OfferCard offer={offer} />
@@ -459,7 +459,7 @@ const HomeScreen = () => {
             </TabsContent>
             
             <TabsContent value="nearby" className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
                 {displayedOffers.filter(offer => !offer.isAmazon).map((offer) => (
                   <Link key={offer.id} to={`/offer/${offer.id}`}>
                     <OfferCard offer={offer} />
@@ -483,7 +483,7 @@ const HomeScreen = () => {
             </TabsContent>
             
             <TabsContent value="amazon" className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
                 {displayedOffers.filter(offer => offer.isAmazon).map((offer) => (
                   <Link key={offer.id} to={`/offer/${offer.id}`}>
                     <OfferCard offer={offer} />
