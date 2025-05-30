@@ -15,7 +15,7 @@ const ChatbotScreen = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
-      text: "Hello! 👋 I'm your OffersMonkey AI Assistant powered by Gemini AI. I'm here to help you discover amazing deals, find the best offers, and provide personalized recommendations. What can I help you find today?",
+      text: "Hello! 👋 I'm your OffersMonkey AI Assistant powered by Gemini AI. I can help you with anything - from finding amazing deals and offers to answering general questions. What would you like to know today?",
       isUser: false,
       timestamp: new Date()
     }
@@ -90,11 +90,11 @@ const ChatbotScreen = () => {
         .eq('user_id', session.user.id);
 
       return {
-        location: user.location,
+        location: user?.location || 'Not specified',
         savedOffersCount: savedOffers?.length || 0,
         userInfo: {
-          name: user.name,
-          email: user.email
+          name: user?.name || 'User',
+          email: user?.email || session.user.email
         }
       };
     } catch (error) {
@@ -181,16 +181,16 @@ const ChatbotScreen = () => {
   };
 
   const suggestedQuestions = [
-    "What are the best deals near me?",
+    "What are the best deals today?",
     "Show me electronics offers",
-    "Find grocery deals",
-    "What's expiring soon?"
+    "What's the weather like?",
+    "Help me with cooking tips"
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Modern Header - Responsive */}
-      <div className="bg-white border-b border-gray-200 shadow-sm relative z-10">
+    <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+      {/* Header - Fixed and responsive */}
+      <div className="bg-white border-b border-gray-200 shadow-sm flex-shrink-0 z-10">
         <div className="flex items-center justify-between p-3 md:p-4">
           <div className="flex items-center space-x-2 md:space-x-3 min-w-0 flex-1">
             <Link to="/home" className="p-2 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0">
@@ -221,36 +221,36 @@ const ChatbotScreen = () => {
         </div>
       </div>
       
-      {/* Messages Area - Responsive with proper spacing */}
-      <div className="flex-1 overflow-hidden relative">
+      {/* Messages Area - Takes remaining space */}
+      <div className="flex-1 min-h-0 relative">
         <ScrollArea className="h-full">
-          <div className="p-3 md:p-4 pb-20 md:pb-24 max-w-4xl mx-auto">
+          <div className="p-3 md:p-4 pb-4 max-w-4xl mx-auto">
             <div className="space-y-4 md:space-y-6">
               {messages.map((message) => (
                 <div
                   key={message.id}
                   className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className={`flex items-start space-x-2 md:space-x-3 max-w-[85%] md:max-w-[80%] ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                  <div className={`flex items-start space-x-2 md:space-x-3 max-w-[90%] sm:max-w-[85%] md:max-w-[80%] ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
                     {!message.isUser && (
-                      <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-monkeyGreen to-green-600 rounded-full flex items-center justify-center flex-shrink-0">
+                      <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-monkeyGreen to-green-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                         <Bot className="w-3 h-3 md:w-4 md:h-4 text-white" />
                       </div>
                     )}
                     <div
-                      className={`rounded-2xl px-3 py-2 md:px-4 md:py-3 ${
+                      className={`rounded-2xl px-3 py-2 md:px-4 md:py-3 break-words ${
                         message.isUser
                           ? 'bg-monkeyGreen text-white rounded-br-md'
                           : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md shadow-sm'
                       }`}
                     >
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.text}</p>
-                      <div className="flex items-center justify-between mt-2">
-                        <p className={`text-xs ${message.isUser ? 'text-green-100' : 'text-gray-400'}`}>
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere">{message.text}</p>
+                      <div className="flex items-center justify-between mt-2 gap-2">
+                        <p className={`text-xs flex-shrink-0 ${message.isUser ? 'text-green-100' : 'text-gray-400'}`}>
                           {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                         {!message.isUser && (
-                          <div className="flex items-center space-x-1">
+                          <div className="flex items-center space-x-1 flex-shrink-0">
                             <Zap className="w-3 h-3 text-monkeyGreen" />
                             <span className="text-xs text-monkeyGreen font-medium">AI</span>
                           </div>
@@ -258,7 +258,7 @@ const ChatbotScreen = () => {
                       </div>
                     </div>
                     {message.isUser && (
-                      <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
+                      <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                         <User className="w-3 h-3 md:w-4 md:h-4 text-white" />
                       </div>
                     )}
@@ -268,7 +268,7 @@ const ChatbotScreen = () => {
               
               {isTyping && (
                 <div className="flex justify-start">
-                  <div className="flex items-start space-x-2 md:space-x-3 max-w-[85%] md:max-w-[80%]">
+                  <div className="flex items-start space-x-2 md:space-x-3 max-w-[90%] sm:max-w-[85%] md:max-w-[80%]">
                     <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-monkeyGreen to-green-600 rounded-full flex items-center justify-center flex-shrink-0">
                       <Bot className="w-3 h-3 md:w-4 md:h-4 text-white" />
                     </div>
@@ -286,12 +286,12 @@ const ChatbotScreen = () => {
                 </div>
               )}
               
-              {/* Suggested Questions - Responsive grid */}
+              {/* Suggested Questions */}
               {messages.length === 1 && (
                 <div className="space-y-4 mt-6 md:mt-8">
                   <div className="text-center">
                     <h3 className="text-sm font-medium text-gray-900 mb-2">💡 Quick Questions</h3>
-                    <p className="text-xs text-gray-500">Get started with these popular questions</p>
+                    <p className="text-xs text-gray-500">Ask me anything - deals, general questions, or advice!</p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
                     {suggestedQuestions.map((question, index) => (
@@ -304,7 +304,7 @@ const ChatbotScreen = () => {
                       >
                         <div className="flex items-center space-x-2">
                           <MessageCircle className="w-4 h-4 text-monkeyGreen flex-shrink-0" />
-                          <span className="text-sm">{question}</span>
+                          <span className="text-sm break-words">{question}</span>
                         </div>
                       </Button>
                     ))}
@@ -318,58 +318,58 @@ const ChatbotScreen = () => {
         </ScrollArea>
       </div>
       
-      {/* Input Area - Fixed positioning with responsive design */}
-      <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white z-20">
-        {/* Bottom navigation spacing for mobile */}
-        <div className="pb-16 md:pb-0">
-          <div className="p-3 md:p-4 max-w-4xl mx-auto">
-            <form onSubmit={handleSendMessage} className="flex space-x-2 md:space-x-3">
-              <div className="flex-1 relative">
-                <Input
-                  placeholder="Ask me about deals, offers, or anything else..."
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  className="pr-10 md:pr-12 border-gray-300 focus:border-monkeyGreen focus:ring-monkeyGreen bg-gray-50 rounded-xl py-2 px-3 md:py-3 md:px-4 text-sm md:text-base"
-                  disabled={isLoading || !session?.user}
-                />
-                {input && (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <Clock className="w-3 h-3 md:w-4 md:h-4 text-gray-400" />
-                  </div>
-                )}
-              </div>
-              <Button 
-                type="submit" 
-                size="icon" 
-                className="bg-monkeyGreen hover:bg-green-700 text-white rounded-xl shadow-sm transition-all duration-200 w-10 h-10 md:w-12 md:h-12 flex-shrink-0"
-                disabled={!input.trim() || isLoading || !session?.user}
-              >
-                {isLoading ? (
-                  <div className="w-3 h-3 md:w-4 md:h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Send className="h-3 w-3 md:h-4 md:w-4" />
-                )}
-              </Button>
-            </form>
-            
-            {!session?.user && (
-              <div className="mt-2 md:mt-3 text-center">
-                <p className="text-xs text-gray-500">
-                  Please <Link to="/login" className="text-monkeyGreen underline font-medium">sign in</Link> to use the AI assistant
-                </p>
-              </div>
-            )}
-            
-            {session?.user && (
-              <div className="mt-2 md:mt-3 text-center">
-                <p className="text-xs text-gray-400">
-                  Powered by Gemini AI • Press Enter to send
-                </p>
-              </div>
-            )}
-          </div>
+      {/* Input Area - Fixed at bottom with safe area for mobile navigation */}
+      <div className="bg-white border-t border-gray-200 flex-shrink-0 z-20">
+        <div className="p-3 md:p-4 max-w-4xl mx-auto">
+          <form onSubmit={handleSendMessage} className="flex space-x-2 md:space-x-3">
+            <div className="flex-1 relative min-w-0">
+              <Input
+                placeholder="Ask me anything - deals, questions, or advice..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                className="pr-10 md:pr-12 border-gray-300 focus:border-monkeyGreen focus:ring-monkeyGreen bg-gray-50 rounded-xl py-2 px-3 md:py-3 md:px-4 text-sm md:text-base w-full"
+                disabled={isLoading || !session?.user}
+              />
+              {input && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <Clock className="w-3 h-3 md:w-4 md:h-4 text-gray-400" />
+                </div>
+              )}
+            </div>
+            <Button 
+              type="submit" 
+              size="icon" 
+              className="bg-monkeyGreen hover:bg-green-700 text-white rounded-xl shadow-sm transition-all duration-200 w-10 h-10 md:w-12 md:h-12 flex-shrink-0"
+              disabled={!input.trim() || isLoading || !session?.user}
+            >
+              {isLoading ? (
+                <div className="w-3 h-3 md:w-4 md:h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Send className="h-3 w-3 md:h-4 md:w-4" />
+              )}
+            </Button>
+          </form>
+          
+          {!session?.user && (
+            <div className="mt-2 md:mt-3 text-center">
+              <p className="text-xs text-gray-500">
+                Please <Link to="/login" className="text-monkeyGreen underline font-medium">sign in</Link> to use the AI assistant
+              </p>
+            </div>
+          )}
+          
+          {session?.user && (
+            <div className="mt-2 md:mt-3 text-center">
+              <p className="text-xs text-gray-400">
+                Powered by Gemini AI • Press Enter to send
+              </p>
+            </div>
+          )}
         </div>
+        
+        {/* Safe area for mobile bottom navigation */}
+        <div className="h-16 md:h-0"></div>
       </div>
     </div>
   );

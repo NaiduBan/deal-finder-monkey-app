@@ -35,8 +35,8 @@ serve(async (req) => {
     // Search for relevant offers based on the user's message
     const offerData = await searchRelevantOffers(supabaseClient, message);
 
-    // Enhanced system prompt with user context and offer data
-    const systemPrompt = `You are OffersMonkey Assistant, a helpful AI that helps users find the best deals and offers. You have access to the user's preferences, saved offers, and real-time offer data.
+    // Enhanced system prompt that can handle any type of question
+    const systemPrompt = `You are OffersMonkey Assistant, a versatile AI assistant that can help with any questions while specializing in deals and offers. You have access to real-time offer data and can provide comprehensive assistance.
 
 Context about the user:
 ${context ? JSON.stringify(context, null, 2) : 'No additional context available'}
@@ -45,27 +45,28 @@ Available Offers Data:
 ${offerData.length > 0 ? JSON.stringify(offerData, null, 2) : 'No relevant offers found for this query'}
 
 Guidelines:
-- Be friendly and enthusiastic about deals 🐒
-- When users ask about offers, deals, coupons, or discounts, provide specific information from the available offers data
-- Always include the store name, offer description, and savings when available
-- If there's a coupon code, mention it clearly with instructions on how to use it
-- Include smartlinks when available for users to access the deals
-- If offer has an expiry date, mention it
-- Use emojis appropriately to make responses engaging
-- Keep responses concise but helpful
-- Focus on offers and deals that match user preferences when possible
-- When no specific offers are found, provide general advice about finding deals
-- Format offer information clearly with store names, discounts, and links
-- Always encourage users to check the terms and conditions
+- You can answer ANY type of question - from general knowledge to specific topics
+- When users ask about offers, deals, coupons, or shopping, prioritize the available offers data
+- For non-offer related questions, provide helpful and accurate information
+- Be friendly, enthusiastic, and use emojis appropriately 🐒
+- Keep responses informative but concise
+- If you don't have specific offer data for a query, you can suggest general shopping advice
+- Always be helpful whether the question is about deals or any other topic
 
-Response Format for Offers:
+For Offer-Related Responses:
 🏪 **Store Name**
 💰 **Offer:** Brief description
 🎟️ **Code:** COUPONCODE (if available)
 📅 **Valid:** Until expiry date (if available)
-🔗 **Get Deal:** [smartlink] (if available)
+🔗 **Get Deal:** [Link] (if available)
 
-If multiple offers are found, list them in a clear, organized way.`;
+For General Questions:
+- Provide accurate, helpful information
+- Use clear formatting and structure
+- Include relevant examples when helpful
+- Be conversational and engaging
+
+Remember: You're an AI assistant that happens to specialize in deals, but you can help with anything!`;
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
@@ -86,7 +87,7 @@ If multiple offers are found, list them in a clear, organized way.`;
           temperature: 0.7,
           topK: 40,
           topP: 0.95,
-          maxOutputTokens: 800,
+          maxOutputTokens: 1000,
         }
       }),
     });
@@ -125,8 +126,17 @@ async function searchRelevantOffers(supabaseClient: any, userMessage: string): P
   try {
     const searchTerms = extractSearchTerms(userMessage.toLowerCase());
     
+    // Check if the message is offer-related
+    const offerKeywords = ['deal', 'offer', 'discount', 'coupon', 'sale', 'promo', 'store', 'shop', 'buy', 'price', 'cheap'];
+    const isOfferRelated = offerKeywords.some(keyword => userMessage.toLowerCase().includes(keyword));
+    
+    if (!isOfferRelated && searchTerms.length === 0) {
+      // For non-offer questions, return empty array
+      return [];
+    }
+    
     if (searchTerms.length === 0) {
-      // If no specific search terms, return some featured or recent offers
+      // If no specific search terms but offer-related, return featured offers
       const { data, error } = await supabaseClient
         .from('Offers_data')
         .select('*')
@@ -161,7 +171,7 @@ async function searchRelevantOffers(supabaseClient: any, userMessage: string): P
 
 // Function to extract search terms from user message
 function extractSearchTerms(message: string): string[] {
-  const commonWords = ['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'shall', 'must', 'show', 'find', 'get', 'give', 'tell', 'me', 'i', 'you', 'we', 'they', 'it', 'this', 'that', 'these', 'those', 'a', 'an', 'some', 'any', 'all', 'best', 'good', 'great', 'deals', 'offers', 'coupons', 'discounts'];
+  const commonWords = ['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'shall', 'must', 'show', 'find', 'get', 'give', 'tell', 'me', 'i', 'you', 'we', 'they', 'it', 'this', 'that', 'these', 'those', 'a', 'an', 'some', 'any', 'all', 'best', 'good', 'great', 'what', 'how', 'when', 'where', 'why', 'who'];
   
   // Extract meaningful words (longer than 2 characters and not common words)
   const words = message
