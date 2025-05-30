@@ -14,9 +14,9 @@ serve(async (req) => {
   }
 
   try {
-    const mistralApiKey = Deno.env.get('MISTRAL_API_KEY');
-    if (!mistralApiKey) {
-      throw new Error('MISTRAL_API_KEY is not set');
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    if (!geminiApiKey) {
+      throw new Error('GEMINI_API_KEY is not set');
     }
 
     const supabaseClient = createClient(
@@ -67,25 +67,37 @@ Response Format for Offers:
 
 If multiple offers are found, list them in a clear, organized way.`;
 
-    const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${mistralApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'mistral-large-latest',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
+        contents: [
+          {
+            parts: [
+              {
+                text: `${systemPrompt}\n\nUser message: ${message}`
+              }
+            ]
+          }
         ],
-        max_tokens: 800,
-        temperature: 0.7,
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 800,
+        }
       }),
     });
 
     const data = await response.json();
-    const aiResponse = data.choices[0].message.content;
+    
+    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+      throw new Error('Invalid response from Gemini API');
+    }
+    
+    const aiResponse = data.candidates[0].content.parts[0].text;
 
     // Save the conversation to database
     await supabaseClient

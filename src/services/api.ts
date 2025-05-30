@@ -65,24 +65,15 @@ export const unsaveOffer = async (userId: string, offerId: string): Promise<bool
   return true;
 };
 
-// Update user preferences
-export const updateUserPreferences = async (
-  userId: string, 
-  preferences: Partial<User['preferences']>
-): Promise<boolean> => {
-  await delay(300); // Simulate network delay
-  return true;
-};
-
 // Search for offers
 export const searchOffers = async (query: string): Promise<Offer[]> => {
   await delay(400); // Simulate network delay
   const lowercaseQuery = query.toLowerCase();
   return mockOffers.filter(
     offer => 
-      offer.title.toLowerCase().includes(lowercaseQuery) || 
-      offer.description.toLowerCase().includes(lowercaseQuery) ||
-      offer.store.toLowerCase().includes(lowercaseQuery)
+      offer.title?.toLowerCase().includes(lowercaseQuery) || 
+      offer.description?.toLowerCase().includes(lowercaseQuery) ||
+      offer.store?.toLowerCase().includes(lowercaseQuery)
   );
 };
 
