@@ -440,8 +440,3 @@ export const mockBanners: BannerItem[] = [
     link: '/offers?category=food'
   }
 ];
-
-// Export function to get mock offers
-export const getMockOffers = (): Offer[] => {
-  return mockOffers;
-};

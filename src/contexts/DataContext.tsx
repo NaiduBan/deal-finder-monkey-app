@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { Offer, Category } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
-import { getMockOffers } from '@/mockData';
+import { getMockOffers } from '@/utils/mockData';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface DataContextType {
