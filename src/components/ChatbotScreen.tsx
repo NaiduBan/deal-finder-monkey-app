@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, ChevronLeft, Bot, User, Sparkles, MessageCircle, Zap, Clock } from 'lucide-react';
+import { Send, ChevronLeft, Bot, User, Sparkles, MessageCircle, Zap, Clock, ExternalLink } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
@@ -180,6 +180,73 @@ const ChatbotScreen = () => {
     }
   };
 
+  // Function to format bot messages with clickable links
+  const formatMessage = (text: string) => {
+    // Split the message by lines to handle structured responses better
+    const lines = text.split('\n');
+    
+    return lines.map((line, index) => {
+      // Check if line contains a link pattern
+      const linkRegex = /(🔗 \*\*Get Deal:\*\* \[([^\]]+)\]\(([^)]+)\)|https?:\/\/[^\s]+)/g;
+      const parts = [];
+      let lastIndex = 0;
+      let match;
+
+      while ((match = linkRegex.exec(line)) !== null) {
+        // Add text before the link
+        if (match.index > lastIndex) {
+          parts.push(line.substring(lastIndex, match.index));
+        }
+
+        if (match[0].startsWith('🔗 **Get Deal:**')) {
+          // Handle formatted deal links
+          const linkText = match[2] || 'Get Deal';
+          const url = match[3];
+          parts.push(
+            <a
+              key={`link-${index}-${match.index}`}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-monkeyGreen hover:text-green-700 underline font-medium"
+            >
+              🔗 <strong>Get Deal:</strong> {linkText}
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          );
+        } else {
+          // Handle plain URLs
+          const url = match[0];
+          parts.push(
+            <a
+              key={`link-${index}-${match.index}`}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-monkeyGreen hover:text-green-700 underline break-all"
+            >
+              {url}
+              <ExternalLink className="w-3 h-3 flex-shrink-0" />
+            </a>
+          );
+        }
+
+        lastIndex = match.index + match[0].length;
+      }
+
+      // Add remaining text
+      if (lastIndex < line.length) {
+        parts.push(line.substring(lastIndex));
+      }
+
+      return (
+        <div key={index} className="leading-relaxed">
+          {parts.length > 0 ? parts : line}
+        </div>
+      );
+    });
+  };
+
   const suggestedQuestions = [
     "What are the best deals today?",
     "Show me electronics offers",
@@ -231,20 +298,28 @@ const ChatbotScreen = () => {
                   key={message.id}
                   className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className={`flex items-start space-x-2 md:space-x-3 max-w-[90%] sm:max-w-[85%] md:max-w-[80%] ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                  <div className={`flex items-start space-x-2 md:space-x-3 max-w-[90%] sm:max-w-[85%] md:max-w-[75%] ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
                     {!message.isUser && (
                       <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-monkeyGreen to-green-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                         <Bot className="w-3 h-3 md:w-4 md:h-4 text-white" />
                       </div>
                     )}
                     <div
-                      className={`rounded-2xl px-3 py-2 md:px-4 md:py-3 break-words ${
+                      className={`rounded-2xl px-3 py-2 md:px-4 md:py-3 min-w-0 overflow-hidden ${
                         message.isUser
                           ? 'bg-monkeyGreen text-white rounded-br-md'
                           : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md shadow-sm'
                       }`}
                     >
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere">{message.text}</p>
+                      <div className="text-sm leading-relaxed break-words overflow-wrap-anywhere">
+                        {message.isUser ? (
+                          <p className="whitespace-pre-wrap">{message.text}</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {formatMessage(message.text)}
+                          </div>
+                        )}
+                      </div>
                       <div className="flex items-center justify-between mt-2 gap-2">
                         <p className={`text-xs flex-shrink-0 ${message.isUser ? 'text-green-100' : 'text-gray-400'}`}>
                           {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -268,7 +343,7 @@ const ChatbotScreen = () => {
               
               {isTyping && (
                 <div className="flex justify-start">
-                  <div className="flex items-start space-x-2 md:space-x-3 max-w-[90%] sm:max-w-[85%] md:max-w-[80%]">
+                  <div className="flex items-start space-x-2 md:space-x-3 max-w-[90%] sm:max-w-[85%] md:max-w-[75%]">
                     <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-monkeyGreen to-green-600 rounded-full flex items-center justify-center flex-shrink-0">
                       <Bot className="w-3 h-3 md:w-4 md:h-4 text-white" />
                     </div>
