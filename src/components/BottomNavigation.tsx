@@ -19,7 +19,7 @@ const BottomNavigation = () => {
     { path: '/home', icon: Home, label: 'Home' },
     { path: '/saved', icon: Bookmark, label: 'Saved' },
     { path: '/chatbot', icon: MessageCircle, label: 'Assistant' },
-    { path: '/preferences/stores', icon: SlidersHorizontal, label: 'Preferences' },
+    { path: '/preferences', icon: SlidersHorizontal, label: 'Preferences' },
     { path: '/profile', icon: User, label: 'Profile' }
   ];
 
