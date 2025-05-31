@@ -8,12 +8,14 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const PreferencesScreen = () => {
   const { toast } = useToast();
   const { session } = useAuth();
   const { offers } = useData();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState('');
   const [userPreferenceCounts, setUserPreferenceCounts] = useState<{[key: string]: number}>({
     stores: 0,
@@ -156,10 +158,10 @@ const PreferencesScreen = () => {
   );
 
   return (
-    <div className="pb-16 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
-      {/* Simple Header */}
+    <div className={`${isMobile ? 'pb-16' : 'pt-20'} bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen`}>
+      {/* Header */}
       <div className="bg-white shadow-lg border-b border-gray-100">
-        <div className="px-4 py-6">
+        <div className={`${isMobile ? 'px-4 py-6' : 'px-8 py-8 max-w-7xl mx-auto'}`}>
           <div className="flex items-center space-x-3 mb-6">
             <Link to="/profile" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
               <ChevronLeft className="w-6 h-6 text-gray-600" />
@@ -169,8 +171,8 @@ const PreferencesScreen = () => {
                 <Heart className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">My Preferences</h1>
-                <p className="text-gray-600 text-sm">Personalize your shopping experience</p>
+                <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900`}>My Preferences</h1>
+                <p className={`text-gray-600 ${isMobile ? 'text-sm' : 'text-base'}`}>Personalize your shopping experience</p>
               </div>
             </div>
           </div>
@@ -178,23 +180,23 @@ const PreferencesScreen = () => {
       </div>
 
       {/* Content */}
-      <div className="p-4 space-y-6">
+      <div className={`${isMobile ? 'p-4' : 'p-8 max-w-7xl mx-auto'} space-y-8`}>
         {/* Search */}
-        <div className="relative">
+        <div className="relative max-w-2xl mx-auto">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <Input
             type="search"
             placeholder="Search preference types..."
-            className="pl-12 pr-4 py-4 w-full border-gray-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-lg"
+            className={`pl-12 pr-4 ${isMobile ? 'py-4' : 'py-5'} w-full border-gray-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white ${isMobile ? 'text-lg' : 'text-xl'}`}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
         {/* Preference Type Cards */}
-        <div className="space-y-4">
+        <div className={`${isMobile ? 'space-y-4' : 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6'}`}>
           {isLoading ? (
-            <div className="flex justify-center py-12">
+            <div className="flex justify-center py-12 col-span-full">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
             </div>
           ) : (
@@ -205,21 +207,21 @@ const PreferencesScreen = () => {
               return (
                 <div
                   key={type.id}
-                  className="bg-white rounded-2xl p-6 shadow-md border border-gray-100 hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:scale-[1.02] hover:-translate-y-1"
+                  className={`bg-white rounded-2xl ${isMobile ? 'p-6' : 'p-8'} shadow-md border border-gray-100 hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:scale-[1.02] hover:-translate-y-1`}
                   onClick={() => navigate(type.route)}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 flex-1">
-                      <div className={`p-4 ${type.bgColor} rounded-2xl border ${type.borderColor}`}>
-                        <IconComponent className={`w-8 h-8 ${type.textColor}`} />
+                    <div className={`flex items-center ${isMobile ? 'space-x-4' : 'space-x-6'} flex-1`}>
+                      <div className={`${isMobile ? 'p-4' : 'p-5'} ${type.bgColor} rounded-2xl border ${type.borderColor}`}>
+                        <IconComponent className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} ${type.textColor}`} />
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <span className="text-2xl">{type.emoji}</span>
-                          <h3 className="text-xl font-bold text-gray-900">{type.title}</h3>
+                        <div className="flex items-center space-x-2 mb-2">
+                          <span className={`${isMobile ? 'text-2xl' : 'text-3xl'}`}>{type.emoji}</span>
+                          <h3 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-900`}>{type.title}</h3>
                         </div>
-                        <p className="text-gray-600 mb-2">{type.subtitle}</p>
-                        <p className="text-sm text-gray-500 mb-3">{type.description}</p>
+                        <p className={`text-gray-600 mb-3 ${isMobile ? 'text-base' : 'text-lg'}`}>{type.subtitle}</p>
+                        <p className={`${isMobile ? 'text-sm' : 'text-base'} text-gray-500 mb-4`}>{type.description}</p>
                         <div className="flex items-center space-x-2 text-sm">
                           <span className="flex items-center space-x-1 text-green-600">
                             <Check className="w-4 h-4" />
@@ -230,10 +232,10 @@ const PreferencesScreen = () => {
                     </div>
                     
                     <div className="flex flex-col items-center space-y-3">
-                      <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${type.gradient} flex items-center justify-center text-white font-bold text-xl shadow-lg`}>
+                      <div className={`${isMobile ? 'w-16 h-16' : 'w-20 h-20'} rounded-2xl bg-gradient-to-r ${type.gradient} flex items-center justify-center text-white font-bold ${isMobile ? 'text-xl' : 'text-2xl'} shadow-lg`}>
                         {selectedCount}
                       </div>
-                      <span className="text-xs font-medium text-gray-500">Selected</span>
+                      <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-gray-500`}>Selected</span>
                     </div>
                   </div>
                 </div>
@@ -244,48 +246,48 @@ const PreferencesScreen = () => {
 
         {/* Empty State */}
         {!isLoading && filteredTypes.length === 0 && (
-          <div className="bg-white p-8 rounded-2xl text-center shadow-sm border border-gray-100">
-            <div className="p-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-              <Search className="w-8 h-8 text-gray-600" />
+          <div className={`bg-white ${isMobile ? 'p-8' : 'p-12'} rounded-2xl text-center shadow-sm border border-gray-100 max-w-2xl mx-auto`}>
+            <div className={`p-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full ${isMobile ? 'w-16 h-16' : 'w-20 h-20'} mx-auto mb-6 flex items-center justify-center`}>
+              <Search className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} text-gray-600`} />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <h3 className={`${isMobile ? 'text-lg' : 'text-xl'} font-medium text-gray-900 mb-3`}>
               No preference types found
             </h3>
-            <p className="text-gray-500">
+            <p className={`text-gray-500 ${isMobile ? 'text-base' : 'text-lg'}`}>
               No preference types match your search "{searchTerm}"
             </p>
           </div>
         )}
 
         {/* Quick Actions */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
-          <div className="flex items-center space-x-3 mb-4">
-            <Settings className="w-6 h-6 text-blue-600" />
-            <h3 className="text-lg font-semibold text-blue-900">Quick Actions</h3>
+        <div className={`bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl ${isMobile ? 'p-6' : 'p-8'} border border-blue-100 max-w-4xl mx-auto`}>
+          <div className="flex items-center space-x-3 mb-6">
+            <Settings className={`${isMobile ? 'w-6 h-6' : 'w-7 h-7'} text-blue-600`} />
+            <h3 className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold text-blue-900`}>Quick Actions</h3>
           </div>
-          <div className="grid grid-cols-1 gap-3">
+          <div className={`${isMobile ? 'grid grid-cols-1 gap-3' : 'grid grid-cols-1 md:grid-cols-3 gap-4'}`}>
             <Button 
               variant="outline" 
-              className="h-12 bg-white hover:bg-blue-50 border-blue-200 text-blue-700"
+              className={`${isMobile ? 'h-12' : 'h-14'} bg-white hover:bg-blue-50 border-blue-200 text-blue-700 ${isMobile ? 'text-base' : 'text-lg'}`}
               onClick={() => navigate('/preferences/stores')}
             >
-              <Store className="w-4 h-4 mr-2" />
+              <Store className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} mr-2`} />
               Manage Stores
             </Button>
             <Button 
               variant="outline" 
-              className="h-12 bg-white hover:bg-purple-50 border-purple-200 text-purple-700"
+              className={`${isMobile ? 'h-12' : 'h-14'} bg-white hover:bg-purple-50 border-purple-200 text-purple-700 ${isMobile ? 'text-base' : 'text-lg'}`}
               onClick={() => navigate('/preferences/brands')}
             >
-              <Star className="w-4 h-4 mr-2" />
+              <Star className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} mr-2`} />
               Manage Brands
             </Button>
             <Button 
               variant="outline" 
-              className="h-12 bg-white hover:bg-orange-50 border-orange-200 text-orange-700"
+              className={`${isMobile ? 'h-12' : 'h-14'} bg-white hover:bg-orange-50 border-orange-200 text-orange-700 ${isMobile ? 'text-base' : 'text-lg'}`}
               onClick={() => navigate('/preferences/banks')}
             >
-              <CreditCard className="w-4 h-4 mr-2" />
+              <CreditCard className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} mr-2`} />
               Manage Banks
             </Button>
           </div>
