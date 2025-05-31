@@ -32,53 +32,58 @@ const PreferenceScreen = () => {
     switch (type) {
       case 'stores':
         return {
-          title: 'Store Preferences',
-          subtitle: 'Choose your favorite stores',
-          color: 'from-emerald-500 to-teal-600',
+          title: 'Favorite Stores',
+          subtitle: 'Choose your go-to shopping destinations',
+          gradient: 'from-emerald-500 via-teal-500 to-cyan-500',
           placeholder: 'Search stores...',
           emptyMessage: 'No stores found',
           icon: Store,
-          description: 'Select stores to get personalized offers and deals'
+          description: 'Select stores where you love to shop for personalized offers',
+          emoji: '🏪'
         };
       case 'brands':
         return {
-          title: 'Brand Preferences', 
-          subtitle: 'Select your preferred brands',
-          color: 'from-purple-500 to-indigo-600',
+          title: 'Preferred Brands', 
+          subtitle: 'Select brands you trust and love',
+          gradient: 'from-purple-500 via-pink-500 to-rose-500',
           placeholder: 'Search brands...',
           emptyMessage: 'No brands found',
           icon: Star,
-          description: 'Choose brands you love to see relevant offers'
+          description: 'Choose your favorite brands to see relevant offers',
+          emoji: '⭐'
         };
       case 'categories':
         return {
-          title: 'Category Preferences',
-          subtitle: 'Pick your favorite categories',
-          color: 'from-blue-500 to-cyan-600',
+          title: 'Interest Categories',
+          subtitle: 'Pick what you love to explore',
+          gradient: 'from-blue-500 via-indigo-500 to-purple-500',
           placeholder: 'Search categories...',
           emptyMessage: 'No categories found',
           icon: Tag,
-          description: 'Select categories that interest you most'
+          description: 'Select categories that match your interests',
+          emoji: '🏷️'
         };
       case 'banks':
         return {
-          title: 'Bank Preferences',
-          subtitle: 'Select your banks',
-          color: 'from-orange-500 to-red-600',
+          title: 'Banking Partners',
+          subtitle: 'Your trusted financial institutions',
+          gradient: 'from-orange-500 via-red-500 to-pink-500',
           placeholder: 'Search banks...',
           emptyMessage: 'No banks found',
           icon: CreditCard,
-          description: 'Choose your banks for relevant credit card offers'
+          description: 'Add your banks for exclusive credit card offers',
+          emoji: '🏦'
         };
       default:
         return {
           title: 'Preferences',
           subtitle: 'Manage your preferences',
-          color: 'from-gray-500 to-gray-600',
+          gradient: 'from-gray-500 to-gray-600',
           placeholder: 'Search...',
           emptyMessage: 'No items found',
           icon: Tag,
-          description: 'Customize your experience'
+          description: 'Customize your experience',
+          emoji: '⚙️'
         };
     }
   };
@@ -426,109 +431,114 @@ const PreferenceScreen = () => {
   };
 
   return (
-    <div className="pb-16 bg-gradient-to-br from-indigo-50 via-white to-cyan-50 min-h-screen">
-      {/* Header */}
-      <div className={`bg-gradient-to-r ${config.color} text-white py-6 px-4 sticky top-0 z-10 shadow-lg`}>
-        <div className="flex items-center space-x-3 mb-4">
-          <Link to="/preferences" className="p-2 hover:bg-white/20 rounded-full transition-colors">
-            <ChevronLeft className="w-6 h-6" />
-          </Link>
-          <div className="flex items-center space-x-3 flex-1">
-            <div className="p-3 bg-white/20 rounded-full">
-              <IconComponent className="w-6 h-6" />
+    <div className="pb-16 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
+      {/* Modern Header */}
+      <div className="bg-white shadow-lg border-b border-gray-100">
+        <div className="px-4 py-6">
+          <div className="flex items-center space-x-3 mb-6">
+            <Link to="/preferences" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <ChevronLeft className="w-6 h-6 text-gray-600" />
+            </Link>
+            <div className="flex items-center space-x-3 flex-1">
+              <div className={`p-3 bg-gradient-to-r ${config.gradient} rounded-xl`}>
+                <IconComponent className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center space-x-2 mb-1">
+                  <span className="text-2xl">{config.emoji}</span>
+                  <h1 className="text-2xl font-bold text-gray-900">{config.title}</h1>
+                </div>
+                <p className="text-gray-600 text-sm">{config.subtitle}</p>
+                <p className="text-gray-500 text-xs mt-1">{config.description}</p>
+              </div>
             </div>
-            <div className="flex-1">
-              <h1 className="text-xl font-bold">{config.title}</h1>
-              <p className="text-white/90 text-sm">{config.subtitle}</p>
-              <p className="text-white/75 text-xs mt-1">{config.description}</p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={refreshData}
+              disabled={isRefreshing}
+              className="text-gray-600 hover:bg-gray-100"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+          
+          {/* Stats Cards */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
+              <div className="flex items-center justify-center space-x-2 mb-2">
+                <Check className="w-5 h-5 text-green-600" />
+                <span className="text-2xl font-bold text-green-700">{selectedItems.length}</span>
+              </div>
+              <p className="text-xs text-green-600 text-center font-medium">Selected</p>
+            </div>
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+              <div className="flex items-center justify-center space-x-2 mb-2">
+                <BarChart3 className="w-5 h-5 text-blue-600" />
+                <span className="text-xl font-bold text-blue-700">{availableItems.length}</span>
+              </div>
+              <p className="text-xs text-blue-600 text-center font-medium">Available</p>
+            </div>
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
+              <div className="flex items-center justify-center space-x-2 mb-2">
+                <TrendingUp className="w-5 h-5 text-purple-600" />
+                <span className="text-xl font-bold text-purple-700">{Math.round((selectedItems.length / Math.max(availableItems.length, 1)) * 100)}%</span>
+              </div>
+              <p className="text-xs text-purple-600 text-center font-medium">Coverage</p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={refreshData}
-            disabled={isRefreshing}
-            className="text-white hover:bg-white/20"
-          >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-          </Button>
-        </div>
-        
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 bg-white/15 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-1 mb-1">
-              <Check className="w-4 h-4" />
-              <p className="text-2xl font-bold">{selectedItems.length}</p>
-            </div>
-            <p className="text-xs text-white/80">Selected</p>
-          </div>
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-1 mb-1">
-              <BarChart3 className="w-4 h-4" />
-              <p className="text-lg font-semibold">{availableItems.length}</p>
-            </div>
-            <p className="text-xs text-white/80">Available</p>
-          </div>
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-1 mb-1">
-              <TrendingUp className="w-4 h-4" />
-              <p className="text-lg font-semibold">{Math.round((selectedItems.length / Math.max(availableItems.length, 1)) * 100)}%</p>
-            </div>
-            <p className="text-xs text-white/80">Coverage</p>
-          </div>
-        </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center space-x-2 mt-4">
-          {!bulkSelectMode ? (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setBulkSelectMode(true)}
-                className="text-white border-white/30 hover:bg-white/20 bg-transparent"
-              >
-                <Users className="w-4 h-4 mr-1" />
-                Bulk Select
-              </Button>
-              {selectedItems.length > 0 && (
+          {/* Action Buttons */}
+          <div className="flex items-center space-x-2">
+            {!bulkSelectMode ? (
+              <>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={clearAllPreferences}
-                  className="text-white border-white/30 hover:bg-white/20 bg-transparent"
+                  onClick={() => setBulkSelectMode(true)}
+                  className="bg-white hover:bg-blue-50 border-blue-200 text-blue-700"
+                >
+                  <Users className="w-4 h-4 mr-1" />
+                  Bulk Select
+                </Button>
+                {selectedItems.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearAllPreferences}
+                    className="bg-white hover:bg-red-50 border-red-200 text-red-700"
+                  >
+                    <X className="w-4 h-4 mr-1" />
+                    Clear All
+                  </Button>
+                )}
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={applyBulkSelection}
+                  className="bg-white hover:bg-green-50 border-green-200 text-green-700"
+                >
+                  <Check className="w-4 h-4 mr-1" />
+                  Apply ({pendingSelection.length})
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setBulkSelectMode(false);
+                    setPendingSelection([]);
+                  }}
+                  className="bg-white hover:bg-gray-50 border-gray-200 text-gray-700"
                 >
                   <X className="w-4 h-4 mr-1" />
-                  Clear All
+                  Cancel
                 </Button>
-              )}
-            </>
-          ) : (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={applyBulkSelection}
-                className="text-white border-white/30 hover:bg-white/20 bg-transparent"
-              >
-                <Check className="w-4 h-4 mr-1" />
-                Apply ({pendingSelection.length})
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setBulkSelectMode(false);
-                  setPendingSelection([]);
-                }}
-                className="text-white border-white/30 hover:bg-white/20 bg-transparent"
-              >
-                <X className="w-4 h-4 mr-1" />
-                Cancel
-              </Button>
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -537,11 +547,11 @@ const PreferenceScreen = () => {
         {/* Search and Filters */}
         <div className="space-y-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <Input
               type="search"
               placeholder={config.placeholder}
-              className="pl-11 pr-4 py-3 w-full border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+              className="pl-12 pr-4 py-4 w-full border-gray-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-lg"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -612,7 +622,7 @@ const PreferenceScreen = () => {
                     <Check className="w-5 h-5 mr-2 text-green-600" />
                     Selected ({selectedFilteredItems.length})
                   </h2>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {selectedFilteredItems.map((item) => (
                       <ItemCard
                         key={item.id}
@@ -639,7 +649,7 @@ const PreferenceScreen = () => {
                       Available ({unselectedFilteredItems.length})
                     </h2>
                   )}
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {(showSelected === 'selected' ? selectedFilteredItems : 
                       showSelected === 'unselected' ? unselectedFilteredItems : 
                       unselectedFilteredItems).map((item) => (
@@ -661,7 +671,7 @@ const PreferenceScreen = () => {
 
           {/* Empty State */}
           {!isLoading && sortedAndFilteredItems.length === 0 && (
-            <div className="bg-white p-8 rounded-xl text-center shadow-sm border border-gray-100">
+            <div className="bg-white p-8 rounded-2xl text-center shadow-sm border border-gray-100">
               <div className="p-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                 <IconComponent className="w-8 h-8 text-gray-600" />
               </div>
@@ -692,9 +702,9 @@ const ItemCard: React.FC<{
   
   return (
     <div
-      className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+      className={`p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200 hover:shadow-lg transform hover:scale-[1.02] ${
         displaySelected 
-          ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-sm' 
+          ? `bg-gradient-to-r ${config.gradient.replace('from-', 'from-').replace('via-', 'via-').replace('to-', 'to-')} bg-opacity-10 border-blue-300 shadow-md` 
           : 'bg-white border-gray-200 hover:border-blue-300 hover:bg-blue-50'
       }`}
       onClick={onClick}
@@ -704,18 +714,18 @@ const ItemCard: React.FC<{
           {isBulkMode && (
             <Checkbox 
               checked={isPendingSelection}
-              className="rounded w-4 h-4"
+              className="rounded w-5 h-5"
             />
           )}
-          <div className={`p-2 rounded-lg ${
-            displaySelected ? 'bg-blue-100' : 'bg-gray-100'
+          <div className={`p-3 rounded-xl ${
+            displaySelected ? 'bg-white bg-opacity-50' : 'bg-gray-100'
           }`}>
-            <config.icon className={`w-5 h-5 ${
-              displaySelected ? 'text-blue-600' : 'text-gray-600'
+            <config.icon className={`w-6 h-6 ${
+              displaySelected ? 'text-blue-700' : 'text-gray-600'
             }`} />
           </div>
           <div>
-            <h3 className={`font-medium ${
+            <h3 className={`font-semibold text-lg ${
               displaySelected ? 'text-blue-900' : 'text-gray-900'
             }`}>
               {item.name}
@@ -725,23 +735,23 @@ const ItemCard: React.FC<{
         </div>
         
         <div className="flex items-center space-x-3">
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+          <span className={`px-4 py-2 rounded-full text-sm font-medium ${
             displaySelected 
-              ? 'bg-blue-100 text-blue-700' 
+              ? 'bg-white bg-opacity-50 text-blue-700' 
               : 'bg-gray-100 text-gray-700'
           }`}>
             {item.count}
           </span>
           {!isBulkMode && (
-            <div className={`p-2 rounded-full transition-all ${
+            <div className={`p-3 rounded-full transition-all ${
               displaySelected 
-                ? 'bg-green-100 text-green-600' 
+                ? 'bg-white bg-opacity-50 text-green-700' 
                 : 'bg-gray-100 text-gray-400 hover:bg-blue-100 hover:text-blue-600'
             }`}>
               {displaySelected ? (
-                <Check className="w-4 h-4" />
+                <Check className="w-5 h-5" />
               ) : (
-                <Plus className="w-4 h-4" />
+                <Plus className="w-5 h-5" />
               )}
             </div>
           )}

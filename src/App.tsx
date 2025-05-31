@@ -21,6 +21,7 @@ import ChatbotScreen from "./components/ChatbotScreen";
 import ProfileScreen from "./components/ProfileScreen";
 import SettingsScreen from "./components/SettingsScreen";
 import PreferenceScreen from "./components/PreferenceScreen";
+import PreferencesScreen from "./components/PreferencesScreen";
 import SavedOffersScreen from "./components/SavedOffersScreen";
 import PointsHistoryScreen from "./components/PointsHistoryScreen";
 import NotificationsScreen from "./components/NotificationsScreen";
@@ -83,6 +84,14 @@ const App = () => (
                         element={
                           <ProtectedRoute>
                             <SavedOffersScreen />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/preferences" 
+                        element={
+                          <ProtectedRoute>
+                            <PreferencesScreen />
                           </ProtectedRoute>
                         } 
                       />
