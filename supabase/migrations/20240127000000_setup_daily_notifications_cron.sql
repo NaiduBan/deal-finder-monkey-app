@@ -1,4 +1,18 @@
 
+-- Schedule hourly notifications (every hour)
+SELECT cron.schedule(
+  'hourly-offers-notifications',
+  '0 * * * *', -- Every hour at minute 0
+  $$
+  SELECT
+    net.http_post(
+        url:='https://vtxtnyivbmvcmxuuqknn.supabase.co/functions/v1/send-daily-notifications',
+        headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ0eHRueWl2Ym12Y214dXVxa25uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgwOTczMDcsImV4cCI6MjA2MzY3MzMwN30.MDY79onfEFsVP5hczJSQJspEZg4ie3HeJ9utbTsVWHA"}'::jsonb,
+        body:=concat('{"time": "', now(), '", "trigger": "hourly"}')::jsonb
+    ) as request_id;
+  $$
+);
+
 -- Schedule the daily notifications function to run every day at 9 AM UTC
 SELECT cron.schedule(
   'daily-offers-notifications',
@@ -8,7 +22,7 @@ SELECT cron.schedule(
     net.http_post(
         url:='https://vtxtnyivbmvcmxuuqknn.supabase.co/functions/v1/send-daily-notifications',
         headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ0eHRueWl2Ym12Y214dXVxa25uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgwOTczMDcsImV4cCI6MjA2MzY3MzMwN30.MDY79onfEFsVP5hczJSQJspEZg4ie3HeJ9utbTsVWHA"}'::jsonb,
-        body:=concat('{"time": "', now(), '", "trigger": "cron"}')::jsonb
+        body:=concat('{"time": "', now(), '", "trigger": "daily"}')::jsonb
     ) as request_id;
   $$
 );
@@ -31,5 +45,6 @@ SELECT cron.schedule(
 -- SELECT * FROM cron.job;
 
 -- To unschedule jobs if needed (for reference):
+-- SELECT cron.unschedule('hourly-offers-notifications');
 -- SELECT cron.unschedule('daily-offers-notifications');
 -- SELECT cron.unschedule('daily-expiry-notifications');

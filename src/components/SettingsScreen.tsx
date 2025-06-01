@@ -1,21 +1,33 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, Moon, Globe, Bell, Shield, Smartphone } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { pushNotificationService } from '@/services/pushNotificationService';
+import { useAuth } from '@/contexts/AuthContext';
 
 const SettingsScreen = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [settings, setSettings] = useState({
     darkMode: false,
     language: 'english',
     pushNotifications: true,
+    hourlyNotifications: true,
     locationSharing: true,
     dataUsage: 'wifi-only',
   });
+
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+
+  useEffect(() => {
+    // Check current notification permission
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission);
+    }
+  }, []);
 
   const handleSettingChange = <T extends keyof typeof settings>(
     key: T,
@@ -23,11 +35,60 @@ const SettingsScreen = () => {
   ) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
     
+    // Handle notification settings
+    if (key === 'pushNotifications') {
+      if (value && user) {
+        handleNotificationToggle(true);
+      } else {
+        pushNotificationService.stopScheduledNotifications();
+      }
+    }
+
+    if (key === 'hourlyNotifications') {
+      if (value && settings.pushNotifications) {
+        pushNotificationService.scheduleHourlyNotifications();
+      } else {
+        pushNotificationService.stopScheduledNotifications();
+      }
+    }
+    
     // Show toast notification
     toast({
       title: "Setting updated",
       description: `${key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')} has been updated`,
     });
+  };
+
+  const handleNotificationToggle = async (enable: boolean) => {
+    if (!enable) {
+      pushNotificationService.stopScheduledNotifications();
+      return;
+    }
+
+    const hasPermission = await pushNotificationService.requestPermission();
+    
+    if (hasPermission && user) {
+      // Setup realtime notifications
+      await pushNotificationService.setupRealtimeNotifications(user.id);
+      
+      // Setup hourly notifications if enabled
+      if (settings.hourlyNotifications) {
+        pushNotificationService.scheduleHourlyNotifications();
+      }
+      
+      setNotificationPermission('granted');
+      toast({
+        title: "Notifications enabled",
+        description: "You'll now receive push notifications for new offers!",
+      });
+    } else {
+      setSettings(prev => ({ ...prev, pushNotifications: false }));
+      toast({
+        title: "Permission required",
+        description: "Please allow notifications in your browser settings",
+        variant: "destructive",
+      });
+    }
   };
   
   return (
@@ -100,11 +161,35 @@ const SettingsScreen = () => {
                 </div>
               </div>
               <Switch 
-                checked={settings.pushNotifications} 
+                checked={settings.pushNotifications && notificationPermission === 'granted'} 
                 onCheckedChange={(checked) => handleSettingChange('pushNotifications', checked)}
                 className="data-[state=checked]:bg-monkeyGreen" 
               />
             </div>
+            
+            <div className="flex justify-between items-center">
+              <div className="flex items-center">
+                <Bell className="w-5 h-5 mr-3 text-orange-500" />
+                <div>
+                  <p className="font-medium">Hourly Notifications</p>
+                  <p className="text-sm text-gray-600">Get notified every hour about hot deals</p>
+                </div>
+              </div>
+              <Switch 
+                checked={settings.hourlyNotifications && settings.pushNotifications} 
+                disabled={!settings.pushNotifications}
+                onCheckedChange={(checked) => handleSettingChange('hourlyNotifications', checked)}
+                className="data-[state=checked]:bg-monkeyGreen" 
+              />
+            </div>
+            
+            {notificationPermission === 'denied' && (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                <p className="text-sm text-orange-800">
+                  Notifications are blocked. Please enable them in your browser settings to receive push notifications.
+                </p>
+              </div>
+            )}
           </div>
         </div>
         

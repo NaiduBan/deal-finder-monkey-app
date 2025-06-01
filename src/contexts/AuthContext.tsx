@@ -111,6 +111,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setUserProfile(newProfile);
               }
             }
+            
+            // Initialize push notifications for the user
+            try {
+              const { initializeNotifications } = await import('@/services/pushNotificationService');
+              await initializeNotifications(currentSession.user.id);
+            } catch (error) {
+              console.error('Error initializing notifications:', error);
+            }
+            
             if (mounted) {
               setLoading(false);
             }
@@ -118,6 +127,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else if (event === 'SIGNED_OUT') {
           setUserProfile(null);
           localStorage.removeItem('user');
+          
+          // Stop notifications when user signs out
+          try {
+            const { pushNotificationService } = await import('@/services/pushNotificationService');
+            pushNotificationService.stopScheduledNotifications();
+          } catch (error) {
+            console.error('Error stopping notifications:', error);
+          }
+          
           if (mounted) {
             setLoading(false);
           }
