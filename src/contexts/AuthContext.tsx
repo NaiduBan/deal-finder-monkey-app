@@ -1,8 +1,8 @@
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { pushNotificationService, initializeNotifications } from '@/services/pushNotificationService';
 
 interface UserProfile {
   id: string;
@@ -114,6 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
             // Initialize push notifications for the user
             try {
+              const { initializeNotifications } = await import('@/services/pushNotificationService');
               await initializeNotifications(currentSession.user.id);
             } catch (error) {
               console.error('Error initializing notifications:', error);
@@ -129,6 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           // Stop notifications when user signs out
           try {
+            const { pushNotificationService } = await import('@/services/pushNotificationService');
             pushNotificationService.stopScheduledNotifications();
           } catch (error) {
             console.error('Error stopping notifications:', error);
