@@ -25,8 +25,12 @@ const SplashScreen = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center monkey-gradient">
-      <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center shadow-lg animate-splash-logo mb-8">
-        <span className="text-5xl">🐵</span>
+      <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center shadow-lg animate-splash-logo mb-8 p-4">
+        <img 
+          src="/lovable-uploads/36b4568e-cccc-479e-8cc6-09adf49b2275.png" 
+          alt="OffersMonkey Logo" 
+          className="w-full h-full object-contain"
+        />
       </div>
       <h1 className="text-white text-3xl font-bold mb-2">OffersMonkey</h1>
       {showTagline && (
