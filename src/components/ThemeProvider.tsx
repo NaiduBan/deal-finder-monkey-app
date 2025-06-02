@@ -1,10 +1,11 @@
 
 import React from 'react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
+import type { ThemeProviderProps as NextThemesProviderProps } from 'next-themes';
 
 interface ThemeProviderProps {
   children: React.ReactNode;
-  attribute?: string;
+  attribute?: NextThemesProviderProps['attribute'];
   defaultTheme?: string;
   enableSystem?: boolean;
 }
