@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ChevronLeft, Check, Search, Star, Store, Tag, X, Plus, Filter, SortAsc, SortDesc, TrendingUp, Users, BarChart3, RefreshCw, Sparkles, CreditCard } from 'lucide-react';
@@ -431,119 +432,103 @@ const PreferenceScreen = () => {
   };
 
   return (
-    <div className={`bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 min-h-screen ${isMobile ? 'pb-16' : ''}`}>
-      {/* Modern Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-100 dark:border-gray-700">
-        <div className={`px-4 py-6 ${!isMobile ? 'max-w-[1440px] mx-auto' : ''}`}>
-          <div className="flex items-center space-x-3 mb-6">
-            <Link to="/preferences" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
-              <ChevronLeft className="w-6 h-6 text-gray-600 dark:text-gray-300" />
-            </Link>
-            <div className="flex items-center space-x-3 flex-1">
-              <div className={`p-3 bg-gradient-to-r ${config.gradient} rounded-xl`}>
-                <IconComponent className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-1">
-                  <span className="text-2xl">{config.emoji}</span>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{config.title}</h1>
+    <div className={`bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 min-h-screen ${isMobile ? 'pb-16' : 'pt-20'}`}>
+      {/* Clean Header */}
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-100 dark:border-gray-700">
+        <div className={`${isMobile ? 'px-4 py-4' : 'px-8 py-6 max-w-6xl mx-auto'}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Link to="/preferences" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
+                <ChevronLeft className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+              </Link>
+              <div className="flex items-center space-x-3">
+                <div className={`p-3 bg-gradient-to-r ${config.gradient} rounded-xl`}>
+                  <IconComponent className="w-6 h-6 text-white" />
                 </div>
-                <p className="text-gray-600 dark:text-gray-300 text-sm">{config.subtitle}</p>
-                <p className="text-gray-500 dark:text-gray-400 text-xs mt-1">{config.description}</p>
+                <div>
+                  <div className="flex items-center space-x-2 mb-1">
+                    <span className={`${isMobile ? 'text-xl' : 'text-2xl'}`}>{config.emoji}</span>
+                    <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-900 dark:text-gray-100`}>{config.title}</h1>
+                  </div>
+                  <p className={`text-gray-600 dark:text-gray-300 ${isMobile ? 'text-sm' : 'text-base'}`}>{config.subtitle}</p>
+                  <div className="flex items-center space-x-4 mt-2">
+                    <span className="text-sm text-green-600 dark:text-green-400 font-medium">
+                      {selectedItems.length} selected
+                    </span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {availableItems.length} available
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={refreshData}
-              disabled={isRefreshing}
-              className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            </Button>
-          </div>
-          
-          {/* Stats Cards */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
-              <div className="flex items-center justify-center space-x-2 mb-2">
-                <Check className="w-5 h-5 text-green-600" />
-                <span className="text-2xl font-bold text-green-700">{selectedItems.length}</span>
-              </div>
-              <p className="text-xs text-green-600 text-center font-medium">Selected</p>
-            </div>
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
-              <div className="flex items-center justify-center space-x-2 mb-2">
-                <BarChart3 className="w-5 h-5 text-blue-600" />
-                <span className="text-xl font-bold text-blue-700">{availableItems.length}</span>
-              </div>
-              <p className="text-xs text-blue-600 text-center font-medium">Available</p>
-            </div>
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
-              <div className="flex items-center justify-center space-x-2 mb-2">
-                <TrendingUp className="w-5 h-5 text-purple-600" />
-                <span className="text-xl font-bold text-purple-700">{Math.round((selectedItems.length / Math.max(availableItems.length, 1)) * 100)}%</span>
-              </div>
-              <p className="text-xs text-purple-600 text-center font-medium">Coverage</p>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center space-x-2">
-            {!bulkSelectMode ? (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setBulkSelectMode(true)}
-                  className="bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300"
-                >
-                  <Users className="w-4 h-4 mr-1" />
-                  Bulk Select
-                </Button>
-                {selectedItems.length > 0 && (
+            
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={refreshData}
+                disabled={isRefreshing}
+                className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </Button>
+              
+              {!bulkSelectMode ? (
+                <>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={clearAllPreferences}
-                    className="bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900 border-red-200 dark:border-red-700 text-red-700 dark:text-red-300"
+                    onClick={() => setBulkSelectMode(true)}
+                    className="bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300"
+                  >
+                    <Users className="w-4 h-4 mr-1" />
+                    {isMobile ? 'Bulk' : 'Bulk Select'}
+                  </Button>
+                  {selectedItems.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={clearAllPreferences}
+                      className="bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900 border-red-200 dark:border-red-700 text-red-700 dark:text-red-300"
+                    >
+                      <X className="w-4 h-4 mr-1" />
+                      {isMobile ? 'Clear' : 'Clear All'}
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={applyBulkSelection}
+                    className="bg-white dark:bg-gray-800 hover:bg-green-50 dark:hover:bg-green-900 border-green-200 dark:border-green-700 text-green-700 dark:text-green-300"
+                  >
+                    <Check className="w-4 h-4 mr-1" />
+                    Apply ({pendingSelection.length})
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setBulkSelectMode(false);
+                      setPendingSelection([]);
+                    }}
+                    className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300"
                   >
                     <X className="w-4 h-4 mr-1" />
-                    Clear All
+                    Cancel
                   </Button>
-                )}
-              </>
-            ) : (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={applyBulkSelection}
-                  className="bg-white dark:bg-gray-800 hover:bg-green-50 dark:hover:bg-green-900 border-green-200 dark:border-green-700 text-green-700 dark:text-green-300"
-                >
-                  <Check className="w-4 h-4 mr-1" />
-                  Apply ({pendingSelection.length})
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setBulkSelectMode(false);
-                    setPendingSelection([]);
-                  }}
-                  className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300"
-                >
-                  <X className="w-4 h-4 mr-1" />
-                  Cancel
-                </Button>
-              </>
-            )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className={`space-y-6 ${isMobile ? 'p-4' : 'max-w-[1440px] mx-auto px-6 py-8'}`}>
+      <div className={`space-y-6 ${isMobile ? 'p-4' : 'max-w-6xl mx-auto px-8 py-8'}`}>
         {/* Search and Filters */}
         <div className="space-y-4">
           <div className="relative">
@@ -551,7 +536,7 @@ const PreferenceScreen = () => {
             <Input
               type="search"
               placeholder={config.placeholder}
-              className="pl-12 pr-4 py-4 w-full border-gray-200 dark:border-gray-600 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-gray-800 text-lg"
+              className={`pl-12 pr-4 ${isMobile ? 'py-3' : 'py-4'} w-full border-gray-200 dark:border-gray-600 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-gray-800 ${isMobile ? 'text-base' : 'text-lg'}`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -622,7 +607,7 @@ const PreferenceScreen = () => {
                     <Check className="w-5 h-5 mr-2 text-green-600" />
                     Selected ({selectedFilteredItems.length})
                   </h2>
-                  <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+                  <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'}`}>
                     {selectedFilteredItems.map((item) => (
                       <ItemCard
                         key={item.id}
@@ -649,7 +634,7 @@ const PreferenceScreen = () => {
                       Available ({unselectedFilteredItems.length})
                     </h2>
                   )}
-                  <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+                  <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'}`}>
                     {(showSelected === 'selected' ? selectedFilteredItems : 
                       showSelected === 'unselected' ? unselectedFilteredItems : 
                       unselectedFilteredItems).map((item) => (
@@ -671,7 +656,7 @@ const PreferenceScreen = () => {
 
           {/* Empty State */}
           {!isLoading && sortedAndFilteredItems.length === 0 && (
-            <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl text-center shadow-sm border border-gray-100 dark:border-gray-700">
+            <div className="bg-white dark:bg-gray-800 p-8 rounded-xl text-center shadow-sm border border-gray-100 dark:border-gray-700">
               <div className="p-4 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                 <IconComponent className="w-8 h-8 text-gray-600 dark:text-gray-300" />
               </div>
@@ -702,7 +687,7 @@ const ItemCard: React.FC<{
   
   return (
     <div
-      className={`p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200 hover:shadow-lg transform hover:scale-[1.02] ${
+      className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-lg transform hover:scale-[1.02] ${
         displaySelected 
           ? `bg-gradient-to-r ${config.gradient.replace('from-', 'from-').replace('via-', 'via-').replace('to-', 'to-')} bg-opacity-10 border-blue-300 dark:border-blue-600 shadow-md` 
           : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10'
@@ -717,25 +702,25 @@ const ItemCard: React.FC<{
               className="rounded w-5 h-5"
             />
           )}
-          <div className={`p-3 rounded-xl ${
+          <div className={`p-2 rounded-lg ${
             displaySelected ? 'bg-white bg-opacity-50 dark:bg-gray-700 dark:bg-opacity-50' : 'bg-gray-100 dark:bg-gray-700'
           }`}>
-            <config.icon className={`w-6 h-6 ${
+            <config.icon className={`w-5 h-5 ${
               displaySelected ? 'text-blue-700 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300'
             }`} />
           </div>
           <div>
-            <h3 className={`font-semibold text-lg ${
+            <h3 className={`font-semibold ${
               displaySelected ? 'text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-gray-100'
             }`}>
               {item.name}
             </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{item.count} offers available</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{item.count} offers</p>
           </div>
         </div>
         
-        <div className="flex items-center space-x-3">
-          <span className={`px-4 py-2 rounded-full text-sm font-medium ${
+        <div className="flex items-center space-x-2">
+          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
             displaySelected 
               ? 'bg-white bg-opacity-50 dark:bg-gray-700 dark:bg-opacity-50 text-blue-700 dark:text-blue-300' 
               : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
@@ -743,15 +728,15 @@ const ItemCard: React.FC<{
             {item.count}
           </span>
           {!isBulkMode && (
-            <div className={`p-3 rounded-full transition-all ${
+            <div className={`p-2 rounded-full transition-all ${
               displaySelected 
                 ? 'bg-white bg-opacity-50 dark:bg-gray-700 dark:bg-opacity-50 text-green-700 dark:text-green-300' 
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400'
             }`}>
               {displaySelected ? (
-                <Check className="w-5 h-5" />
+                <Check className="w-4 h-4" />
               ) : (
-                <Plus className="w-5 h-5" />
+                <Plus className="w-4 h-4" />
               )}
             </div>
           )}
