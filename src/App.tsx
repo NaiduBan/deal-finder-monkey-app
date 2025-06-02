@@ -10,7 +10,6 @@ import NotFound from "./pages/NotFound";
 import { UserProvider } from "./contexts/UserContext";
 import { DataProvider } from "./contexts/DataContext";
 import { AuthProvider } from "./contexts/AuthContext";
-import ThemeProvider from "./components/ThemeProvider";
 
 // Components
 import SplashScreen from "./components/SplashScreen";
@@ -20,7 +19,6 @@ import CategoryScreen from "./components/CategoryScreen";
 import OfferDetailScreen from "./components/OfferDetailScreen";
 import ChatbotScreen from "./components/ChatbotScreen";
 import ProfileScreen from "./components/ProfileScreen";
-import EditProfileScreen from "./components/EditProfileScreen";
 import SettingsScreen from "./components/SettingsScreen";
 import PreferenceScreen from "./components/PreferenceScreen";
 import PreferencesScreen from "./components/PreferencesScreen";
@@ -30,14 +28,7 @@ import NotificationsScreen from "./components/NotificationsScreen";
 import BottomNavigation from "./components/BottomNavigation";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 // Layout component to conditionally render bottom navigation
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
@@ -54,15 +45,13 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
 // Providers wrapper component
 const ProvidersWrapper = ({ children }: { children: React.ReactNode }) => (
-  <ThemeProvider>
-    <AuthProvider>
-      <UserProvider>
-        <DataProvider>
-          {children}
-        </DataProvider>
-      </UserProvider>
-    </AuthProvider>
-  </ThemeProvider>
+  <AuthProvider>
+    <UserProvider>
+      <DataProvider>
+        {children}
+      </DataProvider>
+    </UserProvider>
+  </AuthProvider>
 );
 
 const App = () => (
@@ -143,14 +132,6 @@ const App = () => (
                         element={
                           <ProtectedRoute>
                             <ProfileScreen />
-                          </ProtectedRoute>
-                        } 
-                      />
-                      <Route 
-                        path="/edit-profile" 
-                        element={
-                          <ProtectedRoute>
-                            <EditProfileScreen />
                           </ProtectedRoute>
                         } 
                       />
