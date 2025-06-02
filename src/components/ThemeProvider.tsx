@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
-import type { ThemeProviderProps as NextThemeProviderProps } from 'next-themes/dist/types';
 
 interface ThemeProviderProps {
   children: React.ReactNode;
