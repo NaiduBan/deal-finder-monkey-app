@@ -1,26 +1,40 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 const SplashScreen = () => {
   const navigate = useNavigate();
   const [showTagline, setShowTagline] = useState(false);
 
   useEffect(() => {
-    // Show the tagline after the logo animation
-    const taglineTimeout = setTimeout(() => {
-      setShowTagline(true);
-    }, 1000);
+    // Check if user is already authenticated
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        // User is authenticated, go directly to home
+        setTimeout(() => navigate('/home'), 2000);
+        return;
+      }
 
-    // Navigate to login after splash screen
-    const navigationTimeout = setTimeout(() => {
-      navigate('/login');
-    }, 3000);
+      // Show the tagline after the logo animation
+      const taglineTimeout = setTimeout(() => {
+        setShowTagline(true);
+      }, 1000);
 
-    return () => {
-      clearTimeout(taglineTimeout);
-      clearTimeout(navigationTimeout);
+      // Navigate to login after splash screen for unauthenticated users
+      const navigationTimeout = setTimeout(() => {
+        navigate('/login');
+      }, 3000);
+
+      return () => {
+        clearTimeout(taglineTimeout);
+        clearTimeout(navigationTimeout);
+      };
     };
+
+    checkAuth();
   }, [navigate]);
 
   return (

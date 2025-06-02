@@ -30,7 +30,14 @@ import NotificationsScreen from "./components/NotificationsScreen";
 import BottomNavigation from "./components/BottomNavigation";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
 // Layout component to conditionally render bottom navigation
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
