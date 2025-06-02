@@ -1,22 +1,18 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from 'react-query';
-import { Toaster } from 'react-hot-toast';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from '@/components/ui/sonner';
 import './index.css';
 import HomeScreen from '@/components/HomeScreen';
 import CategoryScreen from '@/components/CategoryScreen';
-import OfferScreen from '@/components/OfferScreen';
-import SearchScreen from '@/components/SearchScreen';
 import ProfileScreen from '@/components/ProfileScreen';
 import SettingsScreen from '@/components/SettingsScreen';
-import NotificationScreen from '@/components/NotificationScreen';
 import PreferenceScreen from '@/components/PreferenceScreen';
-import TermsScreen from '@/components/TermsScreen';
-import PrivacyScreen from '@/components/PrivacyScreen';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import AuthProvider from '@/contexts/AuthContext';
-import UserProvider from '@/contexts/UserContext';
-import DataProvider from '@/contexts/DataContext';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { UserProvider } from '@/contexts/UserContext';
+import { DataProvider } from '@/contexts/DataContext';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import EditProfileScreen from '@/components/EditProfileScreen';
 
@@ -36,8 +32,6 @@ function App() {
                     <Route path="/" element={<HomeScreen />} />
                     <Route path="/home" element={<HomeScreen />} />
                     <Route path="/category/:categoryId" element={<CategoryScreen />} />
-                    <Route path="/offer/:offerId" element={<OfferScreen />} />
-                    <Route path="/search" element={<SearchScreen />} />
                     
                     <Route path="/profile" element={
                       <ProtectedRoute>
@@ -49,11 +43,6 @@ function App() {
                         <SettingsScreen />
                       </ProtectedRoute>
                     } />
-                    <Route path="/notifications" element={
-                      <ProtectedRoute>
-                        <NotificationScreen />
-                      </ProtectedRoute>
-                    } />
                     <Route path="/preferences/:type" element={
                       <ProtectedRoute>
                         <PreferenceScreen />
@@ -61,20 +50,28 @@ function App() {
                     } />
                     <Route path="/preferences" element={
                       <ProtectedRoute>
-                        <div>
-                          <h1>Preferences</h1>
-                          <p>Select a preference type:</p>
-                          <ul>
-                            <li><a href="/preferences/stores">Stores</a></li>
-                            <li><a href="/preferences/brands">Brands</a></li>
-                             <li><a href="/preferences/categories">Categories</a></li>
-                             <li><a href="/preferences/banks">Banks</a></li>
-                          </ul>
+                        <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 dark:from-gray-900 dark:to-gray-800 p-4">
+                          <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                            <h1 className="text-2xl font-bold text-green-700 dark:text-green-400 mb-4">Preferences</h1>
+                            <p className="text-gray-600 dark:text-gray-300 mb-6">Select a preference type:</p>
+                            <div className="space-y-3">
+                              <a href="/preferences/stores" className="block w-full text-left p-3 bg-green-50 dark:bg-gray-700 hover:bg-green-100 dark:hover:bg-gray-600 rounded-lg transition-colors">
+                                <span className="text-green-700 dark:text-green-400 font-medium">Stores</span>
+                              </a>
+                              <a href="/preferences/brands" className="block w-full text-left p-3 bg-green-50 dark:bg-gray-700 hover:bg-green-100 dark:hover:bg-gray-600 rounded-lg transition-colors">
+                                <span className="text-green-700 dark:text-green-400 font-medium">Brands</span>
+                              </a>
+                              <a href="/preferences/categories" className="block w-full text-left p-3 bg-green-50 dark:bg-gray-700 hover:bg-green-100 dark:hover:bg-gray-600 rounded-lg transition-colors">
+                                <span className="text-green-700 dark:text-green-400 font-medium">Categories</span>
+                              </a>
+                              <a href="/preferences/banks" className="block w-full text-left p-3 bg-green-50 dark:bg-gray-700 hover:bg-green-100 dark:hover:bg-gray-600 rounded-lg transition-colors">
+                                <span className="text-green-700 dark:text-green-400 font-medium">Banks</span>
+                              </a>
+                            </div>
+                          </div>
                         </div>
                       </ProtectedRoute>
                     } />
-                    <Route path="/terms" element={<TermsScreen />} />
-                    <Route path="/privacy" element={<PrivacyScreen />} />
                     <Route path="/edit-profile" element={
                       <ProtectedRoute>
                         <EditProfileScreen />
