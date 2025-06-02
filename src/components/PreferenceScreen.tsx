@@ -128,6 +128,7 @@ const PreferenceScreen = () => {
           }
         });
       } else if (type === 'banks') {
+        // Extract banks from text content
         offers?.forEach(offer => {
           const fullText = `${offer.description || ''} ${offer.terms_and_conditions || ''} ${offer.long_offer || ''}`.toLowerCase();
           const bankKeywords = [
@@ -431,25 +432,25 @@ const PreferenceScreen = () => {
   };
 
   return (
-    <div className={`bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 min-h-screen ${isMobile ? 'pb-16' : ''}`}>
+    <div className={`${isMobile ? 'pb-16' : 'pt-20'} bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen`}>
       {/* Modern Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-100 dark:border-gray-700">
-        <div className={`${isMobile ? 'px-4 py-6' : 'max-w-[1440px] mx-auto px-6 py-8'}`}>
+      <div className="bg-white shadow-lg border-b border-gray-100">
+        <div className={`${isMobile ? 'px-4 py-6' : 'px-8 py-8 max-w-7xl mx-auto'}`}>
           <div className="flex items-center space-x-3 mb-6">
-            <Link to="/preferences" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
-              <ChevronLeft className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+            <Link to="/preferences" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <ChevronLeft className="w-6 h-6 text-gray-600" />
             </Link>
             <div className="flex items-center space-x-3 flex-1">
-              <div className={`p-3 bg-gradient-to-r ${config.gradient} rounded-xl`}>
-                <IconComponent className="w-6 h-6 text-white" />
+              <div className={`${isMobile ? 'p-3' : 'p-4'} bg-gradient-to-r ${config.gradient} rounded-xl`}>
+                <IconComponent className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'} text-white`} />
               </div>
               <div className="flex-1">
                 <div className="flex items-center space-x-2 mb-1">
-                  <span className="text-2xl">{config.emoji}</span>
-                  <h1 className={`font-bold text-gray-900 dark:text-gray-100 ${isMobile ? 'text-2xl' : 'text-3xl'}`}>{config.title}</h1>
+                  <span className={`${isMobile ? 'text-2xl' : 'text-3xl'}`}>{config.emoji}</span>
+                  <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900`}>{config.title}</h1>
                 </div>
-                <p className={`text-gray-600 dark:text-gray-400 ${isMobile ? 'text-sm' : 'text-base'}`}>{config.subtitle}</p>
-                <p className={`text-gray-500 dark:text-gray-500 ${isMobile ? 'text-xs mt-1' : 'text-sm mt-2'}`}>{config.description}</p>
+                <p className={`text-gray-600 ${isMobile ? 'text-sm' : 'text-base'}`}>{config.subtitle}</p>
+                <p className={`text-gray-500 ${isMobile ? 'text-xs' : 'text-sm'} mt-1`}>{config.description}</p>
               </div>
             </div>
             <Button
@@ -457,7 +458,7 @@ const PreferenceScreen = () => {
               size="sm"
               onClick={refreshData}
               disabled={isRefreshing}
-              className="text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="text-gray-600 hover:bg-gray-100"
             >
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             </Button>
@@ -496,7 +497,7 @@ const PreferenceScreen = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => setBulkSelectMode(true)}
-                  className="bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-gray-700 border-blue-200 dark:border-gray-600 text-blue-700 dark:text-blue-400"
+                  className="bg-white hover:bg-blue-50 border-blue-200 text-blue-700"
                 >
                   <Users className="w-4 h-4 mr-1" />
                   Bulk Select
@@ -506,7 +507,7 @@ const PreferenceScreen = () => {
                     variant="outline"
                     size="sm"
                     onClick={clearAllPreferences}
-                    className="bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-gray-700 border-red-200 dark:border-gray-600 text-red-700 dark:text-red-400"
+                    className="bg-white hover:bg-red-50 border-red-200 text-red-700"
                   >
                     <X className="w-4 h-4 mr-1" />
                     Clear All
@@ -519,7 +520,7 @@ const PreferenceScreen = () => {
                   variant="outline"
                   size="sm"
                   onClick={applyBulkSelection}
-                  className="bg-white dark:bg-gray-800 hover:bg-green-50 dark:hover:bg-gray-700 border-green-200 dark:border-gray-600 text-green-700 dark:text-green-400"
+                  className="bg-white hover:bg-green-50 border-green-200 text-green-700"
                 >
                   <Check className="w-4 h-4 mr-1" />
                   Apply ({pendingSelection.length})
@@ -531,37 +532,34 @@ const PreferenceScreen = () => {
                     setBulkSelectMode(false);
                     setPendingSelection([]);
                   }}
-                  className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-400"
+                  className="bg-white hover:bg-gray-50 border-gray-200 text-gray-700"
                 >
                   <X className="w-4 h-4 mr-1" />
                   Cancel
                 </Button>
               </>
             )}
-            <div className="text-sm text-gray-600 dark:text-gray-400 ml-4">
-              {selectedItems.length} selected
-            </div>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className={`space-y-6 ${isMobile ? 'p-4' : 'max-w-[1440px] mx-auto px-6 py-8'}`}>
+      <div className={`${isMobile ? 'p-4' : 'p-8 max-w-7xl mx-auto'} space-y-6`}>
         {/* Search and Filters */}
         <div className="space-y-4">
-          <div className="relative">
+          <div className="relative max-w-2xl mx-auto">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <Input
               type="search"
               placeholder={config.placeholder}
-              className="pl-12 pr-4 py-4 w-full border-gray-200 dark:border-gray-600 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-gray-800 text-lg"
+              className={`pl-12 pr-4 ${isMobile ? 'py-4' : 'py-5'} w-full border-gray-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white ${isMobile ? 'text-lg' : 'text-xl'}`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
           {/* Filters and Sort */}
-          <div className={`flex gap-2 items-center ${isMobile ? 'flex-wrap justify-between' : 'justify-between'}`}>
+          <div className="flex flex-wrap gap-2 items-center justify-between">
             <div className="flex gap-2">
               <Button
                 variant={showSelected === 'all' ? 'default' : 'outline'}
@@ -621,11 +619,11 @@ const PreferenceScreen = () => {
               {/* Selected items */}
               {showSelected === 'all' && selectedFilteredItems.length > 0 && (
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+                  <h2 className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold text-gray-800 mb-4 flex items-center`}>
                     <Check className="w-5 h-5 mr-2 text-green-600" />
                     Selected ({selectedFilteredItems.length})
                   </h2>
-                  <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
+                  <div className={`${isMobile ? 'space-y-3' : 'grid grid-cols-1 lg:grid-cols-2 gap-6'}`}>
                     {selectedFilteredItems.map((item) => (
                       <ItemCard
                         key={item.id}
@@ -635,6 +633,7 @@ const PreferenceScreen = () => {
                         isPendingSelection={pendingSelection.includes(item.id)}
                         onClick={() => toggleItem(item.id)}
                         config={config}
+                        isMobile={isMobile}
                       />
                     ))}
                   </div>
@@ -647,12 +646,12 @@ const PreferenceScreen = () => {
                 (showSelected === 'selected' && selectedFilteredItems.length > 0)) && (
                 <div>
                   {showSelected === 'all' && (
-                    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+                    <h2 className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold text-gray-800 mb-4 flex items-center`}>
                       <Plus className="w-5 h-5 mr-2 text-blue-600" />
                       Available ({unselectedFilteredItems.length})
                     </h2>
                   )}
-                  <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
+                  <div className={`${isMobile ? 'space-y-3' : 'grid grid-cols-1 lg:grid-cols-2 gap-6'}`}>
                     {(showSelected === 'selected' ? selectedFilteredItems : 
                       showSelected === 'unselected' ? unselectedFilteredItems : 
                       unselectedFilteredItems).map((item) => (
@@ -664,6 +663,7 @@ const PreferenceScreen = () => {
                         isPendingSelection={pendingSelection.includes(item.id)}
                         onClick={() => toggleItem(item.id)}
                         config={config}
+                        isMobile={isMobile}
                       />
                     ))}
                   </div>
@@ -674,14 +674,14 @@ const PreferenceScreen = () => {
 
           {/* Empty State */}
           {!isLoading && sortedAndFilteredItems.length === 0 && (
-            <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl text-center shadow-sm border border-gray-100 dark:border-gray-700">
-              <div className="p-4 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <IconComponent className="w-8 h-8 text-gray-600 dark:text-gray-400" />
+            <div className={`bg-white ${isMobile ? 'p-8' : 'p-12'} rounded-2xl text-center shadow-sm border border-gray-100 max-w-2xl mx-auto`}>
+              <div className={`p-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full ${isMobile ? 'w-16 h-16' : 'w-20 h-20'} mx-auto mb-6 flex items-center justify-center`}>
+                <IconComponent className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} text-gray-600`} />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+              <h3 className={`${isMobile ? 'text-lg' : 'text-xl'} font-medium text-gray-900 mb-3`}>
                 {config.emptyMessage}
               </h3>
-              <p className="text-gray-500 dark:text-gray-400">
+              <p className={`text-gray-500 ${isMobile ? 'text-base' : 'text-lg'}`}>
                 {searchTerm ? `No ${type} found matching "${searchTerm}"` : `No ${type} available at the moment`}
               </p>
             </div>
@@ -700,15 +700,16 @@ const ItemCard: React.FC<{
   isPendingSelection: boolean;
   onClick: () => void;
   config: any;
-}> = ({ item, isSelected, isBulkMode, isPendingSelection, onClick, config }) => {
+  isMobile: boolean;
+}> = ({ item, isSelected, isBulkMode, isPendingSelection, onClick, config, isMobile }) => {
   const displaySelected = isBulkMode ? isPendingSelection : isSelected;
   
   return (
     <div
-      className={`p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200 hover:shadow-lg transform hover:scale-[1.02] ${
+      className={`${isMobile ? 'p-4' : 'p-6'} rounded-2xl border-2 cursor-pointer transition-all duration-200 hover:shadow-lg transform hover:scale-[1.02] ${
         displaySelected 
-          ? `bg-gradient-to-r ${config.gradient.replace('from-', 'from-').replace('via-', 'via-').replace('to-', 'to-')} bg-opacity-10 border-blue-300 dark:border-blue-600 shadow-md` 
-          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-gray-700'
+          ? `bg-gradient-to-r ${config.gradient.replace('from-', 'from-').replace('via-', 'via-').replace('to-', 'to-')} bg-opacity-10 border-blue-300 shadow-md` 
+          : 'bg-white border-gray-200 hover:border-blue-300 hover:bg-blue-50'
       }`}
       onClick={onClick}
     >
@@ -720,36 +721,36 @@ const ItemCard: React.FC<{
               className="rounded w-5 h-5"
             />
           )}
-          <div className={`p-3 rounded-xl ${
-            displaySelected ? 'bg-white bg-opacity-50 dark:bg-gray-700' : 'bg-gray-100 dark:bg-gray-700'
+          <div className={`${isMobile ? 'p-3' : 'p-4'} rounded-xl ${
+            displaySelected ? 'bg-white bg-opacity-50' : 'bg-gray-100'
           }`}>
-            <config.icon className={`w-6 h-6 ${
-              displaySelected ? 'text-blue-700 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'
+            <config.icon className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'} ${
+              displaySelected ? 'text-blue-700' : 'text-gray-600'
             }`} />
           </div>
           <div>
-            <h3 className={`font-semibold text-lg ${
-              displaySelected ? 'text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-gray-100'
+            <h3 className={`font-semibold ${isMobile ? 'text-lg' : 'text-xl'} ${
+              displaySelected ? 'text-blue-900' : 'text-gray-900'
             }`}>
               {item.name}
             </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{item.count} offers available</p>
+            <p className={`${isMobile ? 'text-sm' : 'text-base'} text-gray-500`}>{item.count} offers available</p>
           </div>
         </div>
         
         <div className="flex items-center space-x-3">
-          <span className={`px-4 py-2 rounded-full text-sm font-medium ${
+          <span className={`px-4 py-2 rounded-full ${isMobile ? 'text-sm' : 'text-base'} font-medium ${
             displaySelected 
-              ? 'bg-white bg-opacity-50 dark:bg-gray-700 text-blue-700 dark:text-blue-300' 
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+              ? 'bg-white bg-opacity-50 text-blue-700' 
+              : 'bg-gray-100 text-gray-700'
           }`}>
             {item.count}
           </span>
           {!isBulkMode && (
-            <div className={`p-3 rounded-full transition-all ${
+            <div className={`${isMobile ? 'p-3' : 'p-4'} rounded-full transition-all ${
               displaySelected 
-                ? 'bg-white bg-opacity-50 dark:bg-gray-700 text-green-700 dark:text-green-400' 
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 hover:bg-blue-100 dark:hover:bg-gray-600 hover:text-blue-600 dark:hover:text-blue-400'
+                ? 'bg-white bg-opacity-50 text-green-700' 
+                : 'bg-gray-100 text-gray-400 hover:bg-blue-100 hover:text-blue-600'
             }`}>
               {displaySelected ? (
                 <Check className="w-5 h-5" />
