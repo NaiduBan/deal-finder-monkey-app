@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import { UserProvider } from "./contexts/UserContext";
 import { DataProvider } from "./contexts/DataContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ThemeProvider } from "./components/ThemeProvider";
 
 // Components
 import SplashScreen from "./components/SplashScreen";
@@ -45,13 +46,15 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
 // Providers wrapper component
 const ProvidersWrapper = ({ children }: { children: React.ReactNode }) => (
-  <AuthProvider>
-    <UserProvider>
-      <DataProvider>
-        {children}
-      </DataProvider>
-    </UserProvider>
-  </AuthProvider>
+  <ThemeProvider defaultTheme="system">
+    <AuthProvider>
+      <UserProvider>
+        <DataProvider>
+          {children}
+        </DataProvider>
+      </UserProvider>
+    </AuthProvider>
+  </ThemeProvider>
 );
 
 const App = () => (
