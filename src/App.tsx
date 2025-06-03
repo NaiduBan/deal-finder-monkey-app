@@ -47,7 +47,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
 // Providers wrapper component
 const ProvidersWrapper = ({ children }: { children: React.ReactNode }) => (
-  <ThemeProvider defaultTheme="system">
+  <ThemeProvider defaultTheme="light">
     <AuthProvider>
       <UserProvider>
         <DataProvider>
