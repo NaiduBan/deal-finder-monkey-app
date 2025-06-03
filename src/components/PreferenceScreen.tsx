@@ -28,6 +28,7 @@ const PreferenceScreen = () => {
   const [bulkSelectMode, setBulkSelectMode] = useState(false);
   const [pendingSelection, setPendingSelection] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Configuration based on preference type
   const getConfig = () => {
@@ -169,14 +170,46 @@ const PreferenceScreen = () => {
     }
   };
 
+  // Load user preferences from database
+  const loadUserPreferences = async () => {
+    if (!session?.user || !type) return;
+
+    try {
+      console.log('Loading preferences for user:', session.user.id, 'type:', type);
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .select('preference_id')
+        .eq('user_id', session.user.id)
+        .eq('preference_type', type);
+
+      if (error) throw error;
+
+      const preferences = data?.map(item => item.preference_id) || [];
+      console.log('Loaded preferences:', preferences);
+      setSelectedItems(preferences);
+    } catch (error) {
+      console.error('Error loading preferences:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load your preferences",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Initial data fetch
   useEffect(() => {
     fetchAvailableItems();
   }, [type]);
 
+  // Load user preferences when component mounts or type changes
+  useEffect(() => {
+    loadUserPreferences();
+  }, [session, type]);
+
   const refreshData = async () => {
     setIsRefreshing(true);
-    await fetchAvailableItems();
+    await Promise.all([fetchAvailableItems(), loadUserPreferences()]);
     setIsRefreshing(false);
     toast({
       title: "Data refreshed",
@@ -184,30 +217,7 @@ const PreferenceScreen = () => {
     });
   };
 
-  useEffect(() => {
-    const loadUserPreferences = async () => {
-      if (!session?.user || !type) return;
-
-      try {
-        console.log('Loading preferences for user:', session.user.id, 'type:', type);
-        const { data, error } = await supabase
-          .from('user_preferences')
-          .select('preference_id')
-          .eq('user_id', session.user.id)
-          .eq('preference_type', type);
-
-        if (error) throw error;
-
-        console.log('Loaded preferences:', data);
-        setSelectedItems(data?.map(item => item.preference_id) || []);
-      } catch (error) {
-        console.error('Error loading preferences:', error);
-      }
-    };
-
-    loadUserPreferences();
-  }, [session, type]);
-
+  // Real-time subscription for preference changes
   useEffect(() => {
     if (!session?.user || !type) return;
 
@@ -293,7 +303,7 @@ const PreferenceScreen = () => {
   const unselectedFilteredItems = sortedAndFilteredItems.filter(item => !selectedItems.includes(item.id));
 
   const toggleItem = async (item: string) => {
-    if (!session?.user || !type) return;
+    if (!session?.user || !type || isSaving) return;
 
     if (bulkSelectMode) {
       setPendingSelection(prev => 
@@ -305,10 +315,12 @@ const PreferenceScreen = () => {
     }
 
     try {
+      setIsSaving(true);
       const isSelected = selectedItems.includes(item);
       console.log('Toggling item:', item, 'currently selected:', isSelected);
       
       if (isSelected) {
+        // Remove from database
         const { error } = await supabase
           .from('user_preferences')
           .delete()
@@ -318,11 +330,15 @@ const PreferenceScreen = () => {
 
         if (error) throw error;
         
+        // Update local state immediately for better UX
+        setSelectedItems(prev => prev.filter(id => id !== item));
+        
         toast({
           title: "Preference removed",
           description: `${item} removed from your ${type}`,
         });
       } else {
+        // Add to database
         const { error } = await supabase
           .from('user_preferences')
           .insert({
@@ -333,6 +349,9 @@ const PreferenceScreen = () => {
 
         if (error) throw error;
         
+        // Update local state immediately for better UX
+        setSelectedItems(prev => [...prev, item]);
+        
         toast({
           title: "Preference added",
           description: `${item} added to your ${type}`,
@@ -342,16 +361,23 @@ const PreferenceScreen = () => {
       console.error('Error updating preference:', error);
       toast({
         title: "Error",
-        description: "Failed to update preference",
+        description: "Failed to update preference. Please try again.",
         variant: "destructive"
       });
+      // Reload preferences to sync with database
+      await loadUserPreferences();
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const applyBulkSelection = async () => {
-    if (!session?.user || !type) return;
+    if (!session?.user || !type || isSaving) return;
 
     try {
+      setIsSaving(true);
+      
+      // Remove items that are not in pending selection
       const toRemove = selectedItems.filter(id => !pendingSelection.includes(id));
       if (toRemove.length > 0) {
         const { error: deleteError } = await supabase
@@ -364,6 +390,7 @@ const PreferenceScreen = () => {
         if (deleteError) throw deleteError;
       }
 
+      // Add items that are in pending selection but not currently selected
       const toAdd = pendingSelection.filter(id => !selectedItems.includes(id));
       if (toAdd.length > 0) {
         const { error: insertError } = await supabase
@@ -379,6 +406,8 @@ const PreferenceScreen = () => {
         if (insertError) throw insertError;
       }
 
+      // Update local state
+      setSelectedItems(pendingSelection);
       setBulkSelectMode(false);
       setPendingSelection([]);
       
@@ -390,16 +419,21 @@ const PreferenceScreen = () => {
       console.error('Error applying bulk selection:', error);
       toast({
         title: "Error",
-        description: "Failed to apply bulk selection",
+        description: "Failed to apply bulk selection. Please try again.",
         variant: "destructive"
       });
+      // Reload preferences to sync with database
+      await loadUserPreferences();
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const clearAllPreferences = async () => {
-    if (!session?.user || !type) return;
+    if (!session?.user || !type || isSaving) return;
 
     try {
+      setIsSaving(true);
       const { error } = await supabase
         .from('user_preferences')
         .delete()
@@ -407,6 +441,9 @@ const PreferenceScreen = () => {
         .eq('preference_type', type);
 
       if (error) throw error;
+      
+      // Update local state
+      setSelectedItems([]);
       
       toast({
         title: "All preferences cleared",
@@ -416,9 +453,13 @@ const PreferenceScreen = () => {
       console.error('Error clearing preferences:', error);
       toast({
         title: "Error",
-        description: "Failed to clear preferences",
+        description: "Failed to clear preferences. Please try again.",
         variant: "destructive"
       });
+      // Reload preferences to sync with database
+      await loadUserPreferences();
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -433,7 +474,7 @@ const PreferenceScreen = () => {
 
   return (
     <div className={`bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 min-h-screen ${isMobile ? 'pb-16' : 'pt-20'}`}>
-      {/* Clean Header */}
+      {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-100 dark:border-gray-700">
         <div className={`${isMobile ? 'px-4 py-4' : 'px-8 py-6 max-w-6xl mx-auto'}`}>
           <div className="flex items-center justify-between">
@@ -468,7 +509,7 @@ const PreferenceScreen = () => {
                 variant="ghost"
                 size="sm"
                 onClick={refreshData}
-                disabled={isRefreshing}
+                disabled={isRefreshing || isSaving}
                 className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -480,6 +521,7 @@ const PreferenceScreen = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => setBulkSelectMode(true)}
+                    disabled={isSaving}
                     className="bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300"
                   >
                     <Users className="w-4 h-4 mr-1" />
@@ -490,6 +532,7 @@ const PreferenceScreen = () => {
                       variant="outline"
                       size="sm"
                       onClick={clearAllPreferences}
+                      disabled={isSaving}
                       className="bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900 border-red-200 dark:border-red-700 text-red-700 dark:text-red-300"
                     >
                       <X className="w-4 h-4 mr-1" />
@@ -503,6 +546,7 @@ const PreferenceScreen = () => {
                     variant="outline"
                     size="sm"
                     onClick={applyBulkSelection}
+                    disabled={isSaving}
                     className="bg-white dark:bg-gray-800 hover:bg-green-50 dark:hover:bg-green-900 border-green-200 dark:border-green-700 text-green-700 dark:text-green-300"
                   >
                     <Check className="w-4 h-4 mr-1" />
@@ -515,6 +559,7 @@ const PreferenceScreen = () => {
                       setBulkSelectMode(false);
                       setPendingSelection([]);
                     }}
+                    disabled={isSaving}
                     className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300"
                   >
                     <X className="w-4 h-4 mr-1" />
@@ -617,6 +662,7 @@ const PreferenceScreen = () => {
                         isPendingSelection={pendingSelection.includes(item.id)}
                         onClick={() => toggleItem(item.id)}
                         config={config}
+                        disabled={isSaving}
                       />
                     ))}
                   </div>
@@ -646,6 +692,7 @@ const PreferenceScreen = () => {
                         isPendingSelection={pendingSelection.includes(item.id)}
                         onClick={() => toggleItem(item.id)}
                         config={config}
+                        disabled={isSaving}
                       />
                     ))}
                   </div>
@@ -682,7 +729,8 @@ const ItemCard: React.FC<{
   isPendingSelection: boolean;
   onClick: () => void;
   config: any;
-}> = ({ item, isSelected, isBulkMode, isPendingSelection, onClick, config }) => {
+  disabled?: boolean;
+}> = ({ item, isSelected, isBulkMode, isPendingSelection, onClick, config, disabled = false }) => {
   const displaySelected = isBulkMode ? isPendingSelection : isSelected;
   
   return (
@@ -691,8 +739,8 @@ const ItemCard: React.FC<{
         displaySelected 
           ? `bg-gradient-to-r ${config.gradient.replace('from-', 'from-').replace('via-', 'via-').replace('to-', 'to-')} bg-opacity-10 border-blue-300 dark:border-blue-600 shadow-md` 
           : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10'
-      }`}
-      onClick={onClick}
+      } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+      onClick={disabled ? undefined : onClick}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
@@ -700,6 +748,7 @@ const ItemCard: React.FC<{
             <Checkbox 
               checked={isPendingSelection}
               className="rounded w-5 h-5"
+              disabled={disabled}
             />
           )}
           <div className={`p-2 rounded-lg ${
