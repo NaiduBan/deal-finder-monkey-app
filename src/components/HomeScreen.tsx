@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Bell, Search, AlertCircle } from 'lucide-react';
@@ -37,6 +38,7 @@ const HomeScreen = () => {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [dynamicCategories, setDynamicCategories] = useState<Category[]>([]);
   const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
+  const [localFilteredOffers, setLocalFilteredOffers] = useState(filteredOffers);
 
   // Debounce search input
   useEffect(() => {
@@ -48,6 +50,11 @@ const HomeScreen = () => {
       clearTimeout(timerId);
     };
   }, [searchQuery]);
+
+  // Update local filtered offers when context filtered offers change
+  useEffect(() => {
+    setLocalFilteredOffers(filteredOffers);
+  }, [filteredOffers]);
 
   // Extract categories from today's offers and filter out categories with no offers
   useEffect(() => {
@@ -111,9 +118,9 @@ const HomeScreen = () => {
     return 'shopping-bag';
   };
 
-  // Fetch user preferences when component mounts
+  // Fetch user preferences when component mounts and apply them immediately
   useEffect(() => {
-    const fetchUserPreferences = async () => {
+    const fetchAndApplyUserPreferences = async () => {
       try {
         console.log("Fetching user preferences...");
         const { data: { session } } = await supabase.auth.getSession();
@@ -136,6 +143,23 @@ const HomeScreen = () => {
             setUserPreferences(preferences);
             console.log('Loaded preferences:', preferences);
 
+            // Apply preferences immediately if we have offers
+            if (offers && offers.length > 0) {
+              const hasPreferences = preferences.brands.length > 0 || 
+                                   preferences.stores.length > 0 || 
+                                   preferences.banks.length > 0;
+              
+              if (hasPreferences) {
+                console.log('Applying preferences immediately to offers');
+                const filtered = applyPreferencesToOffers(offers, preferences);
+                const finalOffers = filtered.length > 0 ? filtered : offers;
+                setLocalFilteredOffers(finalOffers);
+                console.log('Applied preferences - showing', finalOffers.length, 'offers');
+              } else {
+                setLocalFilteredOffers(offers);
+              }
+            }
+
             if (preferences.brands.length > 0 || preferences.stores.length > 0 || preferences.banks.length > 0) {
               console.log('User has personalization preferences applied');
             }
@@ -149,13 +173,82 @@ const HomeScreen = () => {
       }
     };
     
-    fetchUserPreferences();
-  }, []);
+    fetchAndApplyUserPreferences();
+  }, [offers]); // Re-run when offers change
+
+  // Listen for real-time preference changes and update immediately
+  useEffect(() => {
+    const { data: { session } } = supabase.auth.getSession();
+    
+    if (!session?.user) return;
+
+    console.log('Setting up real-time preference listener for home screen');
+
+    const channel = supabase
+      .channel('home-preference-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_preferences',
+          filter: `user_id=eq.${session.user.id}`
+        },
+        async (payload) => {
+          console.log('Home screen detected preference change:', payload);
+          
+          // Refetch all preferences immediately
+          try {
+            const { data, error } = await supabase
+              .from('user_preferences')
+              .select('*')
+              .eq('user_id', session.user.id);
+              
+            if (!error && data) {
+              const newPreferences: {[key: string]: string[]} = {
+                brands: data.filter(p => p.preference_type === 'brands').map(p => p.preference_id),
+                stores: data.filter(p => p.preference_type === 'stores').map(p => p.preference_id),
+                banks: data.filter(p => p.preference_type === 'banks').map(p => p.preference_id)
+              };
+              
+              setUserPreferences(newPreferences);
+              console.log('Updated preferences in home screen:', newPreferences);
+              
+              // Apply new preferences immediately
+              if (offers && offers.length > 0) {
+                const hasPreferences = newPreferences.brands.length > 0 || 
+                                     newPreferences.stores.length > 0 || 
+                                     newPreferences.banks.length > 0;
+                
+                if (hasPreferences) {
+                  console.log('Applying new preferences to offers');
+                  const filtered = applyPreferencesToOffers(offers, newPreferences);
+                  const finalOffers = filtered.length > 0 ? filtered : offers;
+                  setLocalFilteredOffers(finalOffers);
+                  console.log('Applied new preferences - showing', finalOffers.length, 'offers');
+                } else {
+                  console.log('No preferences, showing all offers');
+                  setLocalFilteredOffers(offers);
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error refetching preferences:', error);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up home screen preference listener');
+      supabase.removeChannel(channel);
+    };
+  }, [offers]);
 
   useEffect(() => {
     console.log("Home Screen Rendered");
     console.log("Offers loaded:", offers ? offers.length : 0);
-    console.log("Filtered offers loaded:", filteredOffers ? filteredOffers.length : 0);
+    console.log("Filtered offers loaded:", localFilteredOffers ? localFilteredOffers.length : 0);
     console.log("Categories loaded:", dynamicCategories ? dynamicCategories.length : 0);
     console.log("Is loading:", isDataLoading);
     console.log("Error:", error);
@@ -163,7 +256,7 @@ const HomeScreen = () => {
     console.log("User preferences:", userPreferences);
     console.log("Selected category:", selectedCategory);
     console.log("Has loaded preferences:", hasLoadedPreferences);
-  }, [offers, filteredOffers, dynamicCategories, isDataLoading, error, isUsingMockData, userPreferences, selectedCategory, hasLoadedPreferences]);
+  }, [offers, localFilteredOffers, dynamicCategories, isDataLoading, error, isUsingMockData, userPreferences, selectedCategory, hasLoadedPreferences]);
 
   const loadMoreOffers = () => {
     setIsLoading(true);
@@ -173,7 +266,7 @@ const HomeScreen = () => {
   };
   
   // Enhanced search functionality with category filtering on top of already filtered offers
-  const displayedOffers = filteredOffers.filter(offer => {
+  const displayedOffers = localFilteredOffers.filter(offer => {
     if (selectedCategory && offer.category) {
       const categoryMatch = offer.category.toLowerCase().includes(selectedCategory.toLowerCase()) ||
                            selectedCategory.toLowerCase().includes(offer.category.toLowerCase());
