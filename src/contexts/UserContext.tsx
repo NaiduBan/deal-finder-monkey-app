@@ -53,6 +53,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   // Sync with auth context
   useEffect(() => {
     if (session?.user && userProfile) {
+      console.log('UserContext: Syncing with authenticated user', session.user.id);
       setUser(prevUser => {
         const updatedUser = {
           ...prevUser,
@@ -94,6 +95,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       
       fetchSavedOffers();
     } else if (!session) {
+      console.log('UserContext: No session, using guest user');
       const guestUser = {
         ...mockUser,
         location: 'India',

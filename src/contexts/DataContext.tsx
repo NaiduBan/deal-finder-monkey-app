@@ -3,7 +3,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Offer, Category } from '@/types';
 import { fetchCategories, fetchOffers, applyPreferencesToOffers } from '@/services/supabaseService';
 import { toast } from '@/components/ui/use-toast';
-import { useUser } from '@/contexts/UserContext';
 import { supabase } from "@/integrations/supabase/client";
 
 interface DataContextType {
@@ -65,24 +64,58 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [isUsingMockData, setIsUsingMockData] = useState(false);
-  const { user } = useUser();
-  const [userPreferences, setUserPreferences] = useState<{[key: string]: string[]}>(() => {
-    const cachedPreferences = getCachedData('userPreferences');
-    return cachedPreferences || {
-      brands: [],
-      stores: [],
-      banks: []
-    };
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [userPreferences, setUserPreferences] = useState<{[key: string]: string[]}>({
+    brands: [],
+    stores: [],
+    banks: []
   });
+
+  // Get current user session
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setCurrentUserId(session.user.id);
+        console.log('Current user ID set:', session.user.id);
+      } else {
+        setCurrentUserId(null);
+        console.log('No current user found');
+      }
+    };
+
+    getCurrentUser();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
+      if (session?.user) {
+        setCurrentUserId(session.user.id);
+      } else {
+        setCurrentUserId(null);
+        // Reset preferences when user logs out
+        setUserPreferences({
+          brands: [],
+          stores: [],
+          banks: []
+        });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Enhanced function to fetch user preferences
   const getUserPreferences = async (userId: string) => {
     try {
-      if (!userId) return;
+      if (!userId) {
+        console.log('No user ID provided for preferences');
+        return;
+      }
       
       console.log('Fetching preferences for user:', userId);
       
-      const { data: preferencesData, error } = await (supabase as any)
+      const { data: preferencesData, error } = await supabase
         .from('user_preferences')
         .select('*')
         .eq('user_id', userId);
@@ -107,10 +140,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       console.log('Organized preferences:', preferences);
+      setUserPreferences(preferences);
+      saveToCache('userPreferences', preferences);
       
       if (preferencesData && preferencesData.length > 0) {
-        setUserPreferences(preferences);
-        saveToCache('userPreferences', preferences);
+        console.log('User has personalization preferences applied');
         
         toast({
           title: "Preferences loaded",
@@ -120,48 +154,64 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('No preferences found for user');
       }
       
-      // Filter offers based on preferences if we have offers
-      if (offers.length > 0) {
-        const hasPreferences = preferences.brands.length > 0 || 
-                               preferences.stores.length > 0 || 
-                               preferences.banks.length > 0;
-        
-        if (hasPreferences) {
-          console.log('Applying preferences to filter offers');
-          const filtered = applyPreferencesToOffers(offers, preferences);
-          setFilteredOffers(filtered.length > 0 ? filtered : offers);
-          saveToCache('filteredOffers', filtered.length > 0 ? filtered : offers);
-        } else {
-          console.log('No preferences to apply, showing all offers');
-          setFilteredOffers(offers);
-          saveToCache('filteredOffers', offers);
-        }
-      }
+      return preferences;
     } catch (err) {
       console.error('Error getting user preferences:', err);
+      return null;
     }
   };
 
-  // Listen for auth changes to update preferences
-  useEffect(() => {
-    if (user && user.id) {
-      console.log('User authenticated, fetching preferences');
-      getUserPreferences(user.id);
+  // Apply preferences to offers
+  const applyPreferencesToCurrentOffers = (currentOffers: Offer[], preferences: {[key: string]: string[]}) => {
+    const hasPreferences = preferences.brands.length > 0 || 
+                           preferences.stores.length > 0 || 
+                           preferences.banks.length > 0;
+    
+    if (hasPreferences && currentOffers.length > 0) {
+      console.log('Applying preferences to filter offers');
+      const filtered = applyPreferencesToOffers(currentOffers, preferences);
+      const finalOffers = filtered.length > 0 ? filtered : currentOffers;
+      setFilteredOffers(finalOffers);
+      saveToCache('filteredOffers', finalOffers);
+      return finalOffers;
     } else {
-      console.log('User not authenticated or missing ID, resetting preferences');
-      setUserPreferences({
+      console.log('No preferences to apply or no offers, showing all offers');
+      setFilteredOffers(currentOffers);
+      saveToCache('filteredOffers', currentOffers);
+      return currentOffers;
+    }
+  };
+
+  // Load user preferences when user changes
+  useEffect(() => {
+    if (currentUserId) {
+      console.log('User authenticated, fetching preferences for:', currentUserId);
+      getUserPreferences(currentUserId).then((preferences) => {
+        if (preferences && offers.length > 0) {
+          // Apply preferences immediately when both are available
+          applyPreferencesToCurrentOffers(offers, preferences);
+        }
+      });
+    } else {
+      console.log('User not authenticated, resetting preferences');
+      const resetPreferences = {
         brands: [],
         stores: [],
         banks: []
-      });
-      setFilteredOffers(offers);
-      saveToCache('filteredOffers', offers);
+      };
+      setUserPreferences(resetPreferences);
+      
+      // Show all offers when no user
+      if (offers.length > 0) {
+        setFilteredOffers(offers);
+        saveToCache('filteredOffers', offers);
+      }
     }
-  }, [user, user?.id]);
+  }, [currentUserId]);
 
   // Listen for preference changes in the user_preferences table
   useEffect(() => {
-    if (!user || !user.id) return;
+    if (!currentUserId) return;
 
     console.log('Setting up realtime listener for preference changes');
     
@@ -173,11 +223,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           event: '*', 
           schema: 'public', 
           table: 'user_preferences',
-          filter: `user_id=eq.${user.id}`
+          filter: `user_id=eq.${currentUserId}`
         },
         (payload) => {
           console.log('Preference change detected:', payload);
-          getUserPreferences(user.id);
+          getUserPreferences(currentUserId).then((preferences) => {
+            if (preferences && offers.length > 0) {
+              applyPreferencesToCurrentOffers(offers, preferences);
+            }
+          });
         }
       )
       .subscribe();
@@ -186,7 +240,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Removing preference changes listener');
       supabase.removeChannel(channel);
     };
-  }, [user?.id]);
+  }, [currentUserId, offers]);
+
+  // Update filtered offers when offers change and we have preferences
+  useEffect(() => {
+    if (offers.length > 0 && currentUserId) {
+      console.log('Offers loaded, applying current preferences');
+      applyPreferencesToCurrentOffers(offers, userPreferences);
+    } else if (offers.length > 0) {
+      console.log('Offers loaded, no user preferences to apply');
+      setFilteredOffers(offers);
+      saveToCache('filteredOffers', offers);
+    }
+  }, [offers]);
 
   const fetchData = async () => {
     console.log('Starting to fetch fresh data from Offers_data table...');
@@ -207,8 +273,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setOffers(cachedOffers);
         setCategories(cachedCategories);
         
-        if (user && user.id) {
-          getUserPreferences(user.id);
+        // Apply preferences if user is authenticated
+        if (currentUserId) {
+          const cachedPreferences = getCachedData('userPreferences') || userPreferences;
+          applyPreferencesToCurrentOffers(cachedOffers, cachedPreferences);
         } else {
           setFilteredOffers(cachedOffers);
           saveToCache('filteredOffers', cachedOffers);
@@ -249,22 +317,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setOffers(offersData);
         saveToCache('offers', offersData);
         
-        // Apply user preferences for filtering
-        if (user && user.id) {
-          const hasPreferences = userPreferences.brands.length > 0 || 
-                                userPreferences.stores.length > 0 || 
-                                userPreferences.banks.length > 0;
-                                
-          if (hasPreferences) {
-            console.log('Applying preferences to offers');
-            const filtered = applyPreferencesToOffers(offersData, userPreferences);
-            setFilteredOffers(filtered.length > 0 ? filtered : offersData);
-            saveToCache('filteredOffers', filtered.length > 0 ? filtered : offersData);
-          } else {
-            console.log('No preferences set, showing all offers');
-            setFilteredOffers(offersData);
-            saveToCache('filteredOffers', offersData);
-          }
+        // Apply user preferences for filtering if user is authenticated
+        if (currentUserId) {
+          const currentPreferences = userPreferences.brands.length > 0 || 
+                                   userPreferences.stores.length > 0 || 
+                                   userPreferences.banks.length > 0 
+                                   ? userPreferences 
+                                   : getCachedData('userPreferences') || userPreferences;
+          
+          applyPreferencesToCurrentOffers(offersData, currentPreferences);
         } else {
           setFilteredOffers(offersData);
           saveToCache('filteredOffers', offersData);
@@ -331,26 +392,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => clearInterval(refreshInterval);
   }, []);
 
-  // Update filtered offers when offers or preferences change
-  useEffect(() => {
-    if (offers.length > 0) {
-      const hasPreferences = userPreferences.brands.length > 0 || 
-                             userPreferences.stores.length > 0 || 
-                             userPreferences.banks.length > 0;
-                             
-      if (hasPreferences) {
-        console.log('Preferences changed, refiltering offers');
-        const filtered = applyPreferencesToOffers(offers, userPreferences);
-        setFilteredOffers(filtered.length > 0 ? filtered : offers);
-        saveToCache('filteredOffers', filtered.length > 0 ? filtered : offers);
-      } else {
-        console.log('No filtering preferences, showing all offers');
-        setFilteredOffers(offers);
-        saveToCache('filteredOffers', offers);
-      }
-    }
-  }, [offers, userPreferences]);
-
   const refetchOffers = async () => {
     console.log('Refetching offers from Offers_data table...');
     setIsLoading(true);
@@ -372,14 +413,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setOffers(offersData);
         saveToCache('offers', offersData);
         
-        const hasPreferences = userPreferences.brands.length > 0 || 
-                              userPreferences.stores.length > 0 || 
-                              userPreferences.banks.length > 0;
-                              
-        if (user && user.id && hasPreferences) {
-          const filtered = applyPreferencesToOffers(offersData, userPreferences);
-          setFilteredOffers(filtered.length > 0 ? filtered : offersData);
-          saveToCache('filteredOffers', filtered.length > 0 ? filtered : offersData);
+        // Apply current user preferences
+        if (currentUserId) {
+          applyPreferencesToCurrentOffers(offersData, userPreferences);
         } else {
           setFilteredOffers(offersData);
           saveToCache('filteredOffers', offersData);
