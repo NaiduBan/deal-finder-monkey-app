@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const ChatbotScreen = () => {
   const [messages, setMessages] = useState<Message[]>([
@@ -26,6 +27,7 @@ const ChatbotScreen = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { session } = useAuth();
   const { user } = useUser();
+  const isMobile = useIsMobile();
   
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -255,7 +257,7 @@ const ChatbotScreen = () => {
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+    <div className={`flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden ${isMobile ? 'h-screen pb-16' : 'h-screen'}`}>
       {/* Header - Fixed and responsive */}
       <div className="bg-white border-b border-gray-200 shadow-sm flex-shrink-0 z-10">
         <div className="flex items-center justify-between p-3 md:p-4">
@@ -288,7 +290,7 @@ const ChatbotScreen = () => {
         </div>
       </div>
       
-      {/* Messages Area - Takes remaining space */}
+      {/* Messages Area - Takes remaining space but leaves room for input and nav */}
       <div className="flex-1 min-h-0 relative">
         <ScrollArea className="h-full">
           <div className="p-3 md:p-4 pb-4 max-w-4xl mx-auto">
@@ -393,8 +395,8 @@ const ChatbotScreen = () => {
         </ScrollArea>
       </div>
       
-      {/* Input Area - Fixed at bottom with safe area for mobile navigation */}
-      <div className="bg-white border-t border-gray-200 flex-shrink-0 z-20">
+      {/* Input Area - Fixed at bottom with proper spacing for mobile nav */}
+      <div className="bg-white border-t border-gray-200 flex-shrink-0">
         <div className="p-3 md:p-4 max-w-4xl mx-auto">
           <form onSubmit={handleSendMessage} className="flex space-x-2 md:space-x-3">
             <div className="flex-1 relative min-w-0">
@@ -442,9 +444,6 @@ const ChatbotScreen = () => {
             </div>
           )}
         </div>
-        
-        {/* Safe area for mobile bottom navigation */}
-        <div className="h-16 md:h-0"></div>
       </div>
     </div>
   );
