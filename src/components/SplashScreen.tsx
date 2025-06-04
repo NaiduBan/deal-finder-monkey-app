@@ -12,9 +12,9 @@ const SplashScreen = () => {
       setShowTagline(true);
     }, 1000);
 
-    // Navigate to about page after splash screen
+    // Navigate directly to login page after splash screen
     const navigationTimeout = setTimeout(() => {
-      navigate('/about');
+      navigate('/login');
     }, 3000);
 
     return () => {

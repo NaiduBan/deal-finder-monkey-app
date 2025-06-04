@@ -14,7 +14,6 @@ import { ThemeProvider } from "./components/ThemeProvider";
 
 // Components
 import SplashScreen from "./components/SplashScreen";
-import AboutScreen from "./components/AboutScreen";
 import LoginScreen from "./components/LoginScreen";
 import HomeScreen from "./components/HomeScreen";
 import CategoryScreen from "./components/CategoryScreen";
@@ -35,7 +34,7 @@ const queryClient = new QueryClient();
 // Layout component to conditionally render bottom navigation
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  const hideNavigation = ['/splash', '/about', '/login'].includes(location.pathname);
+  const hideNavigation = ['/splash', '/login'].includes(location.pathname);
   
   return (
     <>
@@ -74,7 +73,6 @@ const App = () => (
                   <AppLayout>
                     <Routes>
                       <Route path="/splash" element={<SplashScreen />} />
-                      <Route path="/about" element={<AboutScreen />} />
                       <Route path="/login" element={<LoginScreen />} />
                       <Route 
                         path="/home" 
