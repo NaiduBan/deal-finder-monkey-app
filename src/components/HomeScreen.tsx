@@ -7,11 +7,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
 import OfferCard from './OfferCard';
+import CuelinkOfferCard from './CuelinkOfferCard';
 import CategoryItem from './CategoryItem';
 import { supabase } from '@/integrations/supabase/client';
 import { applyPreferencesToOffers } from '@/services/supabaseService';
 import { fetchCuelinkOffers } from '@/services/cuelinkService';
-import { Category, Offer } from '@/types';
+import { Category, Offer, CuelinkOffer } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const HomeScreen = () => {
@@ -39,7 +40,7 @@ const HomeScreen = () => {
   const [dynamicCategories, setDynamicCategories] = useState<Category[]>([]);
   const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
   const [localFilteredOffers, setLocalFilteredOffers] = useState(filteredOffers);
-  const [cuelinkOffers, setCuelinkOffers] = useState<Offer[]>([]);
+  const [cuelinkOffers, setCuelinkOffers] = useState<CuelinkOffer[]>([]);
   const [isCuelinkLoading, setIsCuelinkLoading] = useState(false);
 
   // Debounce search input
@@ -316,10 +317,10 @@ const HomeScreen = () => {
     if (debouncedSearchTerm) {
       const searchTermLower = debouncedSearchTerm.toLowerCase();
       const matchesSearch = 
-        (offer.title && offer.title.toLowerCase().includes(searchTermLower)) ||
-        (offer.store && offer.store.toLowerCase().includes(searchTermLower)) ||
-        (offer.description && offer.description.toLowerCase().includes(searchTermLower)) ||
-        (offer.category && offer.category.toLowerCase().includes(searchTermLower));
+        (offer.Title && offer.Title.toLowerCase().includes(searchTermLower)) ||
+        (offer.Merchant && offer.Merchant.toLowerCase().includes(searchTermLower)) ||
+        (offer.Description && offer.Description.toLowerCase().includes(searchTermLower)) ||
+        (offer.Categories && offer.Categories.toLowerCase().includes(searchTermLower));
       
       if (!matchesSearch) return false;
     }
@@ -635,13 +636,11 @@ const HomeScreen = () => {
                     {displayedCuelinkOffers.length > 0 ? (
                       <div className={`grid gap-4 ${
                         isMobile 
-                          ? 'grid-cols-2' 
-                          : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                          ? 'grid-cols-1 sm:grid-cols-2' 
+                          : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
                       }`}>
                         {displayedCuelinkOffers.map((offer) => (
-                          <Link key={offer.id} to={`/offer/${offer.id}`}>
-                            <OfferCard offer={offer} />
-                          </Link>
+                          <CuelinkOfferCard key={offer.Id} offer={offer} />
                         ))}
                       </div>
                     ) : (
