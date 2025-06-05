@@ -64,7 +64,9 @@ const HomeScreen = () => {
     const loadCuelinkOffers = async () => {
       setIsCuelinkLoading(true);
       try {
+        console.log('Loading Cuelink offers...');
         const cuelinkData = await fetchCuelinkOffers();
+        console.log('Fetched Cuelink data:', cuelinkData);
         setCuelinkOffers(cuelinkData);
         console.log('Loaded Cuelink offers:', cuelinkData.length);
       } catch (error) {
@@ -652,6 +654,16 @@ const HomeScreen = () => {
                             : "Try a different search term or check back later"
                           }
                         </p>
+                        <div className="mt-4">
+                          <p className="text-xs text-gray-400">
+                            Total Cuelink offers loaded: {cuelinkOffers.length}
+                          </p>
+                          {debouncedSearchTerm && (
+                            <p className="text-xs text-gray-400">
+                              Search term: "{debouncedSearchTerm}"
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
                   </>
