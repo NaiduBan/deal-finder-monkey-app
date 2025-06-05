@@ -54,6 +54,60 @@ export type Database = {
         }
         Relationships: []
       }
+      Cuelink_data: {
+        Row: {
+          "Campaign ID": number | null
+          "Campaign Name": string | null
+          Categories: string | null
+          "Coupon Code": string | null
+          Description: string | null
+          "End Date": string | null
+          Id: number
+          "Image URL": string | null
+          Merchant: string | null
+          "Offer Added At": string | null
+          "Start Date": string | null
+          Status: string | null
+          Terms: string | null
+          Title: string | null
+          URL: string | null
+        }
+        Insert: {
+          "Campaign ID"?: number | null
+          "Campaign Name"?: string | null
+          Categories?: string | null
+          "Coupon Code"?: string | null
+          Description?: string | null
+          "End Date"?: string | null
+          Id: number
+          "Image URL"?: string | null
+          Merchant?: string | null
+          "Offer Added At"?: string | null
+          "Start Date"?: string | null
+          Status?: string | null
+          Terms?: string | null
+          Title?: string | null
+          URL?: string | null
+        }
+        Update: {
+          "Campaign ID"?: number | null
+          "Campaign Name"?: string | null
+          Categories?: string | null
+          "Coupon Code"?: string | null
+          Description?: string | null
+          "End Date"?: string | null
+          Id?: number
+          "Image URL"?: string | null
+          Merchant?: string | null
+          "Offer Added At"?: string | null
+          "Start Date"?: string | null
+          Status?: string | null
+          Terms?: string | null
+          Title?: string | null
+          URL?: string | null
+        }
+        Relationships: []
+      }
       daily_notifications: {
         Row: {
           created_at: string

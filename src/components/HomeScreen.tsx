@@ -10,7 +10,8 @@ import OfferCard from './OfferCard';
 import CategoryItem from './CategoryItem';
 import { supabase } from '@/integrations/supabase/client';
 import { applyPreferencesToOffers } from '@/services/supabaseService';
-import { Category } from '@/types';
+import { fetchCuelinkOffers } from '@/services/cuelinkService';
+import { Category, Offer } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const HomeScreen = () => {
@@ -38,6 +39,8 @@ const HomeScreen = () => {
   const [dynamicCategories, setDynamicCategories] = useState<Category[]>([]);
   const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
   const [localFilteredOffers, setLocalFilteredOffers] = useState(filteredOffers);
+  const [cuelinkOffers, setCuelinkOffers] = useState<Offer[]>([]);
+  const [isCuelinkLoading, setIsCuelinkLoading] = useState(false);
 
   // Debounce search input
   useEffect(() => {
@@ -54,6 +57,24 @@ const HomeScreen = () => {
   useEffect(() => {
     setLocalFilteredOffers(filteredOffers);
   }, [filteredOffers]);
+
+  // Fetch Cuelink offers
+  useEffect(() => {
+    const loadCuelinkOffers = async () => {
+      setIsCuelinkLoading(true);
+      try {
+        const cuelinkData = await fetchCuelinkOffers();
+        setCuelinkOffers(cuelinkData);
+        console.log('Loaded Cuelink offers:', cuelinkData.length);
+      } catch (error) {
+        console.error('Error loading Cuelink offers:', error);
+      } finally {
+        setIsCuelinkLoading(false);
+      }
+    };
+
+    loadCuelinkOffers();
+  }, []);
 
   // Extract categories from today's offers and filter out categories with no offers
   useEffect(() => {
@@ -290,6 +311,22 @@ const HomeScreen = () => {
     return true;
   });
 
+  // Filter Cuelink offers for Flash Deals tab
+  const displayedCuelinkOffers = cuelinkOffers.filter(offer => {
+    if (debouncedSearchTerm) {
+      const searchTermLower = debouncedSearchTerm.toLowerCase();
+      const matchesSearch = 
+        (offer.title && offer.title.toLowerCase().includes(searchTermLower)) ||
+        (offer.store && offer.store.toLowerCase().includes(searchTermLower)) ||
+        (offer.description && offer.description.toLowerCase().includes(searchTermLower)) ||
+        (offer.category && offer.category.toLowerCase().includes(searchTermLower));
+      
+      if (!matchesSearch) return false;
+    }
+    
+    return true;
+  });
+
   // Handle category selection
   const handleCategoryClick = (categoryId: string) => {
     console.log("Category clicked:", categoryId);
@@ -479,6 +516,7 @@ const HomeScreen = () => {
                 <TabsList>
                   <TabsTrigger value="all">All</TabsTrigger>
                   <TabsTrigger value="nearby">Nearby</TabsTrigger>
+                  <TabsTrigger value="flash">Flash Deals</TabsTrigger>
                   <TabsTrigger value="amazon">Amazon</TabsTrigger>
                 </TabsList>
               </div>
@@ -584,6 +622,40 @@ const HomeScreen = () => {
                       </Link>
                     )}
                   </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="flash" className="space-y-4">
+                {isCuelinkLoading ? (
+                  <div className="flex justify-center items-center py-10">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-monkeyGreen"></div>
+                  </div>
+                ) : (
+                  <>
+                    {displayedCuelinkOffers.length > 0 ? (
+                      <div className={`grid gap-4 ${
+                        isMobile 
+                          ? 'grid-cols-2' 
+                          : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                      }`}>
+                        {displayedCuelinkOffers.map((offer) => (
+                          <Link key={offer.id} to={`/offer/${offer.id}`}>
+                            <OfferCard offer={offer} />
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="bg-white p-6 rounded-lg text-center shadow-sm">
+                        <p className="text-gray-500">No flash deals found</p>
+                        <p className="text-sm text-gray-400 mt-2">
+                          {cuelinkOffers.length === 0 
+                            ? "No flash deals available in the Cuelink_data table" 
+                            : "Try a different search term or check back later"
+                          }
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
               </TabsContent>
               

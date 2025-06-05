@@ -1,4 +1,3 @@
-
 export interface Offer {
   id: string;
   title: string | null;
@@ -34,6 +33,24 @@ export interface Offer {
   startDate: string | null;
   endDate: string | null;
   categories: string | null;
+}
+
+export interface CuelinkOffer {
+  Id: number;
+  Title: string | null;
+  Description: string | null;
+  'Image URL': string | null;
+  Merchant: string | null;
+  Categories: string | null;
+  Terms: string | null;
+  'Campaign Name': string | null;
+  'Campaign ID': number | null;
+  'Offer Added At': string | null;
+  'End Date': string | null;
+  'Start Date': string | null;
+  Status: string | null;
+  URL: string | null;
+  'Coupon Code': string | null;
 }
 
 export interface Category {
