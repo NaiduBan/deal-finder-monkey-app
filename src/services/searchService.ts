@@ -120,8 +120,10 @@ export const searchOffers = async (filters: SearchFilters) => {
 
     if (filters.discountMin !== undefined) {
       filteredOffers = filteredOffers.filter(offer => {
-        if (offer.savings.includes('%')) {
-          const discount = parseInt(offer.savings.replace('%', ''));
+        // Convert savings to string and check if it contains a percentage
+        const savingsStr = String(offer.savings);
+        if (savingsStr.includes('%')) {
+          const discount = parseInt(savingsStr.replace('%', ''));
           return discount >= filters.discountMin!;
         }
         return true;
