@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          badge_color: string | null
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          name: string
+          points_required: number | null
+        }
+        Insert: {
+          badge_color?: string | null
+          created_at?: string
+          description: string
+          icon: string
+          id?: string
+          name: string
+          points_required?: number | null
+        }
+        Update: {
+          badge_color?: string | null
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          name?: string
+          points_required?: number | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string | null
@@ -53,6 +83,35 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      comment_likes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_likes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "deal_comments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       Cuelink_data: {
         Row: {
@@ -108,6 +167,33 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_checkins: {
+        Row: {
+          checkin_date: string
+          created_at: string
+          id: string
+          points_earned: number | null
+          streak_count: number | null
+          user_id: string
+        }
+        Insert: {
+          checkin_date?: string
+          created_at?: string
+          id?: string
+          points_earned?: number | null
+          streak_count?: number | null
+          user_id: string
+        }
+        Update: {
+          checkin_date?: string
+          created_at?: string
+          id?: string
+          points_earned?: number | null
+          streak_count?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_notifications: {
         Row: {
           created_at: string
@@ -137,6 +223,245 @@ export type Database = {
           notification_sent?: boolean | null
           offer_id?: string | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      deal_alerts: {
+        Row: {
+          alert_type: string
+          alert_value: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          target_price: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alert_type: string
+          alert_value: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          target_price?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alert_type?: string
+          alert_value?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          target_price?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      deal_analytics: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          offer_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          offer_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          offer_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      deal_challenges: {
+        Row: {
+          challenge_type: string
+          created_at: string
+          description: string
+          end_date: string
+          id: string
+          is_active: boolean | null
+          reward_points: number
+          start_date: string
+          target_value: number
+          title: string
+        }
+        Insert: {
+          challenge_type: string
+          created_at?: string
+          description: string
+          end_date: string
+          id?: string
+          is_active?: boolean | null
+          reward_points: number
+          start_date: string
+          target_value: number
+          title: string
+        }
+        Update: {
+          challenge_type?: string
+          created_at?: string
+          description?: string
+          end_date?: string
+          id?: string
+          is_active?: boolean | null
+          reward_points?: number
+          start_date?: string
+          target_value?: number
+          title?: string
+        }
+        Relationships: []
+      }
+      deal_comments: {
+        Row: {
+          comment_text: string
+          created_at: string
+          id: string
+          likes_count: number | null
+          offer_id: string
+          parent_comment_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment_text: string
+          created_at?: string
+          id?: string
+          likes_count?: number | null
+          offer_id: string
+          parent_comment_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment_text?: string
+          created_at?: string
+          id?: string
+          likes_count?: number | null
+          offer_id?: string
+          parent_comment_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "deal_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_popularity: {
+        Row: {
+          click_count: number | null
+          id: string
+          offer_id: string
+          popularity_score: number | null
+          rating_average: number | null
+          rating_count: number | null
+          save_count: number | null
+          share_count: number | null
+          updated_at: string
+          view_count: number | null
+        }
+        Insert: {
+          click_count?: number | null
+          id?: string
+          offer_id: string
+          popularity_score?: number | null
+          rating_average?: number | null
+          rating_count?: number | null
+          save_count?: number | null
+          share_count?: number | null
+          updated_at?: string
+          view_count?: number | null
+        }
+        Update: {
+          click_count?: number | null
+          id?: string
+          offer_id?: string
+          popularity_score?: number | null
+          rating_average?: number | null
+          rating_count?: number | null
+          save_count?: number | null
+          share_count?: number | null
+          updated_at?: string
+          view_count?: number | null
+        }
+        Relationships: []
+      }
+      deal_reviews: {
+        Row: {
+          created_at: string
+          helpful_count: number | null
+          id: string
+          offer_id: string
+          rating: number
+          review_text: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          helpful_count?: number | null
+          id?: string
+          offer_id: string
+          rating: number
+          review_text?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          helpful_count?: number | null
+          id?: string
+          offer_id?: string
+          rating?: number
+          review_text?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      deal_shares: {
+        Row: {
+          created_at: string
+          id: string
+          offer_id: string
+          shared_to: string | null
+          shared_via: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          offer_id: string
+          shared_to?: string | null
+          shared_via: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          offer_id?: string
+          shared_to?: string | null
+          shared_via?: string
           user_id?: string
         }
         Relationships: []
@@ -363,24 +688,194 @@ export type Database = {
         }
         Relationships: []
       }
+      review_helpfulness: {
+        Row: {
+          created_at: string
+          id: string
+          is_helpful: boolean
+          review_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_helpful: boolean
+          review_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_helpful?: boolean
+          review_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_helpfulness_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "deal_reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_offers: {
         Row: {
+          category_id: string | null
           created_at: string | null
           id: string
+          notes: string | null
           offer_id: string
+          priority: number | null
           user_id: string | null
         }
         Insert: {
+          category_id?: string | null
           created_at?: string | null
           id?: string
+          notes?: string | null
           offer_id: string
+          priority?: number | null
           user_id?: string | null
         }
         Update: {
+          category_id?: string | null
           created_at?: string | null
           id?: string
+          notes?: string | null
           offer_id?: string
+          priority?: number | null
           user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_offers_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "wishlist_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_challenge_progress: {
+        Row: {
+          challenge_id: string
+          completed_at: string | null
+          created_at: string
+          current_progress: number | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          completed_at?: string | null
+          created_at?: string
+          current_progress?: number | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          completed_at?: string | null
+          created_at?: string
+          current_progress?: number | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_challenge_progress_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "deal_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_friends: {
+        Row: {
+          created_at: string
+          friend_id: string
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          friend_id: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          friend_id?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_points: {
+        Row: {
+          action_type: string
+          created_at: string
+          description: string | null
+          id: string
+          offer_id: string | null
+          points: number
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          offer_id?: string | null
+          points: number
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          offer_id?: string | null
+          points?: number
+          user_id?: string
         }
         Relationships: []
       }
@@ -405,6 +900,30 @@ export type Database = {
           preference_id?: string
           preference_type?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      wishlist_categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
         }
         Relationships: []
       }
