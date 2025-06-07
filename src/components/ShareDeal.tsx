@@ -1,158 +1,138 @@
 
 import React, { useState } from 'react';
-import { Share2, Copy, Check, Facebook, Twitter, MessageCircle, Send } from 'lucide-react';
+import { Share2, Copy, MessageCircle, Mail, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { shareToSocialMedia, copyShareLink } from '@/services/shareService';
+import { shareOffer } from '@/services/shareService';
+import { useAuth } from '@/contexts/AuthContext';
+import { useData } from '@/contexts/DataContext';
 
-interface ShareDealProps {
+export interface ShareDealProps {
   offerId: string;
-  title: string;
-  children?: React.ReactNode;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-const ShareDeal: React.FC<ShareDealProps> = ({ offerId, title, children }) => {
-  const [copied, setCopied] = useState(false);
-  const [open, setOpen] = useState(false);
+const ShareDeal = ({ offerId, isOpen, onClose }: ShareDealProps) => {
   const { toast } = useToast();
+  const { session } = useAuth();
+  const { offers } = useData();
+  const [isSharing, setIsSharing] = useState(false);
 
-  const handleCopyLink = async () => {
+  const offer = offers.find(o => o.id === offerId);
+
+  if (!isOpen || !offer) return null;
+
+  const shareUrl = `${window.location.origin}/offer/${offerId}`;
+  const shareText = `Check out this amazing deal: ${offer.title} - ${offer.description}`;
+
+  const handleShare = async (platform: string) => {
+    setIsSharing(true);
     try {
-      const shareUrl = await copyShareLink(offerId, title);
-      if (shareUrl) {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-        toast({
-          title: "Link copied!",
-          description: "Deal link has been copied to clipboard"
-        });
+      if (session?.user) {
+        await shareOffer(offerId, session.user.id, platform);
       }
-    } catch (error) {
+      
+      let shareLink = '';
+      
+      switch (platform) {
+        case 'whatsapp':
+          shareLink = `https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`;
+          break;
+        case 'telegram':
+          shareLink = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
+          break;
+        case 'email':
+          shareLink = `mailto:?subject=${encodeURIComponent(offer.title)}&body=${encodeURIComponent(`${shareText}\n\n${shareUrl}`)}`;
+          break;
+        case 'copy':
+          await navigator.clipboard.writeText(shareUrl);
+          toast({
+            title: 'Link Copied!',
+            description: 'Deal link has been copied to your clipboard.',
+          });
+          onClose();
+          return;
+      }
+      
+      if (shareLink) {
+        window.open(shareLink, '_blank');
+      }
+      
       toast({
-        title: "Error",
-        description: "Failed to copy link",
-        variant: "destructive"
+        title: 'Deal Shared!',
+        description: `Deal shared successfully via ${platform}.`,
       });
+      
+      onClose();
+    } catch (error) {
+      console.error('Error sharing deal:', error);
+      toast({
+        title: 'Share Failed',
+        description: 'Unable to share deal. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSharing(false);
     }
   };
-
-  const handleSocialShare = async (platform: string) => {
-    try {
-      const success = await shareToSocialMedia(offerId, title, platform);
-      if (success) {
-        toast({
-          title: "Deal shared!",
-          description: `Deal shared on ${platform}`
-        });
-        setOpen(false);
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to share deal",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const shareOptions = [
-    {
-      name: 'WhatsApp',
-      icon: MessageCircle,
-      color: 'text-green-600',
-      platform: 'whatsapp'
-    },
-    {
-      name: 'Twitter',
-      icon: Twitter,
-      color: 'text-blue-400',
-      platform: 'twitter'
-    },
-    {
-      name: 'Facebook',
-      icon: Facebook,
-      color: 'text-blue-600',
-      platform: 'facebook'
-    },
-    {
-      name: 'Telegram',
-      icon: Send,
-      color: 'text-blue-500',
-      platform: 'telegram'
-    }
-  ];
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children || (
-          <Button variant="outline" size="sm">
-            <Share2 className="w-4 h-4 mr-1" />
-            Share
-          </Button>
-        )}
-      </DialogTrigger>
-      
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Share this deal</DialogTitle>
-        </DialogHeader>
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
+      <div className="bg-white rounded-t-xl sm:rounded-xl p-6 w-full max-w-md mx-4 max-h-[80vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Share This Deal</h2>
+          <Button variant="ghost" size="sm" onClick={onClose}>×</Button>
+        </div>
         
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              {/* Copy Link */}
-              <div className="flex items-center gap-2">
-                <div className="flex-1 p-2 bg-gray-50 rounded-md text-sm text-gray-600 truncate">
-                  {window.location.origin}/offer/{offerId}
-                </div>
-                <Button
-                  onClick={handleCopyLink}
-                  variant="outline"
-                  size="sm"
-                  className="flex-shrink-0"
-                >
-                  {copied ? (
-                    <Check className="w-4 h-4" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
-              
-              {/* Social Media Options */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-700">Share on social media</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {shareOptions.map((option) => {
-                    const IconComponent = option.icon;
-                    return (
-                      <Button
-                        key={option.platform}
-                        onClick={() => handleSocialShare(option.platform)}
-                        variant="outline"
-                        className="justify-start"
-                      >
-                        <IconComponent className={`w-4 h-4 mr-2 ${option.color}`} />
-                        {option.name}
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </DialogContent>
-    </Dialog>
+        <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+          <h3 className="font-medium text-sm mb-1">{offer.title}</h3>
+          <p className="text-xs text-gray-600 line-clamp-2">{offer.description}</p>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            variant="outline"
+            onClick={() => handleShare('whatsapp')}
+            disabled={isSharing}
+            className="flex flex-col items-center p-4 h-auto"
+          >
+            <MessageCircle className="w-6 h-6 mb-2 text-green-600" />
+            <span className="text-xs">WhatsApp</span>
+          </Button>
+          
+          <Button
+            variant="outline"
+            onClick={() => handleShare('telegram')}
+            disabled={isSharing}
+            className="flex flex-col items-center p-4 h-auto"
+          >
+            <Share2 className="w-6 h-6 mb-2 text-blue-500" />
+            <span className="text-xs">Telegram</span>
+          </Button>
+          
+          <Button
+            variant="outline"
+            onClick={() => handleShare('email')}
+            disabled={isSharing}
+            className="flex flex-col items-center p-4 h-auto"
+          >
+            <Mail className="w-6 h-6 mb-2 text-red-500" />
+            <span className="text-xs">Email</span>
+          </Button>
+          
+          <Button
+            variant="outline"
+            onClick={() => handleShare('copy')}
+            disabled={isSharing}
+            className="flex flex-col items-center p-4 h-auto"
+          >
+            <Copy className="w-6 h-6 mb-2 text-gray-600" />
+            <span className="text-xs">Copy Link</span>
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 };
 

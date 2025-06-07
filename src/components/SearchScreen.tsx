@@ -1,332 +1,237 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, X, TrendingUp, Clock, MapPin } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Search, Filter, X, TrendingUp, Clock } from 'lucide-react';
+import { useData } from '@/contexts/DataContext';
 import SearchBar from './SearchBar';
 import OfferCard from './OfferCard';
-import { searchOffers, getPopularSearchTerms, SearchFilters } from '@/services/searchService';
-import { Offer } from '@/types';
+import { searchOffers, SearchFilters } from '@/services/searchService';
+import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Link } from 'react-router-dom';
 
 const SearchScreen = () => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const { offers } = useData();
+  const isMobile = useIsMobile();
+  const [searchResults, setSearchResults] = useState(offers);
+  const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<SearchFilters>({});
-  const [searchResults, setSearchResults] = useState<Offer[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [popularTerms, setPopularTerms] = useState<string[]>([]);
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [recentSearches] = useState(['electronics', 'amazon deals', 'fashion']);
+  const [popularSearches] = useState(['smartphones', 'laptops', 'clothing', 'books']);
 
   useEffect(() => {
-    fetchPopularTerms();
-    loadRecentSearches();
-  }, []);
+    setSearchResults(offers);
+  }, [offers]);
 
-  const fetchPopularTerms = async () => {
-    try {
-      const terms = await getPopularSearchTerms();
-      setPopularTerms(terms);
-    } catch (error) {
-      console.error('Error fetching popular terms:', error);
-    }
-  };
-
-  const loadRecentSearches = () => {
-    const saved = localStorage.getItem('recentSearches');
-    if (saved) {
-      setRecentSearches(JSON.parse(saved));
-    }
-  };
-
-  const saveRecentSearch = (query: string) => {
-    if (!query.trim()) return;
-    
-    const updated = [query, ...recentSearches.filter(s => s !== query)].slice(0, 5);
-    setRecentSearches(updated);
-    localStorage.setItem('recentSearches', JSON.stringify(updated));
-  };
-
-  const handleSearch = async (query: string = searchQuery, customFilters: SearchFilters = filters) => {
-    if (!query.trim() && Object.keys(customFilters).length === 0) return;
-    
+  const handleSearch = async (query: string) => {
     setLoading(true);
     try {
-      const results = await searchOffers({
-        keyword: query.trim() || undefined,
-        ...customFilters
-      });
+      const results = await searchOffers({ ...filters, keyword: query });
       setSearchResults(results);
       
-      if (query.trim()) {
-        saveRecentSearch(query.trim());
-      }
+      // Save to recent searches (in a real app, this would be stored)
+      console.log('Search performed:', query);
     } catch (error) {
-      console.error('Error searching offers:', error);
+      console.error('Search error:', error);
+      setSearchResults([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFilterChange = (key: keyof SearchFilters, value: any) => {
-    const newFilters = { ...filters, [key]: value };
+  const handleFilterChange = (newFilters: SearchFilters) => {
     setFilters(newFilters);
-    handleSearch(searchQuery, newFilters);
+    if (newFilters.keyword) {
+      handleSearch(newFilters.keyword);
+    }
   };
 
   const clearFilters = () => {
     setFilters({});
-    setSearchResults([]);
+    setSearchResults(offers);
   };
 
-  const clearRecentSearches = () => {
-    setRecentSearches([]);
-    localStorage.removeItem('recentSearches');
-  };
+  const categories = [
+    'Electronics', 'Fashion', 'Food', 'Travel', 'Beauty', 
+    'Home', 'Sports', 'Books', 'Automotive', 'Health'
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b sticky top-0 z-10">
+      <div className="bg-white border-b sticky top-0 z-10">
         <div className="p-4">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-4 mb-4">
+            <Link to="/home" className="text-gray-600">
+              <X className="w-6 h-6" />
+            </Link>
             <div className="flex-1">
               <SearchBar
-                value={searchQuery}
-                onChange={setSearchQuery}
-                onSearch={() => handleSearch()}
-                placeholder="Search deals, stores, or categories..."
+                onSearch={handleSearch}
+                placeholder="Search deals, stores, categories..."
               />
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center"
+              className="flex items-center gap-2"
             >
-              <Filter className="w-4 h-4 mr-2" />
-              Filters
+              <Filter className="w-4 h-4" />
+              {isMobile ? '' : 'Filters'}
             </Button>
           </div>
 
-          {/* Active Filters */}
-          {Object.keys(filters).length > 0 && (
-            <div className="mt-3 flex items-center space-x-2 flex-wrap">
-              <span className="text-sm text-gray-600">Filters:</span>
-              {Object.entries(filters).map(([key, value]) => (
-                value && (
-                  <div key={key} className="bg-monkeyGreen/10 text-monkeyGreen px-2 py-1 rounded-full text-xs flex items-center">
-                    {key}: {String(value)}
-                    <button
-                      onClick={() => handleFilterChange(key as keyof SearchFilters, undefined)}
-                      className="ml-1 hover:bg-monkeyGreen/20 rounded-full p-0.5"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                )
-              ))}
-              <button
-                onClick={clearFilters}
-                className="text-xs text-gray-500 hover:text-gray-700 underline"
-              >
-                Clear all
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Filters Panel */}
-        {showFilters && (
-          <div className="border-t bg-gray-50 p-4 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Category Filter */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Category</label>
-                <select
-                  value={filters.category || ''}
-                  onChange={(e) => handleFilterChange('category', e.target.value || undefined)}
-                  className="w-full p-2 border rounded-lg"
-                >
-                  <option value="">All Categories</option>
-                  <option value="electronics">Electronics</option>
-                  <option value="fashion">Fashion</option>
-                  <option value="food">Food & Dining</option>
-                  <option value="travel">Travel</option>
-                  <option value="beauty">Beauty</option>
-                  <option value="home">Home & Garden</option>
-                </select>
-              </div>
-
-              {/* Store Filter */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Store</label>
-                <Input
-                  value={filters.store || ''}
-                  onChange={(e) => handleFilterChange('store', e.target.value || undefined)}
-                  placeholder="Enter store name"
-                />
-              </div>
-
-              {/* Price Range */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Price Range</label>
-                <div className="flex space-x-2">
-                  <Input
-                    type="number"
-                    placeholder="Min"
-                    value={filters.minPrice || ''}
-                    onChange={(e) => handleFilterChange('minPrice', e.target.value ? Number(e.target.value) : undefined)}
+          {/* Filters Panel */}
+          {showFilters && (
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Category</label>
+                  <select
+                    value={filters.category || ''}
+                    onChange={(e) => handleFilterChange({ ...filters, category: e.target.value })}
+                    className="w-full p-2 border rounded-lg"
+                  >
+                    <option value="">All Categories</option>
+                    {categories.map(cat => (
+                      <option key={cat} value={cat.toLowerCase()}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">Store</label>
+                  <input
+                    type="text"
+                    value={filters.store || ''}
+                    onChange={(e) => handleFilterChange({ ...filters, store: e.target.value })}
+                    placeholder="Enter store name"
+                    className="w-full p-2 border rounded-lg"
                   />
-                  <Input
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">Min Discount (%)</label>
+                  <input
                     type="number"
-                    placeholder="Max"
-                    value={filters.maxPrice || ''}
-                    onChange={(e) => handleFilterChange('maxPrice', e.target.value ? Number(e.target.value) : undefined)}
+                    value={filters.discountMin || ''}
+                    onChange={(e) => handleFilterChange({ ...filters, discountMin: Number(e.target.value) })}
+                    placeholder="Min discount"
+                    className="w-full p-2 border rounded-lg"
                   />
                 </div>
               </div>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              {/* Discount Filter */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Min Discount %</label>
-                <Input
-                  type="number"
-                  placeholder="e.g. 20"
-                  value={filters.discountMin || ''}
-                  onChange={(e) => handleFilterChange('discountMin', e.target.value ? Number(e.target.value) : undefined)}
-                  className="w-24"
-                />
-              </div>
-
-              {/* Featured Filter */}
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="featured"
-                  checked={filters.featured || false}
-                  onChange={(e) => handleFilterChange('featured', e.target.checked || undefined)}
-                />
-                <label htmlFor="featured" className="text-sm">Featured deals only</label>
+              
+              <div className="flex gap-2 mt-4">
+                <Button size="sm" onClick={clearFilters} variant="outline">
+                  Clear Filters
+                </Button>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={filters.featured || false}
+                    onChange={(e) => handleFilterChange({ ...filters, featured: e.target.checked })}
+                  />
+                  <span className="text-sm">Featured Only</span>
+                </label>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Content */}
       <div className="p-4">
-        {searchResults.length === 0 && !loading && (
-          <div className="space-y-6">
-            {/* Popular Searches */}
-            {popularTerms.length > 0 && (
-              <div>
-                <h3 className="font-semibold mb-3 flex items-center">
-                  <TrendingUp className="w-5 h-5 mr-2 text-monkeyGreen" />
-                  Popular Searches
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {popularTerms.map((term) => (
-                    <button
-                      key={term}
-                      onClick={() => {
-                        setSearchQuery(term);
-                        handleSearch(term);
-                      }}
-                      className="px-3 py-2 bg-white rounded-lg border hover:border-monkeyGreen hover:text-monkeyGreen transition-colors text-sm"
-                    >
-                      {term}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Recent Searches */}
-            {recentSearches.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold flex items-center">
-                    <Clock className="w-5 h-5 mr-2 text-monkeyGreen" />
-                    Recent Searches
-                  </h3>
+        {/* Search Suggestions */}
+        {searchResults.length === offers.length && (
+          <div className="mb-6">
+            <div className="mb-4">
+              <h3 className="text-sm font-medium mb-2 flex items-center">
+                <TrendingUp className="w-4 h-4 mr-2 text-orange-500" />
+                Popular Searches
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {popularSearches.map(term => (
                   <button
-                    onClick={clearRecentSearches}
-                    className="text-sm text-gray-500 hover:text-gray-700"
+                    key={term}
+                    onClick={() => handleSearch(term)}
+                    className="px-3 py-1 bg-white rounded-full text-sm border hover:bg-gray-50"
                   >
-                    Clear
+                    {term}
                   </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {recentSearches.map((term) => (
-                    <button
-                      key={term}
-                      onClick={() => {
-                        setSearchQuery(term);
-                        handleSearch(term);
-                      }}
-                      className="px-3 py-2 bg-white rounded-lg border hover:border-monkeyGreen hover:text-monkeyGreen transition-colors text-sm flex items-center"
-                    >
-                      <Clock className="w-3 h-3 mr-1" />
-                      {term}
-                    </button>
-                  ))}
-                </div>
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <h3 className="text-sm font-medium mb-2 flex items-center">
+                <Clock className="w-4 h-4 mr-2 text-gray-500" />
+                Recent Searches
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {recentSearches.map(term => (
+                  <button
+                    key={term}
+                    onClick={() => handleSearch(term)}
+                    className="px-3 py-1 bg-gray-100 rounded-full text-sm hover:bg-gray-200"
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Search Tips */}
+        {searchResults.length === offers.length && (
+          <div className="bg-blue-50 p-4 rounded-lg mb-6">
+            <h3 className="font-medium text-blue-900 mb-2">Search Tips</h3>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• Use specific keywords like "smartphone", "laptop", "shoes"</li>
+              <li>• Try store names like "Amazon", "Flipkart", "Myntra"</li>
+              <li>• Filter by category or discount percentage</li>
+              <li>• Look for featured deals for the best offers</li>
+            </ul>
+          </div>
+        )}
+
+        {/* Results */}
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-monkeyGreen mx-auto mb-4"></div>
+            <p className="text-gray-600">Searching for deals...</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">
+                {searchResults.length === offers.length 
+                  ? 'All Deals' 
+                  : `${searchResults.length} deals found`}
+              </h2>
+            </div>
+            
+            {searchResults.length > 0 ? (
+              <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-3'} gap-4`}>
+                {searchResults.map((offer) => (
+                  <Link key={offer.id} to={`/offer/${offer.id}`}>
+                    <OfferCard offer={offer} />
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Search className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                <h3 className="text-xl font-semibold text-gray-600 mb-2">No deals found</h3>
+                <p className="text-gray-500 mb-4">Try adjusting your search or filters</p>
+                <Button onClick={clearFilters} variant="outline">
+                  Clear Filters
+                </Button>
               </div>
             )}
-
-            {/* Search Tips */}
-            <div className="bg-white rounded-lg p-4 border">
-              <h3 className="font-semibold mb-3">Search Tips</h3>
-              <ul className="text-sm text-gray-600 space-y-1">
-                <li>• Try searching for specific brands or stores</li>
-                <li>• Use category filters to narrow down results</li>
-                <li>• Set price ranges to find deals in your budget</li>
-                <li>• Enable "Featured deals only" for the best offers</li>
-              </ul>
-            </div>
-          </div>
-        )}
-
-        {/* Loading State */}
-        {loading && (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-monkeyGreen mx-auto"></div>
-            <p className="mt-2 text-gray-600">Searching for deals...</p>
-          </div>
-        )}
-
-        {/* Search Results */}
-        {searchResults.length > 0 && (
-          <div>
-            <h3 className="font-semibold mb-4">
-              Found {searchResults.length} deal{searchResults.length !== 1 ? 's' : ''}
-              {searchQuery && ` for "${searchQuery}"`}
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {searchResults.map((offer) => (
-                <Link key={offer.id} to={`/offer/${offer.id}`}>
-                  <OfferCard offer={offer} />
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* No Results */}
-        {searchResults.length === 0 && !loading && (searchQuery || Object.keys(filters).length > 0) && (
-          <div className="text-center py-8">
-            <Search className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-            <h3 className="text-lg font-semibold mb-2">No deals found</h3>
-            <p className="text-gray-600 mb-4">
-              Try adjusting your search terms or filters
-            </p>
-            <Button onClick={clearFilters} variant="outline">
-              Clear Filters
-            </Button>
-          </div>
+          </>
         )}
       </div>
     </div>

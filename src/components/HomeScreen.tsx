@@ -25,24 +25,23 @@ const categories = [
 ];
 
 const HomeScreen = () => {
-  const { offers, loading } = useData();
+  const { offers, loading: dataLoading } = useData();
   const { session } = useAuth();
   const isMobile = useIsMobile();
-  const [searchQuery, setSearchQuery] = useState('');
 
   // Filter offers
   const featuredOffers = offers.filter(offer => offer.featured).slice(0, 6);
   const recentOffers = offers.slice(0, 8);
   const amazonOffers = offers.filter(offer => offer.isAmazon).slice(0, 6);
 
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
+  const handleSearch = (query: string) => {
+    if (query.trim()) {
       // Navigate to search page with query
-      window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
+      window.location.href = `/search?q=${encodeURIComponent(query)}`;
     }
   };
 
-  if (loading) {
+  if (dataLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -78,8 +77,6 @@ const HomeScreen = () => {
 
           {/* Search Bar */}
           <SearchBar
-            value={searchQuery}
-            onChange={setSearchQuery}
             onSearch={handleSearch}
             placeholder="Search for deals, stores, or categories..."
           />
