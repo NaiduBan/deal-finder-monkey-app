@@ -5,7 +5,6 @@ import { Bookmark, BookmarkCheck, Tag } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { trackEvent } from '@/services/analyticsService';
 
 interface OfferCardProps {
   offer: Offer;
@@ -25,29 +24,13 @@ const OfferCard = ({ offer }: OfferCardProps) => {
       unsaveOffer(offer.id);
     } else {
       saveOffer(offer.id);
-      trackEvent({
-        offer_id: offer.id,
-        event_type: 'save',
-        user_id: session.user.id
-      });
     }
   };
 
-  const handleCardClick = () => {
-    trackEvent({
-      offer_id: offer.id,
-      event_type: 'view',
-      user_id: session?.user?.id
-    });
-  };
-
   return (
-    <div 
-      className={`offer-card h-full flex flex-col bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer ${
-        !isMobile ? 'w-full max-w-[400px]' : ''
-      }`}
-      onClick={handleCardClick}
-    >
+    <div className={`offer-card h-full flex flex-col bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow ${
+      !isMobile ? 'w-full max-w-[400px]' : ''
+    }`}>
       {/* Image Container - Different aspect ratios for mobile and desktop */}
       <div className={`relative bg-gray-50 ${
         isMobile ? 'aspect-square' : 'aspect-[5/2]'
@@ -77,13 +60,6 @@ const OfferCard = ({ offer }: OfferCardProps) => {
           <div className="absolute top-2 left-2 bg-monkeyYellow text-black text-xs font-bold px-2 py-1 rounded-full flex items-center">
             <Tag className="w-3 h-3 mr-1" />
             CODE
-          </div>
-        )}
-
-        {/* Featured Badge */}
-        {offer.featured && (
-          <div className="absolute bottom-2 left-2 bg-monkeyGreen text-white text-xs font-bold px-2 py-1 rounded-full">
-            FEATURED
           </div>
         )}
       </div>
@@ -118,15 +94,6 @@ const OfferCard = ({ offer }: OfferCardProps) => {
             <span className="text-xs text-gray-500">Code: </span>
             <span className="text-xs font-mono font-semibold text-monkeyGreen bg-monkeyGreen/10 px-2 py-1 rounded">
               {offer.code}
-            </span>
-          </div>
-        )}
-
-        {/* Savings Display */}
-        {offer.savings && (
-          <div className="mt-2 text-center">
-            <span className="text-sm font-bold text-red-600 bg-red-50 px-2 py-1 rounded">
-              Save {offer.savings}
             </span>
           </div>
         )}

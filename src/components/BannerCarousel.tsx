@@ -4,14 +4,14 @@ import { Link } from 'react-router-dom';
 import { BannerItem } from '@/types';
 
 interface BannerCarouselProps {
-  banners?: BannerItem[];
+  banners: BannerItem[];
 }
 
-const BannerCarousel = ({ banners = [] }: BannerCarouselProps) => {
+const BannerCarousel = ({ banners }: BannerCarouselProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
-    if (!banners || banners.length <= 1) return;
+    if (banners.length <= 1) return;
 
     const interval = setInterval(() => {
       setCurrentIndex(prevIndex => 
@@ -20,18 +20,9 @@ const BannerCarousel = ({ banners = [] }: BannerCarouselProps) => {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [banners]);
+  }, [banners.length]);
 
-  if (!banners || banners.length === 0) {
-    return (
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-monkeyGreen to-green-600 h-40 flex items-center justify-center">
-        <div className="text-white text-center">
-          <h3 className="text-xl font-bold mb-2">Welcome to OffersMonkey!</h3>
-          <p className="text-white/90">Discover amazing deals and offers</p>
-        </div>
-      </div>
-    );
-  }
+  if (!banners.length) return null;
 
   return (
     <div className="relative overflow-hidden rounded-xl">
@@ -60,20 +51,18 @@ const BannerCarousel = ({ banners = [] }: BannerCarouselProps) => {
       </div>
 
       {/* Indicators */}
-      {banners.length > 1 && (
-        <div className="absolute bottom-2 right-2 flex space-x-1">
-          {banners.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentIndex(index)}
-              className={`w-2 h-2 rounded-full ${
-                currentIndex === index ? 'bg-white' : 'bg-white/50'
-              }`}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
-        </div>
-      )}
+      <div className="absolute bottom-2 right-2 flex space-x-1">
+        {banners.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentIndex(index)}
+            className={`w-2 h-2 rounded-full ${
+              currentIndex === index ? 'bg-white' : 'bg-white/50'
+            }`}
+            aria-label={`Go to slide ${index + 1}`}
+          />
+        ))}
+      </div>
     </div>
   );
 };
