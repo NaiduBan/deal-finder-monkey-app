@@ -1,705 +1,222 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Bell, Search, AlertCircle } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useUser } from '@/contexts/UserContext';
+import { ChevronRight, Search, Bell, TrendingUp, Star, Gift } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
-import OfferCard from './OfferCard';
-import CuelinkOfferCard from './CuelinkOfferCard';
+import { useAuth } from '@/contexts/AuthContext';
+import BannerCarousel from './BannerCarousel';
 import CategoryItem from './CategoryItem';
-import { supabase } from '@/integrations/supabase/client';
-import { applyPreferencesToOffers } from '@/services/supabaseService';
-import { fetchCuelinkOffers } from '@/services/cuelinkService';
-import { Category, Offer, CuelinkOffer } from '@/types';
+import OfferCard from './OfferCard';
+import SearchBar from './SearchBar';
+import TrendingDeals from './TrendingDeals';
+import PointsSystem from './PointsSystem';
+import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 
+const categories = [
+  { id: 'electronics', name: 'Electronics', icon: '📱' },
+  { id: 'fashion', name: 'Fashion', icon: '👕' },
+  { id: 'food', name: 'Food', icon: '🍕' },
+  { id: 'travel', name: 'Travel', icon: '✈️' },
+  { id: 'beauty', name: 'Beauty', icon: '💄' },
+  { id: 'home', name: 'Home', icon: '🏠' },
+  { id: 'sports', name: 'Sports', icon: '⚽' },
+  { id: 'books', name: 'Books', icon: '📚' },
+];
+
 const HomeScreen = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const { user } = useUser();
+  const { offers, loading } = useData();
+  const { session } = useAuth();
   const isMobile = useIsMobile();
-  const { 
-    offers, 
-    filteredOffers,
-    categories: allCategories, 
-    isLoading: isDataLoading, 
-    error, 
-    refetchOffers, 
-    isUsingMockData 
-  } = useData();
-  
   const [searchQuery, setSearchQuery] = useState('');
-  const [userPreferences, setUserPreferences] = useState<{[key: string]: string[]}>({
-    brands: [],
-    stores: [],
-    banks: []
-  });
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const [dynamicCategories, setDynamicCategories] = useState<Category[]>([]);
-  const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
-  const [localFilteredOffers, setLocalFilteredOffers] = useState(filteredOffers);
-  const [cuelinkOffers, setCuelinkOffers] = useState<CuelinkOffer[]>([]);
-  const [isCuelinkLoading, setIsCuelinkLoading] = useState(false);
 
-  // Debounce search input
-  useEffect(() => {
-    const timerId = setTimeout(() => {
-      setDebouncedSearchTerm(searchQuery);
-    }, 300);
+  // Filter offers
+  const featuredOffers = offers.filter(offer => offer.featured).slice(0, 6);
+  const recentOffers = offers.slice(0, 8);
+  const amazonOffers = offers.filter(offer => offer.isAmazon).slice(0, 6);
 
-    return () => {
-      clearTimeout(timerId);
-    };
-  }, [searchQuery]);
-
-  // Update local filtered offers when context filtered offers change
-  useEffect(() => {
-    setLocalFilteredOffers(filteredOffers);
-  }, [filteredOffers]);
-
-  // Fetch Cuelink offers
-  useEffect(() => {
-    const loadCuelinkOffers = async () => {
-      setIsCuelinkLoading(true);
-      try {
-        console.log('Loading Cuelink offers...');
-        const cuelinkData = await fetchCuelinkOffers();
-        console.log('Fetched Cuelink data:', cuelinkData);
-        setCuelinkOffers(cuelinkData);
-        console.log('Loaded Cuelink offers:', cuelinkData.length);
-      } catch (error) {
-        console.error('Error loading Cuelink offers:', error);
-      } finally {
-        setIsCuelinkLoading(false);
-      }
-    };
-
-    loadCuelinkOffers();
-  }, []);
-
-  // Extract categories from today's offers and filter out categories with no offers
-  useEffect(() => {
-    if (offers && offers.length > 0) {
-      const categoryCount = new Map<string, number>();
-      
-      // Count offers per category
-      offers.forEach(offer => {
-        if (offer.category) {
-          const categories = offer.category.split(',').map(cat => cat.trim());
-          categories.forEach(cat => {
-            if (cat) {
-              categoryCount.set(cat, (categoryCount.get(cat) || 0) + 1);
-            }
-          });
-        }
-      });
-
-      // Only include categories that have at least 3 offers
-      const categoryObjects: Category[] = Array.from(categoryCount.entries())
-        .filter(([_, count]) => count >= 3) // Filter out categories with less than 3 offers
-        .map(([categoryName, _]) => {
-          const matchingCategory = allCategories.find(c => 
-            c.name.toLowerCase() === categoryName.toLowerCase() ||
-            c.id.toLowerCase() === categoryName.toLowerCase().replace(/\s+/g, '-')
-          );
-
-          if (matchingCategory) {
-            return matchingCategory;
-          }
-
-          return {
-            id: categoryName.toLowerCase().replace(/\s+/g, '-'),
-            name: categoryName,
-            icon: getCategoryIcon(categoryName),
-          };
-        })
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .slice(0, 12); // Limit to 12 categories to avoid clutter
-
-      console.log('Generated dynamic categories with offer counts:', categoryObjects);
-      setDynamicCategories(categoryObjects);
-    } else {
-      setDynamicCategories([]);
-    }
-  }, [offers, allCategories]);
-
-  // Helper function to determine an appropriate icon based on the category name
-  const getCategoryIcon = (categoryName: string): string => {
-    const name = categoryName.toLowerCase();
-    
-    if (name.includes('electronics') || name.includes('tech')) return 'laptop';
-    if (name.includes('fashion') || name.includes('clothing') || name.includes('apparel')) return 'shirt';
-    if (name.includes('food') || name.includes('drink') || name.includes('restaurant')) return 'utensils';
-    if (name.includes('home') || name.includes('furniture')) return 'home';
-    if (name.includes('travel') || name.includes('flight')) return 'plane';
-    if (name.includes('beauty') || name.includes('cosmetic')) return 'sparkles';
-    if (name.includes('health') || name.includes('fitness')) return 'heart';
-    if (name.includes('toy') || name.includes('kid')) return 'gift';
-    
-    return 'shopping-bag';
-  };
-
-  // Fetch user preferences when component mounts and apply them immediately
-  useEffect(() => {
-    const fetchAndApplyUserPreferences = async () => {
-      try {
-        console.log("Fetching user preferences...");
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          const { data, error } = await supabase
-            .from('user_preferences')
-            .select('*')
-            .eq('user_id', session.user.id);
-            
-          if (error) {
-            console.error('Error fetching user preferences:', error);
-          } else if (data) {
-            const preferences: {[key: string]: string[]} = {
-              brands: data.filter(p => p.preference_type === 'brands').map(p => p.preference_id),
-              stores: data.filter(p => p.preference_type === 'stores').map(p => p.preference_id),
-              banks: data.filter(p => p.preference_type === 'banks').map(p => p.preference_id)
-            };
-            
-            setUserPreferences(preferences);
-            console.log('Loaded preferences:', preferences);
-
-            // Apply preferences immediately if we have offers
-            if (offers && offers.length > 0) {
-              const hasPreferences = preferences.brands.length > 0 || 
-                                   preferences.stores.length > 0 || 
-                                   preferences.banks.length > 0;
-              
-              if (hasPreferences) {
-                console.log('Applying preferences immediately to offers');
-                const filtered = applyPreferencesToOffers(offers, preferences);
-                const finalOffers = filtered.length > 0 ? filtered : offers;
-                setLocalFilteredOffers(finalOffers);
-                console.log('Applied preferences - showing', finalOffers.length, 'offers');
-              } else {
-                setLocalFilteredOffers(offers);
-              }
-            }
-
-            if (preferences.brands.length > 0 || preferences.stores.length > 0 || preferences.banks.length > 0) {
-              console.log('User has personalization preferences applied');
-            }
-          }
-          
-          setHasLoadedPreferences(true);
-        }
-      } catch (error) {
-        console.error('Error loading user preferences:', error);
-        setHasLoadedPreferences(true);
-      }
-    };
-    
-    fetchAndApplyUserPreferences();
-  }, [offers]); // Re-run when offers change
-
-  // Listen for real-time preference changes and update immediately
-  useEffect(() => {
-    const setupRealtimeListener = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.user) return;
-
-      console.log('Setting up real-time preference listener for home screen');
-
-      const channel = supabase
-        .channel('home-preference-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'user_preferences',
-            filter: `user_id=eq.${session.user.id}`
-          },
-          async (payload) => {
-            console.log('Home screen detected preference change:', payload);
-            
-            // Refetch all preferences immediately
-            try {
-              const { data, error } = await supabase
-                .from('user_preferences')
-                .select('*')
-                .eq('user_id', session.user.id);
-                
-              if (!error && data) {
-                const newPreferences: {[key: string]: string[]} = {
-                  brands: data.filter(p => p.preference_type === 'brands').map(p => p.preference_id),
-                  stores: data.filter(p => p.preference_type === 'stores').map(p => p.preference_id),
-                  banks: data.filter(p => p.preference_type === 'banks').map(p => p.preference_id)
-                };
-                
-                setUserPreferences(newPreferences);
-                console.log('Updated preferences in home screen:', newPreferences);
-                
-                // Apply new preferences immediately
-                if (offers && offers.length > 0) {
-                  const hasPreferences = newPreferences.brands.length > 0 || 
-                                       newPreferences.stores.length > 0 || 
-                                       newPreferences.banks.length > 0;
-                  
-                  if (hasPreferences) {
-                    console.log('Applying new preferences to offers');
-                    const filtered = applyPreferencesToOffers(offers, newPreferences);
-                    const finalOffers = filtered.length > 0 ? filtered : offers;
-                    setLocalFilteredOffers(finalOffers);
-                    console.log('Applied new preferences - showing', finalOffers.length, 'offers');
-                  } else {
-                    console.log('No preferences, showing all offers');
-                    setLocalFilteredOffers(offers);
-                  }
-                }
-              }
-            } catch (error) {
-              console.error('Error refetching preferences:', error);
-            }
-          }
-        )
-        .subscribe();
-
-      return () => {
-        console.log('Cleaning up home screen preference listener');
-        supabase.removeChannel(channel);
-      };
-    };
-
-    setupRealtimeListener();
-  }, [offers]);
-
-  useEffect(() => {
-    console.log("Home Screen Rendered");
-    console.log("Offers loaded:", offers ? offers.length : 0);
-    console.log("Filtered offers loaded:", localFilteredOffers ? localFilteredOffers.length : 0);
-    console.log("Categories loaded:", dynamicCategories ? dynamicCategories.length : 0);
-    console.log("Is loading:", isDataLoading);
-    console.log("Error:", error);
-    console.log("Using mock data:", isUsingMockData);
-    console.log("User preferences:", userPreferences);
-    console.log("Selected category:", selectedCategory);
-    console.log("Has loaded preferences:", hasLoadedPreferences);
-  }, [offers, localFilteredOffers, dynamicCategories, isDataLoading, error, isUsingMockData, userPreferences, selectedCategory, hasLoadedPreferences]);
-
-  const loadMoreOffers = () => {
-    setIsLoading(true);
-    refetchOffers().then(() => {
-      setIsLoading(false);
-    });
-  };
-  
-  // Enhanced search functionality with category filtering on top of already filtered offers
-  const displayedOffers = localFilteredOffers.filter(offer => {
-    if (selectedCategory && offer.category) {
-      const categoryMatch = offer.category.toLowerCase().includes(selectedCategory.toLowerCase()) ||
-                           selectedCategory.toLowerCase().includes(offer.category.toLowerCase());
-      if (!categoryMatch) return false;
-    }
-    
-    if (debouncedSearchTerm) {
-      const searchTermLower = debouncedSearchTerm.toLowerCase();
-      const matchesSearch = 
-        (offer.title && offer.title.toLowerCase().includes(searchTermLower)) ||
-        (offer.store && offer.store.toLowerCase().includes(searchTermLower)) ||
-        (offer.description && offer.description.toLowerCase().includes(searchTermLower)) ||
-        (offer.category && offer.category.toLowerCase().includes(searchTermLower));
-      
-      if (!matchesSearch) return false;
-    }
-    
-    return true;
-  });
-
-  // Filter Cuelink offers for Flash Deals tab
-  const displayedCuelinkOffers = cuelinkOffers.filter(offer => {
-    if (debouncedSearchTerm) {
-      const searchTermLower = debouncedSearchTerm.toLowerCase();
-      const matchesSearch = 
-        (offer.Title && offer.Title.toLowerCase().includes(searchTermLower)) ||
-        (offer.Merchant && offer.Merchant.toLowerCase().includes(searchTermLower)) ||
-        (offer.Description && offer.Description.toLowerCase().includes(searchTermLower)) ||
-        (offer.Categories && offer.Categories.toLowerCase().includes(searchTermLower));
-      
-      if (!matchesSearch) return false;
-    }
-    
-    return true;
-  });
-
-  // Handle category selection
-  const handleCategoryClick = (categoryId: string) => {
-    console.log("Category clicked:", categoryId);
-    if (selectedCategory === categoryId) {
-      setSelectedCategory(null);
-    } else {
-      setSelectedCategory(categoryId);
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      // Navigate to search page with query
+      window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
     }
   };
 
-  // Updated search handler with debouncing
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-    console.log("Searching for:", e.target.value);
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-monkeyGreen mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading amazing deals...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={`bg-monkeyBackground min-h-screen ${isMobile ? 'pb-16' : 'pt-20'}`}>
-      {/* Mobile Header with location - only show on mobile */}
-      {isMobile && (
-        <div className="bg-monkeyGreen text-white py-4 px-4 sticky top-0 z-10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-1">
-              <MapPin className="w-4 h-4" />
-              <span className="text-sm">{user.location}</span>
+    <div className={`bg-gray-50 min-h-screen ${isMobile ? 'pb-20' : 'pb-8'}`}>
+      {/* Header */}
+      <div className="bg-monkeyGreen text-white">
+        <div className={`${isMobile ? 'p-4' : 'p-6'}`}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className={`font-bold ${isMobile ? 'text-xl' : 'text-2xl'}`}>
+                Welcome to OffersMonkey! 🐵
+              </h1>
+              <p className={`text-white/90 ${isMobile ? 'text-sm' : 'text-base'}`}>
+                {session?.user ? 'Find amazing deals just for you' : 'Discover the best deals and offers'}
+              </p>
             </div>
-            <div className="flex items-center space-x-3">
-              <Link to="/notifications" className="flex items-center">
-                <Bell className="w-5 h-5 text-white" />
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-monkeyYellow text-[10px] text-black absolute translate-x-3 -translate-y-2">
-                  3
-                </span>
-              </Link>
+            <div className="flex items-center space-x-2">
+              {session?.user && (
+                <Link to="/notifications" className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                  <Bell className="w-6 h-6" />
+                </Link>
+              )}
             </div>
           </div>
-        </div>
-      )}
-      
-      {/* Main content - desktop with max-width container */}
-      <div className={`space-y-6 ${isMobile ? 'p-4' : 'w-full'}`}>
-        <div className={`${!isMobile ? 'max-w-[1440px] mx-auto px-6 py-8' : ''}`}>
-          {/* Desktop welcome section */}
-          {!isMobile && (
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Welcome back!</h1>
-                <div className="flex items-center space-x-2 mt-2">
-                  <MapPin className="w-4 h-4 text-gray-500" />
-                  <span className="text-gray-600">{user.location}</span>
-                </div>
-              </div>
-              <Link to="/notifications" className="flex items-center bg-monkeyGreen text-white px-4 py-2 rounded-lg hover:bg-monkeyGreen/90 transition-colors">
-                <Bell className="w-5 h-5 mr-2" />
-                <span>Notifications</span>
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-monkeyYellow text-xs text-black ml-2">
-                  3
-                </span>
-              </Link>
-            </div>
-          )}
-          
-          {/* Data source alert */}
-          {isUsingMockData && (
-            <Alert className="bg-amber-50 border-amber-200 mb-6">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-amber-700">
-                No real offers found in the Offers_data table. Please check your database.
-              </AlertDescription>
-            </Alert>
-          )}
-          
-          {/* Personalization badge */}
-          {hasLoadedPreferences && (
-            userPreferences.brands.length > 0 || 
-            userPreferences.stores.length > 0 || 
-            userPreferences.banks.length > 0
-          ) && (
-            <div className="bg-monkeyGreen/10 p-3 rounded-lg flex justify-between items-center mb-6">
-              <div>
-                <h3 className="font-medium text-monkeyGreen">Personalized for You</h3>
-                <p className="text-xs text-gray-600">Offers are filtered based on your preferences</p>
-              </div>
-              <Link 
-                to="/preferences/brands" 
-                className="bg-monkeyGreen text-white text-sm px-3 py-1 rounded-full"
-              >
-                Edit
-              </Link>
-            </div>
-          )}
-          
+
           {/* Search Bar */}
-          <div className="relative mb-6">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              type="search"
-              placeholder="Search for offers, stores, categories..."
-              className="pl-10 pr-4 py-2 w-full border-gray-200"
-              value={searchQuery}
-              onChange={handleSearch}
-            />
-          </div>
-          
-          {/* Categories carousel with active state */}
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="font-bold text-lg">For You</h2>
-              <Link to="/preferences/brands" className="text-monkeyGreen text-sm">
-                Set preferences
-              </Link>
-            </div>
-            
-            {isDataLoading ? (
-              <div className="flex justify-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-monkeyGreen"></div>
-              </div>
-            ) : (
-              <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-hide">
-                {dynamicCategories.length > 0 ? (
-                  dynamicCategories.map((category) => (
-                    <div 
-                      key={category.id} 
-                      onClick={() => handleCategoryClick(category.id)}
-                      className={`cursor-pointer ${selectedCategory === category.id ? 'scale-110 transform transition-transform' : ''}`}
-                    >
-                      <CategoryItem key={category.id} category={category} />
-                      {selectedCategory === category.id && (
-                        <div className="h-1 w-full bg-monkeyGreen rounded-full mt-1"></div>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-gray-500 py-2">No categories with sufficient offers available</div>
-                )}
-              </div>
-            )}
-          </div>
-          
-          {/* Active filters */}
-          {(selectedCategory || debouncedSearchTerm) && (
-            <div className="flex flex-wrap gap-2 mb-6">
-              {selectedCategory && (
-                <div className="bg-monkeyGreen/10 text-monkeyGreen px-3 py-1 rounded-full text-sm flex items-center">
-                  {dynamicCategories.find(c => c.id === selectedCategory)?.name}
-                  <button 
-                    onClick={() => setSelectedCategory(null)}
-                    className="ml-1 text-monkeyGreen"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
-              {debouncedSearchTerm && (
-                <div className="bg-monkeyGreen/10 text-monkeyGreen px-3 py-1 rounded-full text-sm flex items-center">
-                  "{debouncedSearchTerm}"
-                  <button 
-                    onClick={() => {
-                      setSearchQuery('');
-                      setDebouncedSearchTerm('');
-                    }}
-                    className="ml-1 text-monkeyGreen"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
-              {(selectedCategory || debouncedSearchTerm) && (
-                <button 
-                  onClick={() => {
-                    setSelectedCategory(null);
-                    setSearchQuery('');
-                    setDebouncedSearchTerm('');
-                  }}
-                  className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-600"
-                >
-                  Clear all
-                </button>
-              )}
-            </div>
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            onSearch={handleSearch}
+            placeholder="Search for deals, stores, or categories..."
+          />
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className={`${isMobile ? 'space-y-6' : 'space-y-8'} ${isMobile ? 'p-4' : 'p-6'}`}>
+        {/* Banner Carousel */}
+        <BannerCarousel />
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Link to="/search" className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow text-center">
+            <Search className="w-8 h-8 text-monkeyGreen mx-auto mb-2" />
+            <span className="text-sm font-medium">Advanced Search</span>
+          </Link>
+          <Link to="/trending" className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow text-center">
+            <TrendingUp className="w-8 h-8 text-orange-500 mx-auto mb-2" />
+            <span className="text-sm font-medium">Trending</span>
+          </Link>
+          {session?.user && (
+            <Link to="/saved" className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow text-center">
+              <Star className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
+              <span className="text-sm font-medium">Saved Deals</span>
+            </Link>
           )}
-          
-          {/* Offers section */}
-          <div>
-            <Tabs defaultValue="all">
-              <div className="flex justify-between items-center mb-3">
-                <h2 className="font-bold text-lg">Today's Offers</h2>
-                <TabsList>
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="nearby">Nearby</TabsTrigger>
-                  <TabsTrigger value="flash">Flash Deals</TabsTrigger>
-                  <TabsTrigger value="amazon">Amazon</TabsTrigger>
-                </TabsList>
-              </div>
-              
-              <TabsContent value="all" className="space-y-4 mt-2">
-                {isDataLoading || isLoading ? (
-                  <div className="flex justify-center items-center py-10">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-monkeyGreen"></div>
-                  </div>
-                ) : (
-                  <>
-                    {error && (
-                      <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                        <p className="text-red-600">Error loading offers: {error.message}</p>
-                      </div>
-                    )}
-                    
-                    {!error && displayedOffers.length > 0 ? (
-                      <div className={`grid gap-4 ${
-                        isMobile 
-                          ? 'grid-cols-2' 
-                          : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
-                      }`}>
-                        {displayedOffers.map((offer) => (
-                          <Link key={offer.id} to={`/offer/${offer.id}`}>
-                            <OfferCard offer={offer} />
-                          </Link>
-                        ))}
-                      </div>
-                    ) : (
-                      !error && (
-                        <div className="bg-white p-6 rounded-lg text-center shadow-sm">
-                          <p className="text-gray-500">No offers found</p>
-                          <p className="text-sm text-gray-400 mt-2">
-                            {offers.length === 0 
-                              ? "No offers available in the Offers_data table" 
-                              : "Try a different search term or check back later"
-                            }
-                          </p>
-                          <div className="mt-4 flex flex-col gap-2">
-                            <button
-                              onClick={refetchOffers}
-                              className="bg-monkeyGreen text-white px-4 py-2 rounded-lg w-full"
-                            >
-                              Refresh Data
-                            </button>
-                            
-                            {offers.length > 0 && (
-                              <Link 
-                                to="/preferences/brands" 
-                                className="border border-monkeyGreen text-monkeyGreen px-4 py-2 rounded-lg text-center"
-                              >
-                                Adjust Preferences
-                              </Link>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    )}
-                  </>
-                )}
-                
-                {!isDataLoading && !error && displayedOffers.length > 0 && (
-                  <button 
-                    onClick={loadMoreOffers}
-                    className="w-full py-3 text-center text-monkeyGreen border border-monkeyGreen rounded-lg mt-4 flex items-center justify-center"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 rounded-full border-2 border-monkeyGreen border-t-transparent animate-spin"></div>
-                        <span>Loading more...</span>
-                      </div>
-                    ) : (
-                      <span>Load more</span>
-                    )}
-                  </button>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="nearby" className="space-y-4">
-                <div className={`grid gap-4 ${
-                  isMobile 
-                    ? 'grid-cols-2' 
-                    : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
-                }`}>
-                  {displayedOffers.filter(offer => !offer.isAmazon).map((offer) => (
-                    <Link key={offer.id} to={`/offer/${offer.id}`}>
-                      <OfferCard offer={offer} />
-                    </Link>
-                  ))}
-                </div>
-                
-                {displayedOffers.filter(offer => !offer.isAmazon).length === 0 && (
-                  <div className="bg-white p-6 rounded-lg text-center shadow-sm">
-                    <p className="text-gray-500">No nearby offers found</p>
-                    {offers.length > 0 && (
-                      <Link 
-                        to="/preferences/stores" 
-                        className="mt-4 text-monkeyGreen block underline"
-                      >
-                        Adjust store preferences
-                      </Link>
-                    )}
-                  </div>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="flash" className="space-y-4">
-                {isCuelinkLoading ? (
-                  <div className="flex justify-center items-center py-10">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-monkeyGreen"></div>
-                  </div>
-                ) : (
-                  <>
-                    {displayedCuelinkOffers.length > 0 ? (
-                      <div className={`grid gap-4 ${
-                        isMobile 
-                          ? 'grid-cols-1 sm:grid-cols-2' 
-                          : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-                      }`}>
-                        {displayedCuelinkOffers.map((offer) => (
-                          <CuelinkOfferCard key={offer.Id} offer={offer} />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="bg-white p-6 rounded-lg text-center shadow-sm">
-                        <p className="text-gray-500">No flash deals found</p>
-                        <p className="text-sm text-gray-400 mt-2">
-                          {cuelinkOffers.length === 0 
-                            ? "No flash deals available in the Cuelink_data table" 
-                            : "Try a different search term or check back later"
-                          }
-                        </p>
-                        <div className="mt-4">
-                          <p className="text-xs text-gray-400">
-                            Total Cuelink offers loaded: {cuelinkOffers.length}
-                          </p>
-                          {debouncedSearchTerm && (
-                            <p className="text-xs text-gray-400">
-                              Search term: "{debouncedSearchTerm}"
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="amazon" className="space-y-4">
-                <div className={`grid gap-4 ${
-                  isMobile 
-                    ? 'grid-cols-2' 
-                    : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
-                }`}>
-                  {displayedOffers.filter(offer => offer.isAmazon).map((offer) => (
-                    <Link key={offer.id} to={`/offer/${offer.id}`}>
-                      <OfferCard offer={offer} />
-                    </Link>
-                  ))}
-                </div>
-                
-                {displayedOffers.filter(offer => offer.isAmazon).length === 0 && (
-                  <div className="bg-white p-6 rounded-lg text-center shadow-sm">
-                    <p className="text-gray-500">No Amazon offers found</p>
-                    {offers.length > 0 && (
-                      <Link 
-                        to="/preferences/stores" 
-                        className="mt-4 text-monkeyGreen block underline"
-                      >
-                        Adjust store preferences
-                      </Link>
-                    )}
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
+          <Link to="/challenges" className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow text-center">
+            <Gift className="w-8 h-8 text-purple-500 mx-auto mb-2" />
+            <span className="text-sm font-medium">Challenges</span>
+          </Link>
+        </div>
+
+        {/* Points System - Only for logged in users */}
+        {session?.user && (
+          <PointsSystem />
+        )}
+
+        {/* Categories */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Shop by Category</h2>
+            <Link to="/categories" className="text-monkeyGreen text-sm font-medium hover:underline flex items-center">
+              View All <ChevronRight className="w-4 h-4 ml-1" />
+            </Link>
+          </div>
+          <div className={`grid ${isMobile ? 'grid-cols-4' : 'grid-cols-8'} gap-4`}>
+            {categories.map((category) => (
+              <CategoryItem key={category.id} category={category} />
+            ))}
           </div>
         </div>
+
+        {/* Trending Deals */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+          <TrendingDeals />
+        </div>
+
+        {/* Featured Offers */}
+        {featuredOffers.length > 0 && (
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold flex items-center">
+                <Star className="w-5 h-5 text-yellow-500 mr-2" />
+                Featured Deals
+              </h2>
+              <Link to="/featured" className="text-monkeyGreen text-sm font-medium hover:underline flex items-center">
+                View All <ChevronRight className="w-4 h-4 ml-1" />
+              </Link>
+            </div>
+            <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-3'} gap-4`}>
+              {featuredOffers.map((offer) => (
+                <Link key={offer.id} to={`/offer/${offer.id}`}>
+                  <OfferCard offer={offer} />
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Amazon Deals */}
+        {amazonOffers.length > 0 && (
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Amazon Deals</h2>
+              <Link to="/amazon" className="text-monkeyGreen text-sm font-medium hover:underline flex items-center">
+                View All <ChevronRight className="w-4 h-4 ml-1" />
+              </Link>
+            </div>
+            <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-3'} gap-4`}>
+              {amazonOffers.map((offer) => (
+                <Link key={offer.id} to={`/offer/${offer.id}`}>
+                  <OfferCard offer={offer} />
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Recent Offers */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Latest Deals</h2>
+            <Link to="/latest" className="text-monkeyGreen text-sm font-medium hover:underline flex items-center">
+              View All <ChevronRight className="w-4 h-4 ml-1" />
+            </Link>
+          </div>
+          <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-4'} gap-4`}>
+            {recentOffers.map((offer) => (
+              <Link key={offer.id} to={`/offer/${offer.id}`}>
+                <OfferCard offer={offer} />
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Call to Action for Non-logged Users */}
+        {!session?.user && (
+          <div className="bg-gradient-to-r from-monkeyGreen to-green-600 rounded-xl p-6 text-white text-center">
+            <h2 className="text-xl font-bold mb-2">Join OffersMonkey Today!</h2>
+            <p className="mb-4 opacity-90">
+              Save your favorite deals, earn points, and get personalized recommendations
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link to="/login">
+                <Button variant="secondary" className="w-full sm:w-auto">
+                  Sign In
+                </Button>
+              </Link>
+              <Link to="/login">
+                <Button variant="outline" className="w-full sm:w-auto bg-white/10 border-white/20 text-white hover:bg-white/20">
+                  Create Account
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

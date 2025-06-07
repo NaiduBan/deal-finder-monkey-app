@@ -1,13 +1,17 @@
 
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Bookmark, Share2, MapPin, Info, Clock, ExternalLink, Tag, Copy, Grid, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Bookmark, Share2, MapPin, Info, Clock, ExternalLink, Tag, Copy, Grid, AlertCircle, MessageCircle, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useData } from '@/contexts/DataContext';
 import { useUser } from '@/contexts/UserContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
+import DealReviews from '@/components/DealReviews';
+import DealComments from '@/components/DealComments';
+import ShareDeal from '@/components/ShareDeal';
+import { trackEvent } from '@/services/analyticsService';
 
 const OfferDetailScreen = () => {
   const { offerId } = useParams<{ offerId: string }>();
@@ -18,12 +22,25 @@ const OfferDetailScreen = () => {
   const { session } = useAuth();
   const isMobile = useIsMobile();
   
+  const [activeTab, setActiveTab] = useState<'details' | 'reviews' | 'comments'>('details');
+  const [showShareModal, setShowShareModal] = useState(false);
+  
   const offerIndex = offers.findIndex(offer => offer.id === offerId);
   const offer = offerIndex !== -1 ? offers[offerIndex] : null;
   const isSaved = offer ? isOfferSaved(offer.id) : false;
   
   const nextOfferId = offerIndex < offers.length - 1 ? offers[offerIndex + 1].id : null;
   const prevOfferId = offerIndex > 0 ? offers[offerIndex - 1].id : null;
+
+  React.useEffect(() => {
+    if (offer) {
+      trackEvent({
+        offer_id: offer.id,
+        event_type: 'view',
+        user_id: session?.user?.id
+      });
+    }
+  }, [offer, session]);
   
   if (!offer) {
     return (
@@ -47,23 +64,16 @@ const OfferDetailScreen = () => {
       unsaveOffer(offer.id);
     } else {
       saveOffer(offer.id);
+      trackEvent({
+        offer_id: offer.id,
+        event_type: 'save',
+        user_id: session.user.id
+      });
     }
   };
   
   const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: offer.title || 'Great Offer',
-        text: offer.description || '',
-        url: window.location.href
-      });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      toast({
-        title: 'Link copied',
-        description: 'Offer link copied to clipboard',
-      });
-    }
+    setShowShareModal(true);
   };
 
   const copyCode = () => {
@@ -80,6 +90,11 @@ const OfferDetailScreen = () => {
     const link = offer.smartlink || offer.url || offer.merchantHomepage;
     if (link) {
       window.open(link, '_blank');
+      trackEvent({
+        offer_id: offer.id,
+        event_type: 'click',
+        user_id: session?.user?.id
+      });
       toast({
         title: 'Opening link',
         description: `Redirecting to ${offer.store}'s website`,
@@ -177,39 +192,108 @@ const OfferDetailScreen = () => {
                 </div>
               )}
             </div>
-            
-            {/* Description */}
-            {offer.description && (
-              <div className={`bg-white ${isMobile ? 'p-4' : 'p-6'} rounded-xl shadow-sm border border-gray-100`}>
-                <h3 className={`font-semibold mb-3 ${isMobile ? 'text-base' : 'text-lg'}`}>Description</h3>
-                <p className={`text-gray-700 leading-relaxed ${isMobile ? 'text-sm' : 'text-base'}`}>
-                  {stripHtmlTags(offer.description)}
-                </p>
+
+            {/* Tab Navigation */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="flex border-b">
+                <button
+                  onClick={() => setActiveTab('details')}
+                  className={`flex-1 px-4 py-3 text-sm font-medium ${
+                    activeTab === 'details' 
+                      ? 'text-monkeyGreen border-b-2 border-monkeyGreen bg-monkeyGreen/5' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Info className="w-4 h-4 inline mr-2" />
+                  Details
+                </button>
+                <button
+                  onClick={() => setActiveTab('reviews')}
+                  className={`flex-1 px-4 py-3 text-sm font-medium ${
+                    activeTab === 'reviews' 
+                      ? 'text-monkeyGreen border-b-2 border-monkeyGreen bg-monkeyGreen/5' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Star className="w-4 h-4 inline mr-2" />
+                  Reviews
+                </button>
+                <button
+                  onClick={() => setActiveTab('comments')}
+                  className={`flex-1 px-4 py-3 text-sm font-medium ${
+                    activeTab === 'comments' 
+                      ? 'text-monkeyGreen border-b-2 border-monkeyGreen bg-monkeyGreen/5' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <MessageCircle className="w-4 h-4 inline mr-2" />
+                  Comments
+                </button>
               </div>
-            )}
-            
-            {/* Long offer if available */}
-            {offer.longOffer && offer.longOffer !== offer.description && (
-              <div className={`bg-white ${isMobile ? 'p-4' : 'p-6'} rounded-xl shadow-sm border border-gray-100`}>
-                <h3 className={`font-semibold mb-3 ${isMobile ? 'text-base' : 'text-lg'}`}>Details</h3>
-                <p className={`text-gray-700 leading-relaxed ${isMobile ? 'text-sm' : 'text-base'}`}>
-                  {stripHtmlTags(offer.longOffer)}
-                </p>
-              </div>
-            )}
-            
-            {/* Categories */}
-            {offer.categories && (
-              <div className={`bg-white ${isMobile ? 'p-4' : 'p-6'} rounded-xl shadow-sm border border-gray-100`}>
-                <div className="flex items-start space-x-3">
-                  <Grid className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} text-monkeyGreen mt-0.5`} />
-                  <div>
-                    <h3 className={`font-semibold text-gray-900 mb-2 ${isMobile ? 'text-base' : 'text-lg'}`}>Categories</h3>
-                    <p className={`text-gray-600 ${isMobile ? 'text-sm' : 'text-base'}`}>{offer.categories}</p>
+
+              {/* Tab Content */}
+              <div className="p-6">
+                {activeTab === 'details' && (
+                  <div className="space-y-6">
+                    {/* Description */}
+                    {offer.description && (
+                      <div>
+                        <h3 className={`font-semibold mb-3 ${isMobile ? 'text-base' : 'text-lg'}`}>Description</h3>
+                        <p className={`text-gray-700 leading-relaxed ${isMobile ? 'text-sm' : 'text-base'}`}>
+                          {stripHtmlTags(offer.description)}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Long offer if available */}
+                    {offer.longOffer && offer.longOffer !== offer.description && (
+                      <div>
+                        <h3 className={`font-semibold mb-3 ${isMobile ? 'text-base' : 'text-lg'}`}>Details</h3>
+                        <p className={`text-gray-700 leading-relaxed ${isMobile ? 'text-sm' : 'text-base'}`}>
+                          {stripHtmlTags(offer.longOffer)}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Categories */}
+                    {offer.categories && (
+                      <div>
+                        <div className="flex items-start space-x-3">
+                          <Grid className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} text-monkeyGreen mt-0.5`} />
+                          <div>
+                            <h3 className={`font-semibold text-gray-900 mb-2 ${isMobile ? 'text-base' : 'text-lg'}`}>Categories</h3>
+                            <p className={`text-gray-600 ${isMobile ? 'text-sm' : 'text-base'}`}>{offer.categories}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Terms */}
+                    {(offer.terms || offer.termsAndConditions) && (
+                      <div className={`bg-orange-50 p-4 rounded-xl border border-orange-200`}>
+                        <div className="flex items-start space-x-3">
+                          <Info className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} text-orange-600 flex-shrink-0 mt-0.5`} />
+                          <div>
+                            <p className={`font-semibold text-orange-900 mb-2 ${isMobile ? 'text-base' : 'text-lg'}`}>Terms & Conditions</p>
+                            <p className={`text-orange-800 leading-relaxed ${isMobile ? 'text-sm' : 'text-base'}`}>
+                              {stripHtmlTags(offer.termsAndConditions || offer.terms)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
+
+                {activeTab === 'reviews' && (
+                  <DealReviews offerId={offer.id} />
+                )}
+
+                {activeTab === 'comments' && (
+                  <DealComments offerId={offer.id} />
+                )}
               </div>
-            )}
+            </div>
             
             {/* Code */}
             {offer.code && (
@@ -258,55 +342,6 @@ const OfferDetailScreen = () => {
                 </div>
               </div>
             )}
-            
-            {/* Location if available */}
-            {offer.location && (
-              <div className={`bg-white ${isMobile ? 'p-4' : 'p-6'} rounded-xl shadow-sm border border-gray-100`}>
-                <div className="flex items-start space-x-3">
-                  <MapPin className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} text-monkeyGreen mt-0.5`} />
-                  <div>
-                    <p className={`font-semibold text-gray-900 ${isMobile ? 'text-base' : 'text-lg'}`}>{offer.store}</p>
-                    <p className={`text-gray-600 ${isMobile ? 'text-sm' : 'text-base'}`}>{offer.location.address}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Terms */}
-            {(offer.terms || offer.termsAndConditions) && (
-              <div className={`bg-orange-50 ${isMobile ? 'p-4' : 'p-6'} rounded-xl border border-orange-200`}>
-                <div className="flex items-start space-x-3">
-                  <Info className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} text-orange-600 flex-shrink-0 mt-0.5`} />
-                  <div>
-                    <p className={`font-semibold text-orange-900 mb-2 ${isMobile ? 'text-base' : 'text-lg'}`}>Terms & Conditions</p>
-                    <p className={`text-orange-800 leading-relaxed ${isMobile ? 'text-sm' : 'text-base'}`}>
-                      {stripHtmlTags(offer.termsAndConditions || offer.terms)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Additional details */}
-            {(offer.offerType || offer.offerValue) && (
-              <div className={`bg-white ${isMobile ? 'p-4' : 'p-6'} rounded-xl shadow-sm border border-gray-100`}>
-                <h3 className={`font-semibold mb-4 ${isMobile ? 'text-base' : 'text-lg'}`}>Offer Details</h3>
-                <div className="space-y-3">
-                  {offer.offerType && (
-                    <div className="flex justify-between">
-                      <span className={`text-gray-600 ${isMobile ? 'text-sm' : 'text-base'}`}>Type:</span>
-                      <span className={`font-medium ${isMobile ? 'text-sm' : 'text-base'}`}>{offer.offerType}</span>
-                    </div>
-                  )}
-                  {offer.offerValue && (
-                    <div className="flex justify-between">
-                      <span className={`text-gray-600 ${isMobile ? 'text-sm' : 'text-base'}`}>Value:</span>
-                      <span className={`font-medium text-monkeyGreen ${isMobile ? 'text-sm' : 'text-base'}`}>{offer.offerValue}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -320,6 +355,15 @@ const OfferDetailScreen = () => {
           {offer.code ? 'Copy Code & Visit' : 'Get This Deal'}
         </Button>
       </div>
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <ShareDeal 
+          offer={offer} 
+          isOpen={showShareModal} 
+          onClose={() => setShowShareModal(false)} 
+        />
+      )}
     </div>
   );
 };
