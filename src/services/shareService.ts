@@ -2,6 +2,31 @@
 import { supabase } from '@/integrations/supabase/client';
 import { trackEvent } from './analyticsService';
 
+export const shareOffer = async (offerId: string, userId: string, platform: string) => {
+  try {
+    await supabase
+      .from('deal_shares')
+      .insert({
+        user_id: userId,
+        offer_id: offerId,
+        shared_via: platform
+      });
+
+    // Track analytics
+    await trackEvent({
+      offer_id: offerId,
+      event_type: 'share',
+      user_id: userId,
+      metadata: { platform }
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error sharing offer:', error);
+    return false;
+  }
+};
+
 export const shareDeal = async (offerId: string, shareMethod: 'social' | 'link' | 'email', shareTo?: string) => {
   try {
     const { data: session } = await supabase.auth.getSession();

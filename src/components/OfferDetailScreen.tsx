@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Offer } from '@/types';
@@ -11,20 +12,23 @@ import ShareDeal from './ShareDeal';
 import { trackEvent } from '@/services/analyticsService';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-interface OfferDetailScreenProps {
-  // You can add props here if needed
-}
-
 const OfferDetailScreen = () => {
   const { offerId } = useParams<{ offerId: string }>();
-  const { offers, loading } = useData();
+  const { offers } = useData();
   const { session } = useAuth();
   const { isOfferSaved, saveOffer, unsaveOffer } = useUser();
   const isMobile = useIsMobile();
   const [showShareModal, setShowShareModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const offer = offers.find(o => o.id === offerId);
   const isSaved = offer ? isOfferSaved(offer.id) : false;
+
+  useEffect(() => {
+    if (offers.length > 0) {
+      setIsLoading(false);
+    }
+  }, [offers]);
 
   useEffect(() => {
     if (offerId && session?.user) {
@@ -47,7 +51,7 @@ const OfferDetailScreen = () => {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
