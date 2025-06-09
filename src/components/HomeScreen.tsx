@@ -14,6 +14,7 @@ import { applyPreferencesToOffers } from '@/services/supabaseService';
 import { fetchCuelinkOffers } from '@/services/cuelinkService';
 import { Category, Offer, CuelinkOffer } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
+import CuelinkPagination from './CuelinkPagination';
 
 const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -42,6 +43,8 @@ const HomeScreen = () => {
   const [localFilteredOffers, setLocalFilteredOffers] = useState(filteredOffers);
   const [cuelinkOffers, setCuelinkOffers] = useState<CuelinkOffer[]>([]);
   const [isCuelinkLoading, setIsCuelinkLoading] = useState(false);
+  const [cuelinkCurrentPage, setCuelinkCurrentPage] = useState(1);
+  const cuelinkItemsPerPage = 12;
 
   // Debounce search input
   useEffect(() => {
@@ -329,6 +332,18 @@ const HomeScreen = () => {
     
     return true;
   });
+
+  // Pagination calculations for Cuelink offers
+  const totalCuelinkPages = Math.ceil(displayedCuelinkOffers.length / cuelinkItemsPerPage);
+  const paginatedCuelinkOffers = displayedCuelinkOffers.slice(
+    (cuelinkCurrentPage - 1) * cuelinkItemsPerPage,
+    cuelinkCurrentPage * cuelinkItemsPerPage
+  );
+
+  const handleCuelinkPageChange = (page: number) => {
+    setCuelinkCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Handle category selection
   const handleCategoryClick = (categoryId: string) => {
@@ -635,16 +650,26 @@ const HomeScreen = () => {
                   </div>
                 ) : (
                   <>
-                    {displayedCuelinkOffers.length > 0 ? (
-                      <div className={`grid gap-4 ${
-                        isMobile 
-                          ? 'grid-cols-1 sm:grid-cols-2' 
-                          : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-                      }`}>
-                        {displayedCuelinkOffers.map((offer) => (
-                          <CuelinkOfferCard key={offer.Id} offer={offer} />
-                        ))}
-                      </div>
+                    {paginatedCuelinkOffers.length > 0 ? (
+                      <>
+                        <div className="mb-4 text-sm text-gray-600">
+                          Showing {((cuelinkCurrentPage - 1) * cuelinkItemsPerPage) + 1}-{Math.min(cuelinkCurrentPage * cuelinkItemsPerPage, displayedCuelinkOffers.length)} of {displayedCuelinkOffers.length} flash deals
+                        </div>
+                        <div className={`grid gap-4 ${
+                          isMobile 
+                            ? 'grid-cols-1 sm:grid-cols-2' 
+                            : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+                        }`}>
+                          {paginatedCuelinkOffers.map((offer) => (
+                            <CuelinkOfferCard key={offer.Id} offer={offer} />
+                          ))}
+                        </div>
+                        <CuelinkPagination 
+                          currentPage={cuelinkCurrentPage}
+                          totalPages={totalCuelinkPages}
+                          onPageChange={handleCuelinkPageChange}
+                        />
+                      </>
                     ) : (
                       <div className="bg-white p-6 rounded-lg text-center shadow-sm">
                         <p className="text-gray-500">No flash deals found</p>

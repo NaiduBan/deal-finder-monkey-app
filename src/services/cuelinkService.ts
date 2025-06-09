@@ -4,12 +4,11 @@ import { CuelinkOffer } from '@/types';
 
 export const fetchCuelinkOffers = async (): Promise<CuelinkOffer[]> => {
   try {
-    console.log('Fetching offers from Cuelink_data table...');
+    console.log('Fetching all offers from Cuelink_data table...');
     
     const { data, error } = await supabase
       .from('Cuelink_data')
-      .select('*')
-      .limit(50);
+      .select('*');
 
     if (error) {
       console.error('Error fetching Cuelink offers:', error);
