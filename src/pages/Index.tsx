@@ -1,7 +1,6 @@
 
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Shield } from 'lucide-react';
 
 const Index = () => {
   // Check if trying to access admin
@@ -22,15 +21,6 @@ const Index = () => {
             className="w-full bg-green-600 hover:bg-green-700"
           >
             Enter App
-          </Button>
-          
-          <Button 
-            variant="outline"
-            onClick={() => window.location.href = '/admin'}
-            className="w-full flex items-center space-x-2"
-          >
-            <Shield className="h-4 w-4" />
-            <span>Admin Portal</span>
           </Button>
         </div>
       </div>

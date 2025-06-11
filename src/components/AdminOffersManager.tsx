@@ -1,12 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, Eye, Edit, Trash2, Plus, ExternalLink } from 'lucide-react';
+import { Search, Eye, Edit, Trash2, Plus, ExternalLink, Upload, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface LMDOffer {
@@ -19,6 +19,16 @@ interface LMDOffer {
   end_date: string;
   offer_value: string;
   url: string;
+  description: string;
+  long_offer: string;
+  code: string;
+  image_url: string;
+  type: string;
+  smartlink: string;
+  merchant_homepage: string;
+  terms_and_conditions: string;
+  featured: string;
+  publisher_exclusive: string;
 }
 
 const AdminOffersManager = () => {
@@ -26,6 +36,8 @@ const AdminOffersManager = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredOffers, setFilteredOffers] = useState<LMDOffer[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchOffers();
@@ -35,7 +47,9 @@ const AdminOffersManager = () => {
     const filtered = offers.filter(offer =>
       offer.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       offer.store?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      offer.categories?.toLowerCase().includes(searchTerm.toLowerCase())
+      offer.categories?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      offer.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      offer.code?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredOffers(filtered);
   }, [offers, searchTerm]);
@@ -45,8 +59,7 @@ const AdminOffersManager = () => {
       const { data, error } = await supabase
         .from('Offers_data')
         .select('*')
-        .order('lmd_id', { ascending: false })
-        .limit(100);
+        .order('lmd_id', { ascending: false });
 
       if (error) {
         console.error('Error fetching offers:', error);
@@ -88,6 +101,79 @@ const AdminOffersManager = () => {
     }
   };
 
+  const handleCSVUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      toast.error('Please upload a CSV file');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const text = await file.text();
+      const lines = text.split('\n');
+      const headers = lines[0].split(',').map(h => h.trim());
+      
+      const offerData = [];
+      for (let i = 1; i < lines.length; i++) {
+        if (lines[i].trim()) {
+          const values = lines[i].split(',').map(v => v.trim());
+          const offer: any = {};
+          headers.forEach((header, index) => {
+            offer[header] = values[index] || null;
+          });
+          offerData.push(offer);
+        }
+      }
+
+      if (offerData.length === 0) {
+        toast.error('No valid offer data found in CSV');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('Offers_data')
+        .upsert(offerData, { onConflict: 'lmd_id' });
+
+      if (error) {
+        console.error('Error uploading offers:', error);
+        toast.error('Failed to upload offers');
+        return;
+      }
+
+      toast.success(`Successfully uploaded ${offerData.length} offers`);
+      fetchOffers();
+    } catch (error) {
+      console.error('Error processing CSV:', error);
+      toast.error('Error processing CSV file');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const exportToCSV = () => {
+    const headers = ['lmd_id', 'title', 'store', 'categories', 'status', 'offer_value', 'start_date', 'end_date', 'description', 'code', 'url'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredOffers.map(offer => 
+        headers.map(header => `"${(offer[header as keyof LMDOffer] || '').toString().replace(/"/g, '""')}"`).join(',')
+      )
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'lmd_offers.csv';
+    link.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <Card>
@@ -122,12 +208,35 @@ const AdminOffersManager = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Search offers by title, store, or category..."
+                placeholder="Search offers by title, store, category, description, or code..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
+            <Button 
+              onClick={exportToCSV}
+              variant="outline"
+              className="flex items-center space-x-2"
+            >
+              <Download className="h-4 w-4" />
+              <span>Export CSV</span>
+            </Button>
+            <Button 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center space-x-2"
+            >
+              <Upload className="h-4 w-4" />
+              <span>{uploading ? 'Uploading...' : 'Upload CSV'}</span>
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={handleCSVUpload}
+              className="hidden"
+            />
             <Button className="flex items-center space-x-2">
               <Plus className="h-4 w-4" />
               <span>Add Offer</span>
@@ -143,7 +252,10 @@ const AdminOffersManager = () => {
                   <TableHead>Store</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Value</TableHead>
+                  <TableHead>Code</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Featured</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>End Date</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -157,10 +269,23 @@ const AdminOffersManager = () => {
                     <TableCell>{offer.categories || 'N/A'}</TableCell>
                     <TableCell>{offer.offer_value || 'N/A'}</TableCell>
                     <TableCell>
+                      {offer.code ? (
+                        <Badge variant="outline">{offer.code}</Badge>
+                      ) : (
+                        'N/A'
+                      )}
+                    </TableCell>
+                    <TableCell>
                       <Badge variant={offer.status === 'active' ? 'default' : 'secondary'}>
                         {offer.status || 'unknown'}
                       </Badge>
                     </TableCell>
+                    <TableCell>
+                      {offer.featured === 'true' && (
+                        <Badge variant="destructive">Featured</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>{offer.type || 'N/A'}</TableCell>
                     <TableCell>
                       {offer.end_date ? new Date(offer.end_date).toLocaleDateString() : 'N/A'}
                     </TableCell>

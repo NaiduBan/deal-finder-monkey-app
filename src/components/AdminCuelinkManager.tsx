@@ -1,12 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, Eye, Edit, Trash2, Plus, ExternalLink } from 'lucide-react';
+import { Search, Eye, Edit, Trash2, Plus, ExternalLink, Upload, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CuelinkOffer {
@@ -19,6 +19,12 @@ interface CuelinkOffer {
   'End Date': string;
   'Coupon Code': string;
   URL: string;
+  Description: string;
+  Terms: string;
+  'Campaign ID': number;
+  'Campaign Name': string;
+  'Image URL': string;
+  'Offer Added At': string;
 }
 
 const AdminCuelinkManager = () => {
@@ -26,6 +32,8 @@ const AdminCuelinkManager = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredOffers, setFilteredOffers] = useState<CuelinkOffer[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchOffers();
@@ -35,7 +43,9 @@ const AdminCuelinkManager = () => {
     const filtered = offers.filter(offer =>
       offer.Title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       offer.Merchant?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      offer.Categories?.toLowerCase().includes(searchTerm.toLowerCase())
+      offer.Categories?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      offer.Description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      offer['Coupon Code']?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredOffers(filtered);
   }, [offers, searchTerm]);
@@ -45,8 +55,7 @@ const AdminCuelinkManager = () => {
       const { data, error } = await supabase
         .from('Cuelink_data')
         .select('*')
-        .order('Id', { ascending: false })
-        .limit(100);
+        .order('Id', { ascending: false });
 
       if (error) {
         console.error('Error fetching Cuelink offers:', error);
@@ -88,6 +97,79 @@ const AdminCuelinkManager = () => {
     }
   };
 
+  const handleCSVUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      toast.error('Please upload a CSV file');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const text = await file.text();
+      const lines = text.split('\n');
+      const headers = lines[0].split(',').map(h => h.trim());
+      
+      const offerData = [];
+      for (let i = 1; i < lines.length; i++) {
+        if (lines[i].trim()) {
+          const values = lines[i].split(',').map(v => v.trim());
+          const offer: any = {};
+          headers.forEach((header, index) => {
+            offer[header] = values[index] || null;
+          });
+          offerData.push(offer);
+        }
+      }
+
+      if (offerData.length === 0) {
+        toast.error('No valid offer data found in CSV');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('Cuelink_data')
+        .upsert(offerData, { onConflict: 'Id' });
+
+      if (error) {
+        console.error('Error uploading Cuelink offers:', error);
+        toast.error('Failed to upload Cuelink offers');
+        return;
+      }
+
+      toast.success(`Successfully uploaded ${offerData.length} Cuelink offers`);
+      fetchOffers();
+    } catch (error) {
+      console.error('Error processing CSV:', error);
+      toast.error('Error processing CSV file');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const exportToCSV = () => {
+    const headers = ['Id', 'Title', 'Merchant', 'Categories', 'Status', 'Coupon Code', 'Start Date', 'End Date', 'Description', 'URL'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredOffers.map(offer => 
+        headers.map(header => `"${(offer[header as keyof CuelinkOffer] || '').toString().replace(/"/g, '""')}"`).join(',')
+      )
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'cuelink_offers.csv';
+    link.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <Card>
@@ -122,12 +204,35 @@ const AdminCuelinkManager = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Search Cuelink offers by title, merchant, or category..."
+                placeholder="Search Cuelink offers by title, merchant, category, description, or coupon code..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
+            <Button 
+              onClick={exportToCSV}
+              variant="outline"
+              className="flex items-center space-x-2"
+            >
+              <Download className="h-4 w-4" />
+              <span>Export CSV</span>
+            </Button>
+            <Button 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center space-x-2"
+            >
+              <Upload className="h-4 w-4" />
+              <span>{uploading ? 'Uploading...' : 'Upload CSV'}</span>
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={handleCSVUpload}
+              className="hidden"
+            />
             <Button className="flex items-center space-x-2">
               <Plus className="h-4 w-4" />
               <span>Add Offer</span>
@@ -143,6 +248,7 @@ const AdminCuelinkManager = () => {
                   <TableHead>Merchant</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Coupon Code</TableHead>
+                  <TableHead>Campaign</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>End Date</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -162,6 +268,7 @@ const AdminCuelinkManager = () => {
                         'N/A'
                       )}
                     </TableCell>
+                    <TableCell>{offer['Campaign Name'] || 'N/A'}</TableCell>
                     <TableCell>
                       <Badge variant={offer.Status === 'active' ? 'default' : 'secondary'}>
                         {offer.Status || 'unknown'}

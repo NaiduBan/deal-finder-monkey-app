@@ -1,12 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, Eye, Edit, Trash2, Plus } from 'lucide-react';
+import { Search, Eye, Edit, Trash2, Plus, Upload, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface User {
@@ -17,6 +17,20 @@ interface User {
   phone?: string;
   city?: string;
   country?: string;
+  first_name?: string;
+  last_name?: string;
+  location?: string;
+  gender?: string;
+  occupation?: string;
+  company?: string;
+  bio?: string;
+  address?: string;
+  state?: string;
+  postal_code?: string;
+  date_of_birth?: string;
+  is_phone_verified?: boolean;
+  is_email_verified?: boolean;
+  marketing_consent?: boolean;
 }
 
 const AdminUsersManager = () => {
@@ -24,6 +38,8 @@ const AdminUsersManager = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -31,10 +47,14 @@ const AdminUsersManager = () => {
 
   useEffect(() => {
     const filtered = users.filter(user =>
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.phone?.includes(searchTerm) ||
-      user.city?.toLowerCase().includes(searchTerm.toLowerCase())
+      user.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.occupation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.company?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredUsers(filtered);
   }, [users, searchTerm]);
@@ -86,6 +106,79 @@ const AdminUsersManager = () => {
     }
   };
 
+  const handleCSVUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      toast.error('Please upload a CSV file');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const text = await file.text();
+      const lines = text.split('\n');
+      const headers = lines[0].split(',').map(h => h.trim());
+      
+      const users = [];
+      for (let i = 1; i < lines.length; i++) {
+        if (lines[i].trim()) {
+          const values = lines[i].split(',').map(v => v.trim());
+          const user: any = {};
+          headers.forEach((header, index) => {
+            user[header] = values[index] || null;
+          });
+          users.push(user);
+        }
+      }
+
+      if (users.length === 0) {
+        toast.error('No valid user data found in CSV');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .upsert(users, { onConflict: 'email' });
+
+      if (error) {
+        console.error('Error uploading users:', error);
+        toast.error('Failed to upload users');
+        return;
+      }
+
+      toast.success(`Successfully uploaded ${users.length} users`);
+      fetchUsers();
+    } catch (error) {
+      console.error('Error processing CSV:', error);
+      toast.error('Error processing CSV file');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const exportToCSV = () => {
+    const headers = ['id', 'email', 'name', 'first_name', 'last_name', 'phone', 'city', 'country', 'occupation', 'company', 'created_at'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredUsers.map(user => 
+        headers.map(header => user[header as keyof User] || '').join(',')
+      )
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'users.csv';
+    link.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <Card>
@@ -120,12 +213,35 @@ const AdminUsersManager = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Search users by email, name, phone, or city..."
+                placeholder="Search users by email, name, phone, city, occupation..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
+            <Button 
+              onClick={exportToCSV}
+              variant="outline"
+              className="flex items-center space-x-2"
+            >
+              <Download className="h-4 w-4" />
+              <span>Export CSV</span>
+            </Button>
+            <Button 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center space-x-2"
+            >
+              <Upload className="h-4 w-4" />
+              <span>{uploading ? 'Uploading...' : 'Upload CSV'}</span>
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={handleCSVUpload}
+              className="hidden"
+            />
             <Button className="flex items-center space-x-2">
               <Plus className="h-4 w-4" />
               <span>Add User</span>
@@ -140,6 +256,9 @@ const AdminUsersManager = () => {
                   <TableHead>Name</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Location</TableHead>
+                  <TableHead>Occupation</TableHead>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Verified</TableHead>
                   <TableHead>Joined</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -148,10 +267,24 @@ const AdminUsersManager = () => {
                 {filteredUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.email}</TableCell>
-                    <TableCell>{user.name || 'N/A'}</TableCell>
+                    <TableCell>
+                      {user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'N/A'}
+                    </TableCell>
                     <TableCell>{user.phone || 'N/A'}</TableCell>
                     <TableCell>
-                      {user.city && user.country ? `${user.city}, ${user.country}` : 'N/A'}
+                      {user.city && user.country ? `${user.city}, ${user.country}` : user.location || 'N/A'}
+                    </TableCell>
+                    <TableCell>{user.occupation || 'N/A'}</TableCell>
+                    <TableCell>{user.company || 'N/A'}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-1">
+                        {user.is_email_verified && (
+                          <Badge variant="secondary" className="text-xs">Email</Badge>
+                        )}
+                        {user.is_phone_verified && (
+                          <Badge variant="secondary" className="text-xs">Phone</Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {new Date(user.created_at).toLocaleDateString()}
