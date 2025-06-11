@@ -15,7 +15,6 @@ import SplashScreen from "./components/SplashScreen";
 import LoginScreen from "./components/LoginScreen";
 import HomeScreen from "./components/HomeScreen";
 import ProfileScreen from "./components/ProfileScreen";
-import EditProfile from "./components/EditProfile";
 import NotificationsScreen from "./components/NotificationsScreen";
 import SavedOffersScreen from "./components/SavedOffersScreen";
 import PreferencesScreen from "./components/PreferencesScreen";
@@ -64,14 +63,6 @@ function App() {
                       element={
                         <ProtectedRoute>
                           <ProfileScreen />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/edit-profile"
-                      element={
-                        <ProtectedRoute>
-                          <EditProfile />
                         </ProtectedRoute>
                       }
                     />
