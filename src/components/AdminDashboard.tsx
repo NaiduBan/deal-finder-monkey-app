@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, ShoppingBag, Package, Category, Heart, TrendingUp } from 'lucide-react';
+import { Users, ShoppingBag, Package, FolderOpen, Heart, TrendingUp } from 'lucide-react';
 
 interface DashboardStats {
   total_users: number;
@@ -82,7 +81,7 @@ const AdminDashboard = () => {
     {
       title: 'Categories',
       value: stats?.total_categories || 0,
-      icon: Category,
+      icon: FolderOpen,
       color: 'text-orange-600',
       bgColor: 'bg-orange-100'
     },

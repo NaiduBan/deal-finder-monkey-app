@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,7 @@ import {
   Users, 
   ShoppingBag, 
   Package, 
-  Category, 
+  FolderOpen, 
   Settings,
   Shield
 } from 'lucide-react';
@@ -84,7 +83,7 @@ const AdminPanel = () => {
               <span className="hidden sm:inline">Cuelink</span>
             </TabsTrigger>
             <TabsTrigger value="categories" className="flex items-center space-x-2">
-              <Category className="h-4 w-4" />
+              <FolderOpen className="h-4 w-4" />
               <span className="hidden sm:inline">Categories</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center space-x-2">
