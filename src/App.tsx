@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import { UserProvider } from "./contexts/UserContext";
 import { DataProvider } from "./contexts/DataContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { AdminProvider } from "./contexts/AdminContext";
 import { ThemeProvider } from "./components/ThemeProvider";
 
 // Components
@@ -28,13 +29,15 @@ import PointsHistoryScreen from "./components/PointsHistoryScreen";
 import NotificationsScreen from "./components/NotificationsScreen";
 import BottomNavigation from "./components/BottomNavigation";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
+import AdminPanel from "./components/AdminPanel";
 
 const queryClient = new QueryClient();
 
 // Layout component to conditionally render bottom navigation
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  const hideNavigation = ['/splash', '/login'].includes(location.pathname);
+  const hideNavigation = ['/splash', '/login', '/admin'].some(path => location.pathname.startsWith(path));
   
   return (
     <>
@@ -47,13 +50,15 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 // Providers wrapper component
 const ProvidersWrapper = ({ children }: { children: React.ReactNode }) => (
   <ThemeProvider defaultTheme="light">
-    <AuthProvider>
-      <UserProvider>
-        <DataProvider>
-          {children}
-        </DataProvider>
-      </UserProvider>
-    </AuthProvider>
+    <AdminProvider>
+      <AuthProvider>
+        <UserProvider>
+          <DataProvider>
+            {children}
+          </DataProvider>
+        </UserProvider>
+      </AuthProvider>
+    </AdminProvider>
   </ThemeProvider>
 );
 
@@ -67,6 +72,17 @@ const App = () => (
             <Sonner />
             <Routes>
               <Route path="/" element={<Index />} />
+              
+              {/* Admin Routes */}
+              <Route 
+                path="/admin/*" 
+                element={
+                  <AdminRoute>
+                    <AdminPanel />
+                  </AdminRoute>
+                } 
+              />
+              
               <Route 
                 path="*" 
                 element={
