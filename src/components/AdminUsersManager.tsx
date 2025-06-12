@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -13,24 +12,27 @@ interface User {
   id: string;
   email: string;
   name: string;
-  created_at: string;
-  phone?: string;
-  city?: string;
-  country?: string;
   first_name?: string;
   last_name?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postal_code?: string;
   location?: string;
+  date_of_birth?: string;
   gender?: string;
   occupation?: string;
   company?: string;
   bio?: string;
-  address?: string;
-  state?: string;
-  postal_code?: string;
-  date_of_birth?: string;
+  avatar_url?: string;
+  preferences?: any;
   is_phone_verified?: boolean;
   is_email_verified?: boolean;
   marketing_consent?: boolean;
+  created_at: string;
+  updated_at?: string;
 }
 
 const AdminUsersManager = () => {
@@ -49,12 +51,15 @@ const AdminUsersManager = () => {
     const filtered = users.filter(user =>
       user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.phone?.includes(searchTerm) ||
-      user.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.phone?.includes(searchTerm) ||
+      user.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.state?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.country?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.occupation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.company?.toLowerCase().includes(searchTerm.toLowerCase())
+      user.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.gender?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredUsers(filtered);
   }, [users, searchTerm]);
@@ -162,7 +167,12 @@ const AdminUsersManager = () => {
   };
 
   const exportToCSV = () => {
-    const headers = ['id', 'email', 'name', 'first_name', 'last_name', 'phone', 'city', 'country', 'occupation', 'company', 'created_at'];
+    const headers = [
+      'id', 'email', 'name', 'first_name', 'last_name', 'phone', 'address', 
+      'city', 'state', 'country', 'postal_code', 'location', 'date_of_birth', 
+      'gender', 'occupation', 'company', 'bio', 'avatar_url', 'is_phone_verified', 
+      'is_email_verified', 'marketing_consent', 'created_at', 'updated_at'
+    ];
     const csvContent = [
       headers.join(','),
       ...filteredUsers.map(user => 
@@ -174,7 +184,7 @@ const AdminUsersManager = () => {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'users.csv';
+    link.download = 'users_complete.csv';
     link.click();
     window.URL.revokeObjectURL(url);
   };
@@ -202,8 +212,8 @@ const AdminUsersManager = () => {
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>Users Management</CardTitle>
-              <p className="text-gray-600">Manage all registered users</p>
+              <CardTitle>Users Management - Complete Data</CardTitle>
+              <p className="text-gray-600">Manage all registered users with complete profile information</p>
             </div>
             <Badge variant="secondary">{users.length} Total Users</Badge>
           </div>
@@ -213,7 +223,7 @@ const AdminUsersManager = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Search users by email, name, phone, city, occupation..."
+                placeholder="Search users by any field..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -248,18 +258,29 @@ const AdminUsersManager = () => {
             </Button>
           </div>
 
-          <div className="border rounded-lg overflow-hidden">
+          <div className="border rounded-lg overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Email</TableHead>
+                  <TableHead className="min-w-[200px]">Email</TableHead>
                   <TableHead>Name</TableHead>
+                  <TableHead>First Name</TableHead>
+                  <TableHead>Last Name</TableHead>
                   <TableHead>Phone</TableHead>
-                  <TableHead>Location</TableHead>
+                  <TableHead>Address</TableHead>
+                  <TableHead>City</TableHead>
+                  <TableHead>State</TableHead>
+                  <TableHead>Country</TableHead>
+                  <TableHead>Postal Code</TableHead>
+                  <TableHead>Date of Birth</TableHead>
+                  <TableHead>Gender</TableHead>
                   <TableHead>Occupation</TableHead>
                   <TableHead>Company</TableHead>
+                  <TableHead>Bio</TableHead>
                   <TableHead>Verified</TableHead>
+                  <TableHead>Marketing</TableHead>
                   <TableHead>Joined</TableHead>
+                  <TableHead>Updated</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -267,17 +288,22 @@ const AdminUsersManager = () => {
                 {filteredUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.email}</TableCell>
-                    <TableCell>
-                      {user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'N/A'}
-                    </TableCell>
+                    <TableCell>{user.name || 'N/A'}</TableCell>
+                    <TableCell>{user.first_name || 'N/A'}</TableCell>
+                    <TableCell>{user.last_name || 'N/A'}</TableCell>
                     <TableCell>{user.phone || 'N/A'}</TableCell>
-                    <TableCell>
-                      {user.city && user.country ? `${user.city}, ${user.country}` : user.location || 'N/A'}
-                    </TableCell>
+                    <TableCell className="max-w-[150px] truncate">{user.address || 'N/A'}</TableCell>
+                    <TableCell>{user.city || 'N/A'}</TableCell>
+                    <TableCell>{user.state || 'N/A'}</TableCell>
+                    <TableCell>{user.country || 'N/A'}</TableCell>
+                    <TableCell>{user.postal_code || 'N/A'}</TableCell>
+                    <TableCell>{user.date_of_birth ? new Date(user.date_of_birth).toLocaleDateString() : 'N/A'}</TableCell>
+                    <TableCell>{user.gender || 'N/A'}</TableCell>
                     <TableCell>{user.occupation || 'N/A'}</TableCell>
                     <TableCell>{user.company || 'N/A'}</TableCell>
+                    <TableCell className="max-w-[150px] truncate">{user.bio || 'N/A'}</TableCell>
                     <TableCell>
-                      <div className="flex space-x-1">
+                      <div className="flex flex-col space-y-1">
                         {user.is_email_verified && (
                           <Badge variant="secondary" className="text-xs">Email</Badge>
                         )}
@@ -287,8 +313,14 @@ const AdminUsersManager = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {new Date(user.created_at).toLocaleDateString()}
+                      {user.marketing_consent ? (
+                        <Badge variant="default" className="text-xs">Yes</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">No</Badge>
+                      )}
                     </TableCell>
+                    <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell>{user.updated_at ? new Date(user.updated_at).toLocaleDateString() : 'N/A'}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end space-x-2">
                         <Button variant="outline" size="sm">

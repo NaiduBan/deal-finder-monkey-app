@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -12,23 +11,23 @@ import { toast } from 'sonner';
 interface LMDOffer {
   lmd_id: number;
   title: string;
+  description: string;
+  long_offer: string;
   store: string;
+  merchant_homepage: string;
   categories: string;
   status: string;
   start_date: string;
   end_date: string;
   offer_value: string;
-  url: string;
-  description: string;
-  long_offer: string;
   code: string;
+  url: string;
+  smartlink: string;
   image_url: string;
   type: string;
-  smartlink: string;
-  merchant_homepage: string;
-  terms_and_conditions: string;
   featured: string;
   publisher_exclusive: string;
+  terms_and_conditions: string;
 }
 
 const AdminOffersManager = () => {
@@ -49,7 +48,9 @@ const AdminOffersManager = () => {
       offer.store?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       offer.categories?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       offer.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      offer.code?.toLowerCase().includes(searchTerm.toLowerCase())
+      offer.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      offer.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      offer.merchant_homepage?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredOffers(filtered);
   }, [offers, searchTerm]);
@@ -157,7 +158,12 @@ const AdminOffersManager = () => {
   };
 
   const exportToCSV = () => {
-    const headers = ['lmd_id', 'title', 'store', 'categories', 'status', 'offer_value', 'start_date', 'end_date', 'description', 'code', 'url'];
+    const headers = [
+      'lmd_id', 'title', 'description', 'long_offer', 'store', 'merchant_homepage', 
+      'categories', 'status', 'start_date', 'end_date', 'offer_value', 'code', 
+      'url', 'smartlink', 'image_url', 'type', 'featured', 'publisher_exclusive', 
+      'terms_and_conditions'
+    ];
     const csvContent = [
       headers.join(','),
       ...filteredOffers.map(offer => 
@@ -169,7 +175,7 @@ const AdminOffersManager = () => {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'lmd_offers.csv';
+    link.download = 'lmd_offers_complete.csv';
     link.click();
     window.URL.revokeObjectURL(url);
   };
@@ -197,8 +203,8 @@ const AdminOffersManager = () => {
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>LMD Offers Management</CardTitle>
-              <p className="text-gray-600">Manage LinkMyDeals offers data</p>
+              <CardTitle>LMD Offers Management - Complete Data</CardTitle>
+              <p className="text-gray-600">Manage LinkMyDeals offers with all available fields</p>
             </div>
             <Badge variant="secondary">{offers.length} Total Offers</Badge>
           </div>
@@ -208,7 +214,7 @@ const AdminOffersManager = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Search offers by title, store, category, description, or code..."
+                placeholder="Search offers by any field..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -243,20 +249,29 @@ const AdminOffersManager = () => {
             </Button>
           </div>
 
-          <div className="border rounded-lg overflow-hidden">
+          <div className="border rounded-lg overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Title</TableHead>
+                  <TableHead>LMD ID</TableHead>
+                  <TableHead className="min-w-[200px]">Title</TableHead>
+                  <TableHead className="min-w-[200px]">Description</TableHead>
+                  <TableHead className="min-w-[200px]">Long Offer</TableHead>
                   <TableHead>Store</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Value</TableHead>
-                  <TableHead>Code</TableHead>
+                  <TableHead>Merchant Homepage</TableHead>
+                  <TableHead>Categories</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Featured</TableHead>
-                  <TableHead>Type</TableHead>
+                  <TableHead>Start Date</TableHead>
                   <TableHead>End Date</TableHead>
+                  <TableHead>Offer Value</TableHead>
+                  <TableHead>Code</TableHead>
+                  <TableHead>URL</TableHead>
+                  <TableHead>Smartlink</TableHead>
+                  <TableHead>Image URL</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Featured</TableHead>
+                  <TableHead>Publisher Exclusive</TableHead>
+                  <TableHead className="min-w-[200px]">Terms & Conditions</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -265,8 +280,18 @@ const AdminOffersManager = () => {
                   <TableRow key={offer.lmd_id}>
                     <TableCell className="font-medium">{offer.lmd_id}</TableCell>
                     <TableCell className="max-w-xs truncate">{offer.title || 'N/A'}</TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.description || 'N/A'}</TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.long_offer || 'N/A'}</TableCell>
                     <TableCell>{offer.store || 'N/A'}</TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.merchant_homepage || 'N/A'}</TableCell>
                     <TableCell>{offer.categories || 'N/A'}</TableCell>
+                    <TableCell>
+                      <Badge variant={offer.status === 'active' ? 'default' : 'secondary'}>
+                        {offer.status || 'unknown'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{offer.start_date ? new Date(offer.start_date).toLocaleDateString() : 'N/A'}</TableCell>
+                    <TableCell>{offer.end_date ? new Date(offer.end_date).toLocaleDateString() : 'N/A'}</TableCell>
                     <TableCell>{offer.offer_value || 'N/A'}</TableCell>
                     <TableCell>
                       {offer.code ? (
@@ -275,20 +300,21 @@ const AdminOffersManager = () => {
                         'N/A'
                       )}
                     </TableCell>
-                    <TableCell>
-                      <Badge variant={offer.status === 'active' ? 'default' : 'secondary'}>
-                        {offer.status || 'unknown'}
-                      </Badge>
-                    </TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.url || 'N/A'}</TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.smartlink || 'N/A'}</TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.image_url || 'N/A'}</TableCell>
+                    <TableCell>{offer.type || 'N/A'}</TableCell>
                     <TableCell>
                       {offer.featured === 'true' && (
                         <Badge variant="destructive">Featured</Badge>
                       )}
                     </TableCell>
-                    <TableCell>{offer.type || 'N/A'}</TableCell>
                     <TableCell>
-                      {offer.end_date ? new Date(offer.end_date).toLocaleDateString() : 'N/A'}
+                      {offer.publisher_exclusive === 'true' && (
+                        <Badge variant="outline">Exclusive</Badge>
+                      )}
                     </TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.terms_and_conditions || 'N/A'}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end space-x-2">
                         <Button variant="outline" size="sm">

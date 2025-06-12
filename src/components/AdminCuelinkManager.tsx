@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -12,19 +11,19 @@ import { toast } from 'sonner';
 interface CuelinkOffer {
   Id: number;
   Title: string;
-  Merchant: string;
-  Categories: string;
-  Status: string;
-  'Start Date': string;
-  'End Date': string;
-  'Coupon Code': string;
-  URL: string;
   Description: string;
   Terms: string;
+  Merchant: string;
+  Categories: string;
   'Campaign ID': number;
   'Campaign Name': string;
   'Image URL': string;
   'Offer Added At': string;
+  'End Date': string;
+  'Start Date': string;
+  Status: string;
+  URL: string;
+  'Coupon Code': string;
 }
 
 const AdminCuelinkManager = () => {
@@ -45,7 +44,9 @@ const AdminCuelinkManager = () => {
       offer.Merchant?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       offer.Categories?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       offer.Description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      offer['Coupon Code']?.toLowerCase().includes(searchTerm.toLowerCase())
+      offer['Coupon Code']?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      offer['Campaign Name']?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      offer.Terms?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredOffers(filtered);
   }, [offers, searchTerm]);
@@ -153,7 +154,11 @@ const AdminCuelinkManager = () => {
   };
 
   const exportToCSV = () => {
-    const headers = ['Id', 'Title', 'Merchant', 'Categories', 'Status', 'Coupon Code', 'Start Date', 'End Date', 'Description', 'URL'];
+    const headers = [
+      'Id', 'Title', 'Description', 'Terms', 'Merchant', 'Categories', 
+      'Campaign ID', 'Campaign Name', 'Image URL', 'Offer Added At', 
+      'End Date', 'Start Date', 'Status', 'URL', 'Coupon Code'
+    ];
     const csvContent = [
       headers.join(','),
       ...filteredOffers.map(offer => 
@@ -165,7 +170,7 @@ const AdminCuelinkManager = () => {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'cuelink_offers.csv';
+    link.download = 'cuelink_offers_complete.csv';
     link.click();
     window.URL.revokeObjectURL(url);
   };
@@ -193,8 +198,8 @@ const AdminCuelinkManager = () => {
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>Cuelink Offers Management</CardTitle>
-              <p className="text-gray-600">Manage Cuelink affiliate offers</p>
+              <CardTitle>Cuelink Offers Management - Complete Data</CardTitle>
+              <p className="text-gray-600">Manage Cuelink affiliate offers with all available fields</p>
             </div>
             <Badge variant="secondary">{offers.length} Total Offers</Badge>
           </div>
@@ -204,7 +209,7 @@ const AdminCuelinkManager = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Search Cuelink offers by title, merchant, category, description, or coupon code..."
+                placeholder="Search Cuelink offers by any field..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -239,18 +244,25 @@ const AdminCuelinkManager = () => {
             </Button>
           </div>
 
-          <div className="border rounded-lg overflow-hidden">
+          <div className="border rounded-lg overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
-                  <TableHead>Title</TableHead>
+                  <TableHead className="min-w-[200px]">Title</TableHead>
+                  <TableHead className="min-w-[200px]">Description</TableHead>
+                  <TableHead className="min-w-[200px]">Terms</TableHead>
                   <TableHead>Merchant</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Coupon Code</TableHead>
-                  <TableHead>Campaign</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Categories</TableHead>
+                  <TableHead>Campaign ID</TableHead>
+                  <TableHead>Campaign Name</TableHead>
+                  <TableHead>Image URL</TableHead>
+                  <TableHead>Offer Added At</TableHead>
+                  <TableHead>Start Date</TableHead>
                   <TableHead>End Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>URL</TableHead>
+                  <TableHead>Coupon Code</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -259,23 +271,28 @@ const AdminCuelinkManager = () => {
                   <TableRow key={offer.Id}>
                     <TableCell className="font-medium">{offer.Id}</TableCell>
                     <TableCell className="max-w-xs truncate">{offer.Title || 'N/A'}</TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.Description || 'N/A'}</TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.Terms || 'N/A'}</TableCell>
                     <TableCell>{offer.Merchant || 'N/A'}</TableCell>
                     <TableCell>{offer.Categories || 'N/A'}</TableCell>
+                    <TableCell>{offer['Campaign ID'] || 'N/A'}</TableCell>
+                    <TableCell>{offer['Campaign Name'] || 'N/A'}</TableCell>
+                    <TableCell className="max-w-xs truncate">{offer['Image URL'] || 'N/A'}</TableCell>
+                    <TableCell>{offer['Offer Added At'] || 'N/A'}</TableCell>
+                    <TableCell>{offer['Start Date'] ? new Date(offer['Start Date']).toLocaleDateString() : 'N/A'}</TableCell>
+                    <TableCell>{offer['End Date'] ? new Date(offer['End Date']).toLocaleDateString() : 'N/A'}</TableCell>
+                    <TableCell>
+                      <Badge variant={offer.Status === 'active' ? 'default' : 'secondary'}>
+                        {offer.Status || 'unknown'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.URL || 'N/A'}</TableCell>
                     <TableCell>
                       {offer['Coupon Code'] ? (
                         <Badge variant="outline">{offer['Coupon Code']}</Badge>
                       ) : (
                         'N/A'
                       )}
-                    </TableCell>
-                    <TableCell>{offer['Campaign Name'] || 'N/A'}</TableCell>
-                    <TableCell>
-                      <Badge variant={offer.Status === 'active' ? 'default' : 'secondary'}>
-                        {offer.Status || 'unknown'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {offer['End Date'] ? new Date(offer['End Date']).toLocaleDateString() : 'N/A'}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end space-x-2">
