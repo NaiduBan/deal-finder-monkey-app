@@ -1,14 +1,29 @@
-
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Star, ShoppingBag, Bell, Gift, Users, TrendingUp, Smartphone, Laptop } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useEffect } from 'react';
 
 const Index = () => {
+  const isMobile = useIsMobile();
+
   // Check if trying to access admin
   if (window.location.pathname.startsWith('/admin')) {
     return <Navigate to="/admin" replace />;
+  }
+
+  // Redirect mobile users directly to the app
+  useEffect(() => {
+    if (isMobile) {
+      window.location.href = '/splash';
+    }
+  }, [isMobile]);
+
+  // Don't render anything for mobile users (they'll be redirected)
+  if (isMobile) {
+    return null;
   }
   
   const features = [
