@@ -53,17 +53,22 @@ const AdminCuelinkManager = () => {
 
   const fetchOffers = async () => {
     try {
+      console.log('Fetching offers from Cuelink_data table...');
+      
       const { data, error } = await supabase
         .from('Cuelink_data')
         .select('*')
         .order('Id', { ascending: false });
 
+      console.log('Cuelink offers fetch result:', { data, error, count: data?.length });
+
       if (error) {
         console.error('Error fetching Cuelink offers:', error);
-        toast.error('Failed to fetch Cuelink offers');
+        toast.error(`Failed to fetch Cuelink offers: ${error.message}`);
         return;
       }
 
+      console.log('Successfully fetched Cuelink offers:', data?.length || 0);
       setOffers(data || []);
     } catch (error) {
       console.error('Error:', error);
@@ -111,17 +116,21 @@ const AdminCuelinkManager = () => {
     try {
       const text = await file.text();
       const lines = text.split('\n');
-      const headers = lines[0].split(',').map(h => h.trim());
+      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
       
       const offerData = [];
       for (let i = 1; i < lines.length; i++) {
         if (lines[i].trim()) {
-          const values = lines[i].split(',').map(v => v.trim());
+          const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
           const offer: any = {};
           headers.forEach((header, index) => {
-            offer[header] = values[index] || null;
+            if (values[index] && values[index] !== 'N/A') {
+              offer[header] = values[index];
+            }
           });
-          offerData.push(offer);
+          if (offer.Id) {
+            offerData.push(offer);
+          }
         }
       }
 
@@ -154,15 +163,21 @@ const AdminCuelinkManager = () => {
   };
 
   const exportToCSV = () => {
+    // Following exact database column order from Cuelink_data table
     const headers = [
       'Id', 'Title', 'Description', 'Terms', 'Merchant', 'Categories', 
       'Campaign ID', 'Campaign Name', 'Image URL', 'Offer Added At', 
-      'End Date', 'Start Date', 'Status', 'URL', 'Coupon Code'
+      'Start Date', 'End Date', 'Status', 'URL', 'Coupon Code'
     ];
+    
     const csvContent = [
       headers.join(','),
       ...filteredOffers.map(offer => 
-        headers.map(header => `"${(offer[header as keyof CuelinkOffer] || '').toString().replace(/"/g, '""')}"`).join(',')
+        headers.map(header => {
+          const value = offer[header as keyof CuelinkOffer];
+          if (value === null || value === undefined) return '';
+          return `"${value.toString().replace(/"/g, '""')}"`;
+        }).join(',')
       )
     ].join('\n');
 
@@ -198,8 +213,8 @@ const AdminCuelinkManager = () => {
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>Cuelink Offers Management - Complete Data</CardTitle>
-              <p className="text-gray-600">Manage Cuelink affiliate offers with all available fields</p>
+              <CardTitle>Cuelink Offers Management - Complete Database View</CardTitle>
+              <p className="text-gray-600">All Cuelink affiliate offers with exact database structure</p>
             </div>
             <Badge variant="secondary">{offers.length} Total Offers</Badge>
           </div>
@@ -327,7 +342,7 @@ const AdminCuelinkManager = () => {
 
           {filteredOffers.length === 0 && (
             <div className="text-center py-8 text-gray-500">
-              {searchTerm ? 'No Cuelink offers found matching your search.' : 'No Cuelink offers found.'}
+              {searchTerm ? 'No Cuelink offers found matching your search.' : 'No Cuelink offers found. Check console for debugging info.'}
             </div>
           )}
         </CardContent>

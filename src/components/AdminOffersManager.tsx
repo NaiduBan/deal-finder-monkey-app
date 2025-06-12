@@ -20,14 +20,15 @@ interface LMDOffer {
   start_date: string;
   end_date: string;
   offer_value: string;
-  code: string;
-  url: string;
-  smartlink: string;
-  image_url: string;
+  offer: string;
   type: string;
-  featured: string;
+  image_url: string;
+  smartlink: string;
+  url: string;
   publisher_exclusive: string;
+  featured: string;
   terms_and_conditions: string;
+  code: string;
 }
 
 const AdminOffersManager = () => {
@@ -50,24 +51,31 @@ const AdminOffersManager = () => {
       offer.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       offer.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       offer.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      offer.merchant_homepage?.toLowerCase().includes(searchTerm.toLowerCase())
+      offer.merchant_homepage?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      offer.long_offer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      offer.offer?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredOffers(filtered);
   }, [offers, searchTerm]);
 
   const fetchOffers = async () => {
     try {
+      console.log('Fetching offers from Offers_data table...');
+      
       const { data, error } = await supabase
         .from('Offers_data')
         .select('*')
         .order('lmd_id', { ascending: false });
 
+      console.log('Offers fetch result:', { data, error, count: data?.length });
+
       if (error) {
         console.error('Error fetching offers:', error);
-        toast.error('Failed to fetch offers');
+        toast.error(`Failed to fetch offers: ${error.message}`);
         return;
       }
 
+      console.log('Successfully fetched offers:', data?.length || 0);
       setOffers(data || []);
     } catch (error) {
       console.error('Error:', error);
@@ -115,17 +123,21 @@ const AdminOffersManager = () => {
     try {
       const text = await file.text();
       const lines = text.split('\n');
-      const headers = lines[0].split(',').map(h => h.trim());
+      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
       
       const offerData = [];
       for (let i = 1; i < lines.length; i++) {
         if (lines[i].trim()) {
-          const values = lines[i].split(',').map(v => v.trim());
+          const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
           const offer: any = {};
           headers.forEach((header, index) => {
-            offer[header] = values[index] || null;
+            if (values[index] && values[index] !== 'N/A') {
+              offer[header] = values[index];
+            }
           });
-          offerData.push(offer);
+          if (offer.lmd_id) {
+            offerData.push(offer);
+          }
         }
       }
 
@@ -158,16 +170,22 @@ const AdminOffersManager = () => {
   };
 
   const exportToCSV = () => {
+    // Following exact database column order from Offers_data table
     const headers = [
       'lmd_id', 'title', 'description', 'long_offer', 'store', 'merchant_homepage', 
-      'categories', 'status', 'start_date', 'end_date', 'offer_value', 'code', 
-      'url', 'smartlink', 'image_url', 'type', 'featured', 'publisher_exclusive', 
-      'terms_and_conditions'
+      'categories', 'status', 'start_date', 'end_date', 'offer_value', 'offer',
+      'type', 'image_url', 'smartlink', 'url', 'publisher_exclusive', 'featured',
+      'terms_and_conditions', 'code'
     ];
+    
     const csvContent = [
       headers.join(','),
       ...filteredOffers.map(offer => 
-        headers.map(header => `"${(offer[header as keyof LMDOffer] || '').toString().replace(/"/g, '""')}"`).join(',')
+        headers.map(header => {
+          const value = offer[header as keyof LMDOffer];
+          if (value === null || value === undefined) return '';
+          return `"${value.toString().replace(/"/g, '""')}"`;
+        }).join(',')
       )
     ].join('\n');
 
@@ -203,8 +221,8 @@ const AdminOffersManager = () => {
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>LMD Offers Management - Complete Data</CardTitle>
-              <p className="text-gray-600">Manage LinkMyDeals offers with all available fields</p>
+              <CardTitle>LMD Offers Management - Complete Database View</CardTitle>
+              <p className="text-gray-600">All LinkMyDeals offers with exact database structure</p>
             </div>
             <Badge variant="secondary">{offers.length} Total Offers</Badge>
           </div>
@@ -264,14 +282,15 @@ const AdminOffersManager = () => {
                   <TableHead>Start Date</TableHead>
                   <TableHead>End Date</TableHead>
                   <TableHead>Offer Value</TableHead>
-                  <TableHead>Code</TableHead>
-                  <TableHead>URL</TableHead>
-                  <TableHead>Smartlink</TableHead>
-                  <TableHead>Image URL</TableHead>
+                  <TableHead className="min-w-[200px]">Offer</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Featured</TableHead>
+                  <TableHead>Image URL</TableHead>
+                  <TableHead>Smartlink</TableHead>
+                  <TableHead>URL</TableHead>
                   <TableHead>Publisher Exclusive</TableHead>
+                  <TableHead>Featured</TableHead>
                   <TableHead className="min-w-[200px]">Terms & Conditions</TableHead>
+                  <TableHead>Code</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -293,6 +312,22 @@ const AdminOffersManager = () => {
                     <TableCell>{offer.start_date ? new Date(offer.start_date).toLocaleDateString() : 'N/A'}</TableCell>
                     <TableCell>{offer.end_date ? new Date(offer.end_date).toLocaleDateString() : 'N/A'}</TableCell>
                     <TableCell>{offer.offer_value || 'N/A'}</TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.offer || 'N/A'}</TableCell>
+                    <TableCell>{offer.type || 'N/A'}</TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.image_url || 'N/A'}</TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.smartlink || 'N/A'}</TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.url || 'N/A'}</TableCell>
+                    <TableCell>
+                      {offer.publisher_exclusive === 'true' && (
+                        <Badge variant="outline">Exclusive</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {offer.featured === 'true' && (
+                        <Badge variant="destructive">Featured</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.terms_and_conditions || 'N/A'}</TableCell>
                     <TableCell>
                       {offer.code ? (
                         <Badge variant="outline">{offer.code}</Badge>
@@ -300,21 +335,6 @@ const AdminOffersManager = () => {
                         'N/A'
                       )}
                     </TableCell>
-                    <TableCell className="max-w-xs truncate">{offer.url || 'N/A'}</TableCell>
-                    <TableCell className="max-w-xs truncate">{offer.smartlink || 'N/A'}</TableCell>
-                    <TableCell className="max-w-xs truncate">{offer.image_url || 'N/A'}</TableCell>
-                    <TableCell>{offer.type || 'N/A'}</TableCell>
-                    <TableCell>
-                      {offer.featured === 'true' && (
-                        <Badge variant="destructive">Featured</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {offer.publisher_exclusive === 'true' && (
-                        <Badge variant="outline">Exclusive</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate">{offer.terms_and_conditions || 'N/A'}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end space-x-2">
                         <Button variant="outline" size="sm">
@@ -348,7 +368,7 @@ const AdminOffersManager = () => {
 
           {filteredOffers.length === 0 && (
             <div className="text-center py-8 text-gray-500">
-              {searchTerm ? 'No offers found matching your search.' : 'No offers found.'}
+              {searchTerm ? 'No offers found matching your search.' : 'No offers found. Check console for debugging info.'}
             </div>
           )}
         </CardContent>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -15,19 +16,19 @@ interface User {
   first_name?: string;
   last_name?: string;
   phone?: string;
+  location?: string;
+  gender?: string;
+  occupation?: string;
+  company?: string;
+  bio?: string;
   address?: string;
   city?: string;
   state?: string;
   country?: string;
   postal_code?: string;
-  location?: string;
-  date_of_birth?: string;
-  gender?: string;
-  occupation?: string;
-  company?: string;
-  bio?: string;
   avatar_url?: string;
   preferences?: any;
+  date_of_birth?: string;
   is_phone_verified?: boolean;
   is_email_verified?: boolean;
   marketing_consent?: boolean;
@@ -66,17 +67,23 @@ const AdminUsersManager = () => {
 
   const fetchUsers = async () => {
     try {
+      console.log('Fetching users from profiles table...');
+      
+      // Use service role or admin context to bypass RLS
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
+      console.log('Users fetch result:', { data, error, count: data?.length });
+
       if (error) {
         console.error('Error fetching users:', error);
-        toast.error('Failed to fetch users');
+        toast.error(`Failed to fetch users: ${error.message}`);
         return;
       }
 
+      console.log('Successfully fetched users:', data?.length || 0);
       setUsers(data || []);
     } catch (error) {
       console.error('Error:', error);
@@ -124,28 +131,32 @@ const AdminUsersManager = () => {
     try {
       const text = await file.text();
       const lines = text.split('\n');
-      const headers = lines[0].split(',').map(h => h.trim());
+      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
       
-      const users = [];
+      const userData = [];
       for (let i = 1; i < lines.length; i++) {
         if (lines[i].trim()) {
-          const values = lines[i].split(',').map(v => v.trim());
+          const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
           const user: any = {};
           headers.forEach((header, index) => {
-            user[header] = values[index] || null;
+            if (values[index] && values[index] !== 'N/A') {
+              user[header] = values[index];
+            }
           });
-          users.push(user);
+          if (user.id || user.email) {
+            userData.push(user);
+          }
         }
       }
 
-      if (users.length === 0) {
+      if (userData.length === 0) {
         toast.error('No valid user data found in CSV');
         return;
       }
 
       const { data, error } = await supabase
         .from('profiles')
-        .upsert(users, { onConflict: 'email' });
+        .upsert(userData, { onConflict: 'id' });
 
       if (error) {
         console.error('Error uploading users:', error);
@@ -153,7 +164,7 @@ const AdminUsersManager = () => {
         return;
       }
 
-      toast.success(`Successfully uploaded ${users.length} users`);
+      toast.success(`Successfully uploaded ${userData.length} users`);
       fetchUsers();
     } catch (error) {
       console.error('Error processing CSV:', error);
@@ -167,16 +178,24 @@ const AdminUsersManager = () => {
   };
 
   const exportToCSV = () => {
+    // Following exact database column order from profiles table
     const headers = [
-      'id', 'email', 'name', 'first_name', 'last_name', 'phone', 'address', 
-      'city', 'state', 'country', 'postal_code', 'location', 'date_of_birth', 
-      'gender', 'occupation', 'company', 'bio', 'avatar_url', 'is_phone_verified', 
-      'is_email_verified', 'marketing_consent', 'created_at', 'updated_at'
+      'id', 'email', 'name', 'first_name', 'last_name', 'phone', 'location', 
+      'gender', 'occupation', 'company', 'bio', 'address', 'city', 'state', 
+      'country', 'postal_code', 'avatar_url', 'preferences', 'date_of_birth',
+      'is_phone_verified', 'is_email_verified', 'marketing_consent', 
+      'created_at', 'updated_at'
     ];
+    
     const csvContent = [
       headers.join(','),
       ...filteredUsers.map(user => 
-        headers.map(header => user[header as keyof User] || '').join(',')
+        headers.map(header => {
+          const value = user[header as keyof User];
+          if (value === null || value === undefined) return '';
+          if (typeof value === 'object') return `"${JSON.stringify(value).replace(/"/g, '""')}"`;
+          return `"${value.toString().replace(/"/g, '""')}"`;
+        }).join(',')
       )
     ].join('\n');
 
@@ -212,8 +231,8 @@ const AdminUsersManager = () => {
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>Users Management - Complete Data</CardTitle>
-              <p className="text-gray-600">Manage all registered users with complete profile information</p>
+              <CardTitle>Users Management - Complete Database View</CardTitle>
+              <p className="text-gray-600">All user profiles with complete database structure</p>
             </div>
             <Badge variant="secondary">{users.length} Total Users</Badge>
           </div>
@@ -262,55 +281,70 @@ const AdminUsersManager = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="min-w-[200px]">ID</TableHead>
                   <TableHead className="min-w-[200px]">Email</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>First Name</TableHead>
                   <TableHead>Last Name</TableHead>
                   <TableHead>Phone</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Gender</TableHead>
+                  <TableHead>Occupation</TableHead>
+                  <TableHead>Company</TableHead>
+                  <TableHead className="min-w-[200px]">Bio</TableHead>
                   <TableHead>Address</TableHead>
                   <TableHead>City</TableHead>
                   <TableHead>State</TableHead>
                   <TableHead>Country</TableHead>
                   <TableHead>Postal Code</TableHead>
+                  <TableHead>Avatar URL</TableHead>
+                  <TableHead>Preferences</TableHead>
                   <TableHead>Date of Birth</TableHead>
-                  <TableHead>Gender</TableHead>
-                  <TableHead>Occupation</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Bio</TableHead>
-                  <TableHead>Verified</TableHead>
-                  <TableHead>Marketing</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead>Updated</TableHead>
+                  <TableHead>Phone Verified</TableHead>
+                  <TableHead>Email Verified</TableHead>
+                  <TableHead>Marketing Consent</TableHead>
+                  <TableHead>Created At</TableHead>
+                  <TableHead>Updated At</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredUsers.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.email}</TableCell>
+                    <TableCell className="font-medium text-xs">{user.id}</TableCell>
+                    <TableCell className="font-medium">{user.email || 'N/A'}</TableCell>
                     <TableCell>{user.name || 'N/A'}</TableCell>
                     <TableCell>{user.first_name || 'N/A'}</TableCell>
                     <TableCell>{user.last_name || 'N/A'}</TableCell>
                     <TableCell>{user.phone || 'N/A'}</TableCell>
+                    <TableCell>{user.location || 'N/A'}</TableCell>
+                    <TableCell>{user.gender || 'N/A'}</TableCell>
+                    <TableCell>{user.occupation || 'N/A'}</TableCell>
+                    <TableCell>{user.company || 'N/A'}</TableCell>
+                    <TableCell className="max-w-[150px] truncate">{user.bio || 'N/A'}</TableCell>
                     <TableCell className="max-w-[150px] truncate">{user.address || 'N/A'}</TableCell>
                     <TableCell>{user.city || 'N/A'}</TableCell>
                     <TableCell>{user.state || 'N/A'}</TableCell>
                     <TableCell>{user.country || 'N/A'}</TableCell>
                     <TableCell>{user.postal_code || 'N/A'}</TableCell>
+                    <TableCell className="max-w-[100px] truncate">{user.avatar_url || 'N/A'}</TableCell>
+                    <TableCell className="max-w-[100px] truncate">
+                      {user.preferences ? JSON.stringify(user.preferences) : 'N/A'}
+                    </TableCell>
                     <TableCell>{user.date_of_birth ? new Date(user.date_of_birth).toLocaleDateString() : 'N/A'}</TableCell>
-                    <TableCell>{user.gender || 'N/A'}</TableCell>
-                    <TableCell>{user.occupation || 'N/A'}</TableCell>
-                    <TableCell>{user.company || 'N/A'}</TableCell>
-                    <TableCell className="max-w-[150px] truncate">{user.bio || 'N/A'}</TableCell>
                     <TableCell>
-                      <div className="flex flex-col space-y-1">
-                        {user.is_email_verified && (
-                          <Badge variant="secondary" className="text-xs">Email</Badge>
-                        )}
-                        {user.is_phone_verified && (
-                          <Badge variant="secondary" className="text-xs">Phone</Badge>
-                        )}
-                      </div>
+                      {user.is_phone_verified ? (
+                        <Badge variant="default" className="text-xs">Yes</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">No</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {user.is_email_verified ? (
+                        <Badge variant="default" className="text-xs">Yes</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">No</Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       {user.marketing_consent ? (
@@ -347,7 +381,7 @@ const AdminUsersManager = () => {
 
           {filteredUsers.length === 0 && (
             <div className="text-center py-8 text-gray-500">
-              {searchTerm ? 'No users found matching your search.' : 'No users found.'}
+              {searchTerm ? 'No users found matching your search.' : 'No users found. Check console for debugging info.'}
             </div>
           )}
         </CardContent>
