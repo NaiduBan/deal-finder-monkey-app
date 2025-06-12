@@ -70,7 +70,7 @@ const Index = () => {
               <span className="text-3xl lg:text-4xl">🐵</span>
             </div>
             <div>
-              <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 mb-2">MonkeyOffers</h1>
+              <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 mb-2">OffersMonkey</h1>
               <p className="text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto">
                 Discover amazing deals and offers from top brands. Save money while shopping smart!
               </p>
