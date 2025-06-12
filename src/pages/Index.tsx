@@ -82,7 +82,9 @@ const Index = () => {
           {/* Logo and Main Heading */}
           <div className="flex flex-col items-center space-y-4">
             <div className="w-20 h-20 lg:w-24 lg:h-24 bg-monkeyGreen rounded-full flex items-center justify-center shadow-lg">
-              <span className="text-3xl lg:text-4xl">🐵</span>
+              <span className="text-3xl lg:text-4xl">
+              <img src="https://offersmonkey.com/favicon.ico" alt="Logo">
+              </span>
             </div>
             <div>
               <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 mb-2">OffersMonkey</h1>
