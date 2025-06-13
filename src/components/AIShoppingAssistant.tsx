@@ -9,6 +9,14 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
 
+// Extend Window interface for Speech Recognition
+declare global {
+  interface Window {
+    webkitSpeechRecognition: any;
+    SpeechRecognition: any;
+  }
+}
+
 const AIShoppingAssistant = () => {
   const [isListening, setIsListening] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,7 +37,7 @@ const AIShoppingAssistant = () => {
       recognition.interimResults = false;
       recognition.lang = 'en-US';
 
-      recognition.onresult = (event) => {
+      recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setVoiceText(transcript);
         setSearchQuery(transcript);
@@ -76,7 +84,7 @@ const AIShoppingAssistant = () => {
     generateRecommendations();
   }, [offers, user.savedOffers]);
 
-  const handleVoiceSearch = (query) => {
+  const handleVoiceSearch = (query: string) => {
     console.log('Voice search:', query);
     // Implement voice-based deal discovery logic here
   };
@@ -85,7 +93,7 @@ const AIShoppingAssistant = () => {
     setIsListening(!isListening);
   };
 
-  const createPriceAlert = (offerId) => {
+  const createPriceAlert = (offerId: string) => {
     const newAlert = {
       id: Date.now(),
       offerId,
@@ -152,7 +160,7 @@ const AIShoppingAssistant = () => {
         </CardHeader>
         <CardContent>
           <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-3'}`}>
-            {recommendations.map((offer) => (
+            {recommendations.map((offer: any) => (
               <div key={offer.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-semibold text-sm">{offer.title}</h3>
@@ -197,7 +205,7 @@ const AIShoppingAssistant = () => {
         <CardContent>
           {priceAlerts.length > 0 ? (
             <div className="space-y-3">
-              {priceAlerts.map((alert) => (
+              {priceAlerts.map((alert: any) => (
                 <div key={alert.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                   <div>
                     <p className="font-medium">Price alert active</p>

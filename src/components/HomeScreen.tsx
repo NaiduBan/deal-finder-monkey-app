@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Bell, Search, AlertCircle } from 'lucide-react';
+import { MapPin, Bell, Search, AlertCircle, Bot, Users } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent } from '@/components/ui/card';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
 import OfferCard from './OfferCard';
@@ -15,7 +16,6 @@ import { fetchCuelinkOffers } from '@/services/cuelinkService';
 import { Category, Offer, CuelinkOffer } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import CuelinkPagination from './CuelinkPagination';
-import { Card, CardContent, Bot, Users } from '@/components/ui/card';
 
 const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
