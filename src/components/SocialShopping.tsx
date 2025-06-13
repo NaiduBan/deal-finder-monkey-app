@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Users, Share2, Heart, MessageCircle, Star, Trophy, Gift, Clock, MapPin, Tag, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -391,7 +390,7 @@ const SocialShopping = () => {
                 <Share2 className="w-5 h-5" />
                 <span>Share a Deal</span>
               </CardTitle>
-            </CardContent>
+            </CardHeader>
             <CardContent>
               <div className="flex space-x-3">
                 <Input
