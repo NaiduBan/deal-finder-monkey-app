@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Bell, Search, AlertCircle, Bot, Users, Crown, Building2 } from 'lucide-react';
+import { MapPin, Bell, Search, AlertCircle, Bot, Users } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -9,9 +8,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
 import OfferCard from './OfferCard';
-import CategoryItem from './CategoryItem';
-import BannerCarousel from './BannerCarousel';
 import CuelinkOfferCard from './CuelinkOfferCard';
+import CategoryItem from './CategoryItem';
+import { supabase } from '@/integrations/supabase/client';
+import { applyPreferencesToOffers } from '@/services/supabaseService';
 import { fetchCuelinkOffers } from '@/services/cuelinkService';
 import { Category, Offer, CuelinkOffer } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -19,244 +19,767 @@ import CuelinkPagination from './CuelinkPagination';
 
 const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [cuelinkOffers, setCuelinkOffers] = useState<CuelinkOffer[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(12);
-  const [isLoadingCuelink, setIsLoadingCuelink] = useState(false);
   const { user } = useUser();
-  const { categories, offers, banners, isLoading: dataLoading } = useData();
   const isMobile = useIsMobile();
+  const { 
+    offers, 
+    filteredOffers,
+    categories: allCategories, 
+    isLoading: isDataLoading, 
+    error, 
+    refetchOffers, 
+    isUsingMockData 
+  } = useData();
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [userPreferences, setUserPreferences] = useState<{[key: string]: string[]}>({
+    brands: [],
+    stores: [],
+    banks: []
+  });
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [dynamicCategories, setDynamicCategories] = useState<Category[]>([]);
+  const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
+  const [localFilteredOffers, setLocalFilteredOffers] = useState(filteredOffers);
+  const [cuelinkOffers, setCuelinkOffers] = useState<CuelinkOffer[]>([]);
+  const [isCuelinkLoading, setIsCuelinkLoading] = useState(false);
+  const [cuelinkCurrentPage, setCuelinkCurrentPage] = useState(1);
+  const cuelinkItemsPerPage = 12;
 
-  // Load Cuelink offers
+  // Debounce search input
+  useEffect(() => {
+    const timerId = setTimeout(() => {
+      setDebouncedSearchTerm(searchQuery);
+    }, 300);
+
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [searchQuery]);
+
+  // Update local filtered offers when context filtered offers change
+  useEffect(() => {
+    setLocalFilteredOffers(filteredOffers);
+  }, [filteredOffers]);
+
+  // Fetch Cuelink offers
   useEffect(() => {
     const loadCuelinkOffers = async () => {
-      setIsLoadingCuelink(true);
+      setIsCuelinkLoading(true);
       try {
+        console.log('Loading Cuelink offers...');
         const cuelinkData = await fetchCuelinkOffers();
+        console.log('Fetched Cuelink data:', cuelinkData);
         setCuelinkOffers(cuelinkData);
+        console.log('Loaded Cuelink offers:', cuelinkData.length);
       } catch (error) {
         console.error('Error loading Cuelink offers:', error);
       } finally {
-        setIsLoadingCuelink(false);
+        setIsCuelinkLoading(false);
       }
     };
 
     loadCuelinkOffers();
   }, []);
 
-  // Filter offers based on search query
-  const filteredOffers = offers.filter((offer: Offer) =>
-    offer.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    offer.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    offer.store?.toLowerCase().includes(searchQuery.toLowerCase())
+  // Extract categories from today's offers and filter out categories with no offers
+  useEffect(() => {
+    if (offers && offers.length > 0) {
+      const categoryCount = new Map<string, number>();
+      
+      // Count offers per category
+      offers.forEach(offer => {
+        if (offer.category) {
+          const categories = offer.category.split(',').map(cat => cat.trim());
+          categories.forEach(cat => {
+            if (cat) {
+              categoryCount.set(cat, (categoryCount.get(cat) || 0) + 1);
+            }
+          });
+        }
+      });
+
+      // Only include categories that have at least 3 offers
+      const categoryObjects: Category[] = Array.from(categoryCount.entries())
+        .filter(([_, count]) => count >= 3) // Filter out categories with less than 3 offers
+        .map(([categoryName, _]) => {
+          const matchingCategory = allCategories.find(c => 
+            c.name.toLowerCase() === categoryName.toLowerCase() ||
+            c.id.toLowerCase() === categoryName.toLowerCase().replace(/\s+/g, '-')
+          );
+
+          if (matchingCategory) {
+            return matchingCategory;
+          }
+
+          return {
+            id: categoryName.toLowerCase().replace(/\s+/g, '-'),
+            name: categoryName,
+            icon: getCategoryIcon(categoryName),
+          };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .slice(0, 12); // Limit to 12 categories to avoid clutter
+
+      console.log('Generated dynamic categories with offer counts:', categoryObjects);
+      setDynamicCategories(categoryObjects);
+    } else {
+      setDynamicCategories([]);
+    }
+  }, [offers, allCategories]);
+
+  // Helper function to determine an appropriate icon based on the category name
+  const getCategoryIcon = (categoryName: string): string => {
+    const name = categoryName.toLowerCase();
+    
+    if (name.includes('electronics') || name.includes('tech')) return 'laptop';
+    if (name.includes('fashion') || name.includes('clothing') || name.includes('apparel')) return 'shirt';
+    if (name.includes('food') || name.includes('drink') || name.includes('restaurant')) return 'utensils';
+    if (name.includes('home') || name.includes('furniture')) return 'home';
+    if (name.includes('travel') || name.includes('flight')) return 'plane';
+    if (name.includes('beauty') || name.includes('cosmetic')) return 'sparkles';
+    if (name.includes('health') || name.includes('fitness')) return 'heart';
+    if (name.includes('toy') || name.includes('kid')) return 'gift';
+    
+    return 'shopping-bag';
+  };
+
+  // Fetch user preferences when component mounts and apply them immediately
+  useEffect(() => {
+    const fetchAndApplyUserPreferences = async () => {
+      try {
+        console.log("Fetching user preferences...");
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          const { data, error } = await supabase
+            .from('user_preferences')
+            .select('*')
+            .eq('user_id', session.user.id);
+            
+          if (error) {
+            console.error('Error fetching user preferences:', error);
+          } else if (data) {
+            const preferences: {[key: string]: string[]} = {
+              brands: data.filter(p => p.preference_type === 'brands').map(p => p.preference_id),
+              stores: data.filter(p => p.preference_type === 'stores').map(p => p.preference_id),
+              banks: data.filter(p => p.preference_type === 'banks').map(p => p.preference_id)
+            };
+            
+            setUserPreferences(preferences);
+            console.log('Loaded preferences:', preferences);
+
+            // Apply preferences immediately if we have offers
+            if (offers && offers.length > 0) {
+              const hasPreferences = preferences.brands.length > 0 || 
+                                   preferences.stores.length > 0 || 
+                                   preferences.banks.length > 0;
+              
+              if (hasPreferences) {
+                console.log('Applying preferences immediately to offers');
+                const filtered = applyPreferencesToOffers(offers, preferences);
+                const finalOffers = filtered.length > 0 ? filtered : offers;
+                setLocalFilteredOffers(finalOffers);
+                console.log('Applied preferences - showing', finalOffers.length, 'offers');
+              } else {
+                setLocalFilteredOffers(offers);
+              }
+            }
+
+            if (preferences.brands.length > 0 || preferences.stores.length > 0 || preferences.banks.length > 0) {
+              console.log('User has personalization preferences applied');
+            }
+          }
+          
+          setHasLoadedPreferences(true);
+        }
+      } catch (error) {
+        console.error('Error loading user preferences:', error);
+        setHasLoadedPreferences(true);
+      }
+    };
+    
+    fetchAndApplyUserPreferences();
+  }, [offers]); // Re-run when offers change
+
+  // Listen for real-time preference changes and update immediately
+  useEffect(() => {
+    const setupRealtimeListener = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) return;
+
+      console.log('Setting up real-time preference listener for home screen');
+
+      const channel = supabase
+        .channel('home-preference-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'user_preferences',
+            filter: `user_id=eq.${session.user.id}`
+          },
+          async (payload) => {
+            console.log('Home screen detected preference change:', payload);
+            
+            // Refetch all preferences immediately
+            try {
+              const { data, error } = await supabase
+                .from('user_preferences')
+                .select('*')
+                .eq('user_id', session.user.id);
+                
+              if (!error && data) {
+                const newPreferences: {[key: string]: string[]} = {
+                  brands: data.filter(p => p.preference_type === 'brands').map(p => p.preference_id),
+                  stores: data.filter(p => p.preference_type === 'stores').map(p => p.preference_id),
+                  banks: data.filter(p => p.preference_type === 'banks').map(p => p.preference_id)
+                };
+                
+                setUserPreferences(newPreferences);
+                console.log('Updated preferences in home screen:', newPreferences);
+                
+                // Apply new preferences immediately
+                if (offers && offers.length > 0) {
+                  const hasPreferences = newPreferences.brands.length > 0 || 
+                                       newPreferences.stores.length > 0 || 
+                                       newPreferences.banks.length > 0;
+                  
+                  if (hasPreferences) {
+                    console.log('Applying new preferences to offers');
+                    const filtered = applyPreferencesToOffers(offers, newPreferences);
+                    const finalOffers = filtered.length > 0 ? filtered : offers;
+                    setLocalFilteredOffers(finalOffers);
+                    console.log('Applied new preferences - showing', finalOffers.length, 'offers');
+                  } else {
+                    console.log('No preferences, showing all offers');
+                    setLocalFilteredOffers(offers);
+                  }
+                }
+              }
+            } catch (error) {
+              console.error('Error refetching preferences:', error);
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        console.log('Cleaning up home screen preference listener');
+        supabase.removeChannel(channel);
+      };
+    };
+
+    setupRealtimeListener();
+  }, [offers]);
+
+  useEffect(() => {
+    console.log("Home Screen Rendered");
+    console.log("Offers loaded:", offers ? offers.length : 0);
+    console.log("Filtered offers loaded:", localFilteredOffers ? localFilteredOffers.length : 0);
+    console.log("Categories loaded:", dynamicCategories ? dynamicCategories.length : 0);
+    console.log("Is loading:", isDataLoading);
+    console.log("Error:", error);
+    console.log("Using mock data:", isUsingMockData);
+    console.log("User preferences:", userPreferences);
+    console.log("Selected category:", selectedCategory);
+    console.log("Has loaded preferences:", hasLoadedPreferences);
+  }, [offers, localFilteredOffers, dynamicCategories, isDataLoading, error, isUsingMockData, userPreferences, selectedCategory, hasLoadedPreferences]);
+
+  const loadMoreOffers = () => {
+    setIsLoading(true);
+    refetchOffers().then(() => {
+      setIsLoading(false);
+    });
+  };
+  
+  // Enhanced search functionality with category filtering on top of already filtered offers
+  const displayedOffers = localFilteredOffers.filter(offer => {
+    if (selectedCategory && offer.category) {
+      const categoryMatch = offer.category.toLowerCase().includes(selectedCategory.toLowerCase()) ||
+                           selectedCategory.toLowerCase().includes(offer.category.toLowerCase());
+      if (!categoryMatch) return false;
+    }
+    
+    if (debouncedSearchTerm) {
+      const searchTermLower = debouncedSearchTerm.toLowerCase();
+      const matchesSearch = 
+        (offer.title && offer.title.toLowerCase().includes(searchTermLower)) ||
+        (offer.store && offer.store.toLowerCase().includes(searchTermLower)) ||
+        (offer.description && offer.description.toLowerCase().includes(searchTermLower)) ||
+        (offer.category && offer.category.toLowerCase().includes(searchTermLower));
+      
+      if (!matchesSearch) return false;
+    }
+    
+    return true;
+  });
+
+  // Filter Cuelink offers for Flash Deals tab
+  const displayedCuelinkOffers = cuelinkOffers.filter(offer => {
+    if (debouncedSearchTerm) {
+      const searchTermLower = debouncedSearchTerm.toLowerCase();
+      const matchesSearch = 
+        (offer.Title && offer.Title.toLowerCase().includes(searchTermLower)) ||
+        (offer.Merchant && offer.Merchant.toLowerCase().includes(searchTermLower)) ||
+        (offer.Description && offer.Description.toLowerCase().includes(searchTermLower)) ||
+        (offer.Categories && offer.Categories.toLowerCase().includes(searchTermLower));
+      
+      if (!matchesSearch) return false;
+    }
+    
+    return true;
+  });
+
+  // Pagination calculations for Cuelink offers
+  const totalCuelinkPages = Math.ceil(displayedCuelinkOffers.length / cuelinkItemsPerPage);
+  const paginatedCuelinkOffers = displayedCuelinkOffers.slice(
+    (cuelinkCurrentPage - 1) * cuelinkItemsPerPage,
+    cuelinkCurrentPage * cuelinkItemsPerPage
   );
 
-  const filteredCuelinkOffers = cuelinkOffers.filter((offer: CuelinkOffer) =>
-    offer.Title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    offer.Description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    offer.Merchant?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Pagination for Cuelink offers
-  const totalPages = Math.ceil(filteredCuelinkOffers.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedCuelinkOffers = filteredCuelinkOffers.slice(startIndex, endIndex);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+  const handleCuelinkPageChange = (page: number) => {
+    setCuelinkCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Loading skeleton
-  const LoadingSkeleton = () => (
-    <div className="grid grid-cols-2 gap-4">
-      {[...Array(6)].map((_, index) => (
-        <div key={index} className="bg-white rounded-xl p-4 animate-pulse">
-          <div className="bg-gray-200 h-32 rounded-lg mb-3"></div>
-          <div className="bg-gray-200 h-4 rounded mb-2"></div>
-          <div className="bg-gray-200 h-3 rounded mb-2"></div>
-          <div className="bg-gray-200 h-3 rounded w-2/3"></div>
-        </div>
-      ))}
-    </div>
-  );
+  // Handle category selection
+  const handleCategoryClick = (categoryId: string) => {
+    console.log("Category clicked:", categoryId);
+    if (selectedCategory === categoryId) {
+      setSelectedCategory(null);
+    } else {
+      setSelectedCategory(categoryId);
+    }
+  };
+
+  // Updated search handler with debouncing
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    console.log("Searching for:", e.target.value);
+  };
 
   return (
     <div className={`bg-monkeyBackground min-h-screen ${isMobile ? 'pb-16' : 'pt-20'}`}>
-      {/* Header */}
-      <div className={`bg-monkeyGreen text-white ${isMobile ? 'p-4 pt-6' : 'p-6'}`}>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-monkeyYellow rounded-full flex items-center justify-center">
-              <span className="text-2xl">🐵</span>
+      {/* Mobile Header with location - only show on mobile */}
+      {isMobile && (
+        <div className="bg-monkeyGreen text-white py-4 px-4 sticky top-0 z-10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-1">
+              <MapPin className="w-4 h-4" />
+              <span className="text-sm">{user.location}</span>
             </div>
-            <h1 className="text-xl font-bold">OffersMonkey</h1>
-          </div>
-          <div className="flex items-center space-x-3">
-            <Link to="/notifications" className="relative">
-              <Bell className="w-6 h-6" />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                3
-              </span>
-            </Link>
-            <MapPin className="w-6 h-6" />
+            <div className="flex items-center space-x-3">
+              <Link to="/notifications" className="flex items-center">
+                <Bell className="w-5 h-5 text-white" />
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-monkeyYellow text-[10px] text-black absolute translate-x-3 -translate-y-2">
+                  3
+                </span>
+              </Link>
+            </div>
           </div>
         </div>
-
-        {/* Search bar */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <Input
-            placeholder="Search for deals, stores, products..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-white text-gray-900"
-          />
-        </div>
-      </div>
-
-      {/* New Features Quick Access */}
-      <div className="p-4">
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <Link to="/assistant">
-            <Card className="hover:shadow-md transition-shadow">
-              <CardContent className="p-4 text-center">
-                <Bot className="w-8 h-8 text-monkeyGreen mx-auto mb-2" />
-                <h3 className="font-semibold text-sm">AI Assistant</h3>
-                <p className="text-xs text-gray-600">Voice deals & smart recommendations</p>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link to="/local-deals">
-            <Card className="hover:shadow-md transition-shadow">
-              <CardContent className="p-4 text-center">
-                <MapPin className="w-8 h-8 text-monkeyGreen mx-auto mb-2" />
-                <h3 className="font-semibold text-sm">Local Deals</h3>
-                <p className="text-xs text-gray-600">Nearby stores & restaurants</p>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link to="/social">
-            <Card className="hover:shadow-md transition-shadow">
-              <CardContent className="p-4 text-center">
-                <Users className="w-8 h-8 text-monkeyGreen mx-auto mb-2" />
-                <h3 className="font-semibold text-sm">Social Shopping</h3>
-                <p className="text-xs text-gray-600">Group buying & community</p>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link to="/premium">
-            <Card className="hover:shadow-md transition-shadow">
-              <CardContent className="p-4 text-center">
-                <Crown className="w-8 h-8 text-monkeyGreen mx-auto mb-2" />
-                <h3 className="font-semibold text-sm">Premium</h3>
-                <p className="text-xs text-gray-600">Exclusive deals & early access</p>
-              </CardContent>
-            </Card>
-          </Link>
-        </div>
-
-        {/* Brand Partnership Banner */}
-        <Link to="/partnership">
-          <Card className="mb-6 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200 hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-3">
-                <Building2 className="w-8 h-8 text-purple-600" />
-                <div>
-                  <h3 className="font-semibold text-purple-900">Brand Partnership</h3>
-                  <p className="text-sm text-purple-700">Collaborate with top brands & manage campaigns</p>
+      )}
+      
+      {/* Main content - desktop with max-width container */}
+      <div className={`space-y-6 ${isMobile ? 'p-4' : 'w-full'}`}>
+        <div className={`${!isMobile ? 'max-w-[1440px] mx-auto px-6 py-8' : ''}`}>
+          {/* Desktop welcome section */}
+          {!isMobile && (
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Welcome back!</h1>
+                <div className="flex items-center space-x-2 mt-2">
+                  <MapPin className="w-4 h-4 text-gray-500" />
+                  <span className="text-gray-600">{user.location}</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        {/* Banner Carousel */}
-        {banners && banners.length > 0 && (
+              <Link to="/notifications" className="flex items-center bg-monkeyGreen text-white px-4 py-2 rounded-lg hover:bg-monkeyGreen/90 transition-colors">
+                <Bell className="w-5 h-5 mr-2" />
+                <span>Notifications</span>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-monkeyYellow text-xs text-black ml-2">
+                  3
+                </span>
+              </Link>
+            </div>
+          )}
+          
+          {/* New Features Section */}
           <div className="mb-6">
-            <BannerCarousel banners={banners} />
-          </div>
-        )}
+            <h2 className="font-bold text-lg mb-3">Smart Shopping Features</h2>
+            <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-3'}`}>
+              <Link to="/ai-assistant" className="block">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Bot className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-blue-900">AI Assistant</h3>
+                        <p className="text-sm text-blue-600">Voice search & smart recommendations</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
 
-        {/* Categories */}
-        {categories && categories.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Shop by Category</h2>
-            <div className="flex space-x-3 overflow-x-auto pb-2">
-              {categories.map((category: Category) => (
-                <Link key={category.id} to={`/category/${category.id}`}>
-                  <CategoryItem category={category} />
-                </Link>
-              ))}
+              <Link to="/local-deals" className="block">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <MapPin className="w-6 h-6 text-green-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-green-900">Local Deals</h3>
+                        <p className="text-sm text-green-600">Nearby stores & restaurants</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              <Link to="/social-shopping" className="block">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                        <Users className="w-6 h-6 text-purple-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-purple-900">Social Shopping</h3>
+                        <p className="text-sm text-purple-600">Group buys & community deals</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             </div>
           </div>
-        )}
-
-        {/* Offers Tabs */}
-        <Tabs defaultValue="local" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="local">Local Offers</TabsTrigger>
-            <TabsTrigger value="cuelink">
-              Cuelink Offers
-              {isLoadingCuelink && <span className="ml-2 text-xs">(Loading...)</span>}
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="local" className="space-y-4">
-            {dataLoading ? (
-              <LoadingSkeleton />
-            ) : filteredOffers.length > 0 ? (
-              <div className="grid grid-cols-2 gap-4">
-                {filteredOffers.map((offer: Offer) => (
-                  <Link key={offer.id} to={`/offer/${offer.id}`}>
-                    <OfferCard offer={offer} />
-                  </Link>
-                ))}
+          
+          {/* Data source alert */}
+          {isUsingMockData && (
+            <Alert className="bg-amber-50 border-amber-200 mb-6">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-700">
+                No real offers found in the Offers_data table. Please check your database.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {/* Personalization badge */}
+          {hasLoadedPreferences && (
+            userPreferences.brands.length > 0 || 
+            userPreferences.stores.length > 0 || 
+            userPreferences.banks.length > 0
+          ) && (
+            <div className="bg-monkeyGreen/10 p-3 rounded-lg flex justify-between items-center mb-6">
+              <div>
+                <h3 className="font-medium text-monkeyGreen">Personalized for You</h3>
+                <p className="text-xs text-gray-600">Offers are filtered based on your preferences</p>
+              </div>
+              <Link 
+                to="/preferences/brands" 
+                className="bg-monkeyGreen text-white text-sm px-3 py-1 rounded-full"
+              >
+                Edit
+              </Link>
+            </div>
+          )}
+          
+          {/* Search Bar */}
+          <div className="relative mb-6">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              type="search"
+              placeholder="Search for offers, stores, categories..."
+              className="pl-10 pr-4 py-2 w-full border-gray-200"
+              value={searchQuery}
+              onChange={handleSearch}
+            />
+          </div>
+          
+          {/* Categories carousel with active state */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="font-bold text-lg">For You</h2>
+              <Link to="/preferences/brands" className="text-monkeyGreen text-sm">
+                Set preferences
+              </Link>
+            </div>
+            
+            {isDataLoading ? (
+              <div className="flex justify-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-monkeyGreen"></div>
               </div>
             ) : (
-              <div className="text-center py-10">
-                <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 mb-2">No offers found</p>
-                {searchQuery && (
-                  <p className="text-sm text-gray-500">
-                    Try searching with different keywords
-                  </p>
+              <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-hide">
+                {dynamicCategories.length > 0 ? (
+                  dynamicCategories.map((category) => (
+                    <div 
+                      key={category.id} 
+                      onClick={() => handleCategoryClick(category.id)}
+                      className={`cursor-pointer ${selectedCategory === category.id ? 'scale-110 transform transition-transform' : ''}`}
+                    >
+                      <CategoryItem key={category.id} category={category} />
+                      {selectedCategory === category.id && (
+                        <div className="h-1 w-full bg-monkeyGreen rounded-full mt-1"></div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-gray-500 py-2">No categories with sufficient offers available</div>
                 )}
               </div>
             )}
-          </TabsContent>
-
-          <TabsContent value="cuelink" className="space-y-4">
-            {isLoadingCuelink ? (
-              <LoadingSkeleton />
-            ) : paginatedCuelinkOffers.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {paginatedCuelinkOffers.map((offer: CuelinkOffer) => (
-                    <CuelinkOfferCard key={offer.Id} offer={offer} />
+          </div>
+          
+          {/* Active filters */}
+          {(selectedCategory || debouncedSearchTerm) && (
+            <div className="flex flex-wrap gap-2 mb-6">
+              {selectedCategory && (
+                <div className="bg-monkeyGreen/10 text-monkeyGreen px-3 py-1 rounded-full text-sm flex items-center">
+                  {dynamicCategories.find(c => c.id === selectedCategory)?.name}
+                  <button 
+                    onClick={() => setSelectedCategory(null)}
+                    className="ml-1 text-monkeyGreen"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+              {debouncedSearchTerm && (
+                <div className="bg-monkeyGreen/10 text-monkeyGreen px-3 py-1 rounded-full text-sm flex items-center">
+                  "{debouncedSearchTerm}"
+                  <button 
+                    onClick={() => {
+                      setSearchQuery('');
+                      setDebouncedSearchTerm('');
+                    }}
+                    className="ml-1 text-monkeyGreen"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+              {(selectedCategory || debouncedSearchTerm) && (
+                <button 
+                  onClick={() => {
+                    setSelectedCategory(null);
+                    setSearchQuery('');
+                    setDebouncedSearchTerm('');
+                  }}
+                  className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-600"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+          )}
+          
+          {/* Offers section */}
+          <div>
+            <Tabs defaultValue="all">
+              <div className="flex justify-between items-center mb-3">
+                <h2 className="font-bold text-lg">Today's Offers</h2>
+                <TabsList>
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="nearby">Nearby</TabsTrigger>
+                  <TabsTrigger value="flash">Flash Deals</TabsTrigger>
+                  <TabsTrigger value="amazon">Amazon</TabsTrigger>
+                </TabsList>
+              </div>
+              
+              <TabsContent value="all" className="space-y-4 mt-2">
+                {isDataLoading || isLoading ? (
+                  <div className="flex justify-center items-center py-10">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-monkeyGreen"></div>
+                  </div>
+                ) : (
+                  <>
+                    {error && (
+                      <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                        <p className="text-red-600">Error loading offers: {error.message}</p>
+                      </div>
+                    )}
+                    
+                    {!error && displayedOffers.length > 0 ? (
+                      <div className={`grid gap-4 ${
+                        isMobile 
+                          ? 'grid-cols-2' 
+                          : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                      }`}>
+                        {displayedOffers.map((offer) => (
+                          <Link key={offer.id} to={`/offer/${offer.id}`}>
+                            <OfferCard offer={offer} />
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      !error && (
+                        <div className="bg-white p-6 rounded-lg text-center shadow-sm">
+                          <p className="text-gray-500">No offers found</p>
+                          <p className="text-sm text-gray-400 mt-2">
+                            {offers.length === 0 
+                              ? "No offers available in the Offers_data table" 
+                              : "Try a different search term or check back later"
+                            }
+                          </p>
+                          <div className="mt-4 flex flex-col gap-2">
+                            <button
+                              onClick={refetchOffers}
+                              className="bg-monkeyGreen text-white px-4 py-2 rounded-lg w-full"
+                            >
+                              Refresh Data
+                            </button>
+                            
+                            {offers.length > 0 && (
+                              <Link 
+                                to="/preferences/brands" 
+                                className="border border-monkeyGreen text-monkeyGreen px-4 py-2 rounded-lg text-center"
+                              >
+                                Adjust Preferences
+                              </Link>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </>
+                )}
+                
+                {!isDataLoading && !error && displayedOffers.length > 0 && (
+                  <button 
+                    onClick={loadMoreOffers}
+                    className="w-full py-3 text-center text-monkeyGreen border border-monkeyGreen rounded-lg mt-4 flex items-center justify-center"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 rounded-full border-2 border-monkeyGreen border-t-transparent animate-spin"></div>
+                        <span>Loading more...</span>
+                      </div>
+                    ) : (
+                      <span>Load more</span>
+                    )}
+                  </button>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="nearby" className="space-y-4">
+                <div className={`grid gap-4 ${
+                  isMobile 
+                    ? 'grid-cols-2' 
+                    : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                }`}>
+                  {displayedOffers.filter(offer => !offer.isAmazon).map((offer) => (
+                    <Link key={offer.id} to={`/offer/${offer.id}`}>
+                      <OfferCard offer={offer} />
+                    </Link>
                   ))}
                 </div>
-                <CuelinkPagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                />
-              </>
-            ) : (
-              <div className="text-center py-10">
-                <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 mb-2">No Cuelink offers available</p>
-                {searchQuery && (
-                  <p className="text-sm text-gray-500">
-                    Try searching with different keywords
-                  </p>
+                
+                {displayedOffers.filter(offer => !offer.isAmazon).length === 0 && (
+                  <div className="bg-white p-6 rounded-lg text-center shadow-sm">
+                    <p className="text-gray-500">No nearby offers found</p>
+                    {offers.length > 0 && (
+                      <Link 
+                        to="/preferences/stores" 
+                        className="mt-4 text-monkeyGreen block underline"
+                      >
+                        Adjust store preferences
+                      </Link>
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+              </TabsContent>
+              
+              <TabsContent value="flash" className="space-y-4">
+                {isCuelinkLoading ? (
+                  <div className="flex justify-center items-center py-10">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-monkeyGreen"></div>
+                  </div>
+                ) : (
+                  <>
+                    {paginatedCuelinkOffers.length > 0 ? (
+                      <>
+                        <div className="mb-4 text-sm text-gray-600">
+                          Showing {((cuelinkCurrentPage - 1) * cuelinkItemsPerPage) + 1}-{Math.min(cuelinkCurrentPage * cuelinkItemsPerPage, displayedCuelinkOffers.length)} of {displayedCuelinkOffers.length} flash deals
+                        </div>
+                        <div className={`grid gap-4 ${
+                          isMobile 
+                            ? 'grid-cols-1 sm:grid-cols-2' 
+                            : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+                        }`}>
+                          {paginatedCuelinkOffers.map((offer) => (
+                            <CuelinkOfferCard key={offer.Id} offer={offer} />
+                          ))}
+                        </div>
+                        <CuelinkPagination 
+                          currentPage={cuelinkCurrentPage}
+                          totalPages={totalCuelinkPages}
+                          onPageChange={handleCuelinkPageChange}
+                        />
+                      </>
+                    ) : (
+                      <div className="bg-white p-6 rounded-lg text-center shadow-sm">
+                        <p className="text-gray-500">No flash deals found</p>
+                        <p className="text-sm text-gray-400 mt-2">
+                          {cuelinkOffers.length === 0 
+                            ? "No flash deals available in the Cuelink_data table" 
+                            : "Try a different search term or check back later"
+                          }
+                        </p>
+                        <div className="mt-4">
+                          <p className="text-xs text-gray-400">
+                            Total Cuelink offers loaded: {cuelinkOffers.length}
+                          </p>
+                          {debouncedSearchTerm && (
+                            <p className="text-xs text-gray-400">
+                              Search term: "{debouncedSearchTerm}"
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="amazon" className="space-y-4">
+                <div className={`grid gap-4 ${
+                  isMobile 
+                    ? 'grid-cols-2' 
+                    : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                }`}>
+                  {displayedOffers.filter(offer => offer.isAmazon).map((offer) => (
+                    <Link key={offer.id} to={`/offer/${offer.id}`}>
+                      <OfferCard offer={offer} />
+                    </Link>
+                  ))}
+                </div>
+                
+                {displayedOffers.filter(offer => offer.isAmazon).length === 0 && (
+                  <div className="bg-white p-6 rounded-lg text-center shadow-sm">
+                    <p className="text-gray-500">No Amazon offers found</p>
+                    {offers.length > 0 && (
+                      <Link 
+                        to="/preferences/stores" 
+                        className="mt-4 text-monkeyGreen block underline"
+                      >
+                        Adjust store preferences
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
       </div>
     </div>
   );
