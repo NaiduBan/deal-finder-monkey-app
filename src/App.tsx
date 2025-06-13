@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -31,6 +30,11 @@ import BottomNavigation from "./components/BottomNavigation";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import AdminPanel from "./components/AdminPanel";
+
+// New feature components
+import AIShoppingAssistant from "./components/AIShoppingAssistant";
+import HyperLocalDeals from "./components/HyperLocalDeals";
+import SocialShopping from "./components/SocialShopping";
 
 const queryClient = new QueryClient();
 
@@ -95,6 +99,30 @@ const App = () => (
                         element={
                           <ProtectedRoute>
                             <HomeScreen />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/ai-assistant" 
+                        element={
+                          <ProtectedRoute>
+                            <AIShoppingAssistant />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/local-deals" 
+                        element={
+                          <ProtectedRoute>
+                            <HyperLocalDeals />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/social-shopping" 
+                        element={
+                          <ProtectedRoute>
+                            <SocialShopping />
                           </ProtectedRoute>
                         } 
                       />

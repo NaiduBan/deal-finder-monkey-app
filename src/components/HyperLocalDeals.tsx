@@ -1,0 +1,290 @@
+
+import React, { useState, useEffect } from 'react';
+import { MapPin, Navigation, Store, Clock, Phone, Star } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useUser } from '@/contexts/UserContext';
+
+const HyperLocalDeals = () => {
+  const [userLocation, setUserLocation] = useState(null);
+  const [nearbyDeals, setNearbyDeals] = useState([]);
+  const [localBusinesses, setLocalBusinesses] = useState([]);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const isMobile = useIsMobile();
+  const { user } = useUser();
+
+  // Mock local deals data
+  const mockLocalDeals = [
+    {
+      id: 1,
+      title: "Flat 30% off on Pizza",
+      store: "Pizza Hut",
+      address: "MG Road, Near City Mall",
+      distance: "0.5 km",
+      rating: 4.2,
+      phone: "+91 98765 43210",
+      validUntil: "Today 11:59 PM",
+      category: "Food & Dining",
+      isGeoFenced: true
+    },
+    {
+      id: 2,
+      title: "Buy 1 Get 1 Free Coffee",
+      store: "Cafe Coffee Day",
+      address: "Brigade Road",
+      distance: "1.2 km",
+      rating: 4.0,
+      phone: "+91 98765 43211",
+      validUntil: "Tomorrow 6:00 PM",
+      category: "Food & Dining",
+      isGeoFenced: true
+    },
+    {
+      id: 3,
+      title: "20% off on Electronics",
+      store: "Reliance Digital",
+      address: "Forum Mall, Koramangala",
+      distance: "2.1 km",
+      rating: 4.5,
+      phone: "+91 98765 43212",
+      validUntil: "Week End",
+      category: "Electronics",
+      isGeoFenced: false
+    }
+  ];
+
+  const mockLocalBusinesses = [
+    {
+      id: 1,
+      name: "Rajesh Electronics",
+      category: "Electronics",
+      address: "Commercial Street",
+      distance: "0.8 km",
+      rating: 4.3,
+      phone: "+91 98765 43213",
+      offers: ["10% off on Mobile Accessories", "Free home delivery"]
+    },
+    {
+      id: 2,
+      name: "Anand Sweets",
+      category: "Food",
+      address: "Gandhi Bazaar",
+      distance: "1.5 km",
+      rating: 4.7,
+      phone: "+91 98765 43214",
+      offers: ["Special festival discount", "Bulk order discounts"]
+    }
+  ];
+
+  useEffect(() => {
+    setNearbyDeals(mockLocalDeals);
+    setLocalBusinesses(mockLocalBusinesses);
+  }, []);
+
+  const getCurrentLocation = () => {
+    setIsLoadingLocation(true);
+    
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+          setIsLoadingLocation(false);
+          // Simulate finding more local deals
+          console.log('Location updated, finding nearby deals...');
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          setIsLoadingLocation(false);
+        }
+      );
+    } else {
+      setIsLoadingLocation(false);
+      alert('Geolocation is not supported by this browser.');
+    }
+  };
+
+  const callBusiness = (phone) => {
+    window.open(`tel:${phone}`);
+  };
+
+  const getDirections = (address) => {
+    const encodedAddress = encodeURIComponent(address);
+    window.open(`https://maps.google.com/?q=${encodedAddress}`, '_blank');
+  };
+
+  return (
+    <div className={`bg-monkeyBackground min-h-screen ${isMobile ? 'p-4 pb-20' : 'max-w-6xl mx-auto p-6'}`}>
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-monkeyGreen rounded-full flex items-center justify-center">
+              <MapPin className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Local Deals</h1>
+              <p className="text-gray-600">Discover deals near you</p>
+            </div>
+          </div>
+          <Button 
+            onClick={getCurrentLocation}
+            disabled={isLoadingLocation}
+            className="bg-monkeyGreen hover:bg-monkeyGreen/90"
+          >
+            <Navigation className="w-4 h-4 mr-2" />
+            {isLoadingLocation ? 'Locating...' : 'Find Me'}
+          </Button>
+        </div>
+        
+        <div className="flex items-center space-x-2 mt-3">
+          <MapPin className="w-4 h-4 text-gray-500" />
+          <span className="text-gray-600">{user.location}</span>
+          {userLocation && (
+            <Badge className="bg-green-100 text-green-800">Live Location</Badge>
+          )}
+        </div>
+      </div>
+
+      {/* Nearby Deals */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Store className="w-5 h-5" />
+            <span>Nearby Deals</span>
+            <Badge variant="secondary">{nearbyDeals.length}</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
+            {nearbyDeals.map((deal) => (
+              <div key={deal.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex-1">
+                    <h3 className="font-semibold">{deal.title}</h3>
+                    <p className="text-monkeyGreen font-medium">{deal.store}</p>
+                  </div>
+                  {deal.isGeoFenced && (
+                    <Badge className="bg-orange-100 text-orange-800 text-xs">
+                      Geo-Alert
+                    </Badge>
+                  )}
+                </div>
+                
+                <div className="space-y-2 mb-3">
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <MapPin className="w-4 h-4" />
+                    <span>{deal.address}</span>
+                    <Badge variant="outline" className="text-xs">{deal.distance}</Badge>
+                  </div>
+                  
+                  <div className="flex items-center space-x-4 text-sm">
+                    <div className="flex items-center space-x-1">
+                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      <span>{deal.rating}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Clock className="w-4 h-4 text-gray-500" />
+                      <span className="text-gray-600">{deal.validUntil}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex space-x-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => callBusiness(deal.phone)}
+                    className="flex-1"
+                  >
+                    <Phone className="w-3 h-3 mr-1" />
+                    Call
+                  </Button>
+                  <Button 
+                    size="sm"
+                    onClick={() => getDirections(deal.address)}
+                    className="flex-1 bg-monkeyGreen hover:bg-monkeyGreen/90"
+                  >
+                    <Navigation className="w-3 h-3 mr-1" />
+                    Directions
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Local Business Partners */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Store className="w-5 h-5" />
+            <span>Local Business Partners</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
+            {localBusinesses.map((business) => (
+              <div key={business.id} className="border rounded-lg p-4">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h3 className="font-semibold">{business.name}</h3>
+                    <p className="text-sm text-gray-600">{business.category}</p>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                    <span className="text-sm">{business.rating}</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2 text-sm text-gray-600 mb-3">
+                  <MapPin className="w-4 h-4" />
+                  <span>{business.address}</span>
+                  <Badge variant="outline" className="text-xs">{business.distance}</Badge>
+                </div>
+
+                <div className="mb-3">
+                  <p className="text-sm font-medium mb-1">Current Offers:</p>
+                  <div className="space-y-1">
+                    {business.offers.map((offer, index) => (
+                      <div key={index} className="text-xs bg-monkeyGreen/10 text-monkeyGreen px-2 py-1 rounded">
+                        {offer}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex space-x-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => callBusiness(business.phone)}
+                    className="flex-1"
+                  >
+                    <Phone className="w-3 h-3 mr-1" />
+                    Call
+                  </Button>
+                  <Button 
+                    size="sm"
+                    onClick={() => getDirections(business.address)}
+                    className="flex-1 bg-monkeyGreen hover:bg-monkeyGreen/90"
+                  >
+                    <Navigation className="w-3 h-3 mr-1" />
+                    Visit
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default HyperLocalDeals;
