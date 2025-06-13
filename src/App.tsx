@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -13,7 +12,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { AdminProvider } from "./contexts/AdminContext";
 import { ThemeProvider } from "./components/ThemeProvider";
 
-// Original Components
+// Components
 import SplashScreen from "./components/SplashScreen";
 import LoginScreen from "./components/LoginScreen";
 import HomeScreen from "./components/HomeScreen";
@@ -37,27 +36,17 @@ import AIShoppingAssistant from "./components/AIShoppingAssistant";
 import HyperLocalDeals from "./components/HyperLocalDeals";
 import SocialShopping from "./components/SocialShopping";
 
-// CashKaro Style Components
-import CashkaroHomeScreen from "./components/CashkaroHomeScreen";
-import CashkaroStoresScreen from "./components/CashkaroStoresScreen";
-import CashkaroOffersScreen from "./components/CashkaroOffersScreen";
-import CashkaroCashbackScreen from "./components/CashkaroCashbackScreen";
-import CashkaroBottomNavigation from "./components/CashkaroBottomNavigation";
-
 const queryClient = new QueryClient();
 
-// Layout component to conditionally render navigation
+// Layout component to conditionally render bottom navigation
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  const hideNavigation = ['/splash', '/login', '/admin', '/index'].some(path => location.pathname.startsWith(path));
-  const isCashkaroRoute = ['/cashkaro', '/stores', '/offers', '/cashback'].some(path => location.pathname.startsWith(path));
+  const hideNavigation = ['/splash', '/login', '/admin'].some(path => location.pathname.startsWith(path));
   
   return (
     <>
       {children}
-      {!hideNavigation && (
-        isCashkaroRoute ? <CashkaroBottomNavigation /> : <BottomNavigation />
-      )}
+      {!hideNavigation && <BottomNavigation />}
     </>
   );
 };
@@ -86,9 +75,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <Routes>
-              {/* Redirect root to CashKaro style home */}
-              <Route path="/" element={<Navigate to="/cashkaro" replace />} />
-              <Route path="/index" element={<Index />} />
+              <Route path="/" element={<Index />} />
               
               {/* Admin Routes */}
               <Route 
@@ -105,13 +92,6 @@ const App = () => (
                 element={
                   <AppLayout>
                     <Routes>
-                      {/* CashKaro Style Routes */}
-                      <Route path="/cashkaro" element={<CashkaroHomeScreen />} />
-                      <Route path="/stores" element={<CashkaroStoresScreen />} />
-                      <Route path="/offers" element={<CashkaroOffersScreen />} />
-                      <Route path="/cashback" element={<CashkaroCashbackScreen />} />
-                      
-                      {/* Original App Routes */}
                       <Route path="/splash" element={<SplashScreen />} />
                       <Route path="/login" element={<LoginScreen />} />
                       <Route 
@@ -192,7 +172,7 @@ const App = () => (
                           <ProtectedRoute>
                             <ChatbotScreen />
                           </ProtectedRoute>
-                        }
+                        } 
                       />
                       <Route 
                         path="/profile" 
