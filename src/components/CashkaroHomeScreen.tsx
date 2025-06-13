@@ -17,7 +17,7 @@ const CashkaroHomeScreen = () => {
   const topStores = [
     { name: 'Amazon', cashback: '2.5%', logo: '🛒', color: 'bg-orange-100' },
     { name: 'Flipkart', cashback: '3%', logo: '🛍️', color: 'bg-blue-100' },
-    { name: 'Myntra', cashback: '4%', logo: '👕', logo: '🛍️', color: 'bg-pink-100' },
+    { name: 'Myntra', cashback: '4%', logo: '👕', color: 'bg-pink-100' },
     { name: 'Ajio', cashback: '5%', logo: '👗', color: 'bg-purple-100' },
     { name: 'Nykaa', cashback: '6%', logo: '💄', color: 'bg-rose-100' },
     { name: 'Swiggy', cashback: '8%', logo: '🍔', color: 'bg-orange-100' },
