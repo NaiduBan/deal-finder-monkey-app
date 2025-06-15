@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { MapPin, Navigation, Store, Clock, Phone, Star } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,8 +6,45 @@ import { Badge } from '@/components/ui/badge';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser } from '@/contexts/UserContext';
 
+// --- TypeScript interfaces ---
+interface DealType {
+  id: number;
+  title: string;
+  store: string;
+  address: string;
+  distance: string;
+  rating: number;
+  phone: string;
+  validUntil: string;
+  category: string;
+  isGeoFenced: boolean;
+}
+
+interface BusinessType {
+  id: number;
+  name: string;
+  category: string;
+  address: string;
+  distance: string;
+  rating: number;
+  phone: string;
+  offers: string[];
+}
+
+interface DealCardProps {
+  deal: DealType;
+  callBusiness: (phone: string) => void;
+  getDirections: (address: string) => void;
+}
+
+interface BusinessCardProps {
+  business: BusinessType;
+  callBusiness: (phone: string) => void;
+  getDirections: (address: string) => void;
+}
+
 // Child component for deal cards
-const DealCard = React.memo(({ deal, callBusiness, getDirections }) => (
+const DealCard: React.FC<DealCardProps> = React.memo(({ deal, callBusiness, getDirections }) => (
   <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
     <div className="flex justify-between items-start mb-3">
       <div className="flex-1">
@@ -61,7 +97,7 @@ const DealCard = React.memo(({ deal, callBusiness, getDirections }) => (
 ));
 
 // Child component for business cards
-const BusinessCard = React.memo(({ business, callBusiness, getDirections }) => (
+const BusinessCard: React.FC<BusinessCardProps> = React.memo(({ business, callBusiness, getDirections }) => (
   <div className="border rounded-lg p-4">
     <div className="flex justify-between items-start mb-3">
       <div>
@@ -220,9 +256,9 @@ const HyperLocalDeals = () => {
     window.open(`https://maps.google.com/?q=${encodedAddress}`, '_blank');
   }, []);
 
-  // Memoize deal and business card lists
+  // Memoize deal and business card lists, passing correct typing
   const DealList = useMemo(() => (
-    nearbyDeals.map((deal) => (
+    nearbyDeals.map((deal: DealType) => (
       <DealCard 
         key={deal.id} 
         deal={deal} 
@@ -233,7 +269,7 @@ const HyperLocalDeals = () => {
   ), [nearbyDeals, callBusiness, getDirections]);
 
   const BusinessList = useMemo(() => (
-    localBusinesses.map((business) => (
+    localBusinesses.map((business: BusinessType) => (
       <BusinessCard 
         key={business.id} 
         business={business}
