@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Search, Eye, Edit, Trash2, Plus, ExternalLink, Upload, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { Switch } from "@/components/ui/switch";
 
 interface LMDOffer {
   lmd_id: number;
@@ -29,6 +30,7 @@ interface LMDOffer {
   featured: string;
   terms_and_conditions: string;
   code: string;
+  sponsored: boolean;
 }
 
 const AdminOffersManager = () => {
@@ -110,6 +112,27 @@ const AdminOffersManager = () => {
     }
   };
 
+  const handleToggleSponsored = async (lmdId: number, sponsored: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('Offers_data')
+        .update({ sponsored })
+        .eq('lmd_id', lmdId);
+
+      if (error) {
+        toast.error('Failed to update sponsored status');
+        console.error('Error updating sponsored status:', error);
+        return;
+      }
+
+      setOffers(offers.map(o => (o.lmd_id === lmdId ? { ...o, sponsored } : o)));
+      toast.success(`Offer ${sponsored ? 'marked as' : 'unmarked from'} sponsored.`);
+    } catch (error) {
+      toast.error('An error occurred while updating sponsored status.');
+      console.error('Error:', error);
+    }
+  };
+
   const handleCSVUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -175,7 +198,7 @@ const AdminOffersManager = () => {
       'lmd_id', 'title', 'description', 'long_offer', 'store', 'merchant_homepage', 
       'categories', 'status', 'start_date', 'end_date', 'offer_value', 'offer',
       'type', 'image_url', 'smartlink', 'url', 'publisher_exclusive', 'featured',
-      'terms_and_conditions', 'code'
+      'terms_and_conditions', 'code', 'sponsored'
     ];
     
     const csvContent = [
@@ -291,6 +314,7 @@ const AdminOffersManager = () => {
                   <TableHead>Featured</TableHead>
                   <TableHead className="min-w-[200px]">Terms & Conditions</TableHead>
                   <TableHead>Code</TableHead>
+                  <TableHead>Sponsored</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -334,6 +358,12 @@ const AdminOffersManager = () => {
                       ) : (
                         'N/A'
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <Switch
+                        checked={offer.sponsored}
+                        onCheckedChange={(checked) => handleToggleSponsored(offer.lmd_id, checked)}
+                      />
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end space-x-2">

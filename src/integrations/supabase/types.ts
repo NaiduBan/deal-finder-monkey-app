@@ -618,6 +618,7 @@ export type Database = {
           offer_value: string | null
           publisher_exclusive: string | null
           smartlink: string | null
+          sponsored: boolean
           start_date: string | null
           status: string | null
           store: string | null
@@ -640,6 +641,7 @@ export type Database = {
           offer_value?: string | null
           publisher_exclusive?: string | null
           smartlink?: string | null
+          sponsored?: boolean
           start_date?: string | null
           status?: string | null
           store?: string | null
@@ -662,6 +664,7 @@ export type Database = {
           offer_value?: string | null
           publisher_exclusive?: string | null
           smartlink?: string | null
+          sponsored?: boolean
           start_date?: string | null
           status?: string | null
           store?: string | null

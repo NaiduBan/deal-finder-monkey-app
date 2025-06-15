@@ -1,3 +1,4 @@
+
 export interface Offer {
   id: string;
   title: string | null;
@@ -25,6 +26,7 @@ export interface Offer {
   termsAndConditions: string | null;
   featured: boolean;
   publisherExclusive: boolean;
+  sponsored: boolean;
   url: string | null;
   smartlink: string | null;
   offerType: string | null;

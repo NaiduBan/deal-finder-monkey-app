@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Offer } from '@/types';
-import { Bookmark, BookmarkCheck, Tag } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Tag, Star } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -28,7 +28,9 @@ const OfferCard = ({ offer }: OfferCardProps) => {
   };
 
   return (
-    <div className={`offer-card h-full flex flex-col bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow ${
+    <div className={`offer-card h-full flex flex-col bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow ${
+      offer.sponsored ? 'border-monkeyYellow' : 'border-gray-100'
+    } ${
       !isMobile ? 'w-full max-w-[400px]' : ''
     }`}>
       {/* Image Container - Different aspect ratios for mobile and desktop */}
@@ -55,13 +57,22 @@ const OfferCard = ({ offer }: OfferCardProps) => {
           </button>
         )}
         
-        {/* Code Badge */}
-        {offer.code && (
-          <div className="absolute top-2 left-2 bg-monkeyYellow text-black text-xs font-bold px-2 py-1 rounded-full flex items-center">
-            <Tag className="w-3 h-3 mr-1" />
-            CODE
-          </div>
-        )}
+        {/* Badges Container */}
+        <div className="absolute top-2 left-2 flex items-center gap-2">
+            {offer.sponsored && (
+                <div className="bg-monkeyYellow text-black text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 z-10">
+                    <Star className="w-3 h-3" />
+                    Sponsored
+                </div>
+            )}
+            {/* Code Badge */}
+            {offer.code && (
+                <div className="bg-monkeyGreen text-white text-xs font-bold px-2 py-1 rounded-full flex items-center z-10">
+                    <Tag className="w-3 h-3 mr-1" />
+                    CODE
+                </div>
+            )}
+        </div>
       </div>
       
       {/* Content */}
