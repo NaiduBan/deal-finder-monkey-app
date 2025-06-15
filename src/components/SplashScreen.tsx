@@ -27,7 +27,7 @@ const SplashScreen = () => {
     <div className="min-h-screen flex flex-col items-center justify-center monkey-gradient">
       <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center shadow-lg animate-splash-logo mb-8 p-4">
         <img 
-          src="/lovable-uploads/7af3a309-4731-4f26-b6d0-72b4fc7c953f.png" 
+          src="https://offersmonkey.com/favicon.ico" 
           alt="OffersMonkey Logo" 
           className="w-full h-full object-contain"
         />
