@@ -64,15 +64,23 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				// OffersMonkey custom colors
-				monkeyGreen: {
-					DEFAULT: '#2E7D32',
-					light: '#A5D6A7',
-				},
+				'spring-green': {
+                    '50': '#eefff5',
+                    '100': '#d7ffea',
+                    '200': '#b2ffd6',
+                    '300': '#52ffa5',
+                    '400': '#33f591',
+                    '500': '#09de70',
+                    '600': '#01b85a',
+                    '700': '#059049',
+                    '800': '#0a713d',
+                    '900': '#0a5d35',
+                    '950': '#00341b',
+                },
 				monkeyYellow: {
 					DEFAULT: '#F9A825',
 					light: '#FEF7CD',
 				},
-				monkeyBackground: '#F2FCE2',
 			},
 			fontFamily: {
 				montserrat: ['Montserrat', 'sans-serif'],

@@ -66,7 +66,7 @@ const BottomNavigation = () => {
                   active ? 'text-monkeyYellow' : 'text-gray-600'
                 }`}
               >
-                <div className={`p-1 rounded-full ${active ? 'bg-monkeyGreen' : ''}`}>
+                <div className={`p-1 rounded-full ${active ? 'bg-spring-green-500' : ''}`}>
                   <IconComponent className="w-5 h-5" />
                 </div>
                 <span className="text-xs mt-1">{item.label}</span>
@@ -100,7 +100,7 @@ const BottomNavigation = () => {
               <img src="https://offersmonkey.com/favicon.ico" alt="OffersMonkey Logo" className="w-full h-full rounded-full" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-monkeyGreen">OffersMonkey</h1>
+              <h1 className="text-lg font-bold text-spring-green-600">OffersMonkey</h1>
               <p className="text-xs text-gray-500 leading-none">Find the best deals</p>
             </div>
           </Link>
@@ -115,8 +115,8 @@ const BottomNavigation = () => {
                         navigationMenuTriggerStyle(),
                         "flex items-center space-x-2",
                         isActive(item.path)
-                          ? "bg-monkeyGreen text-white shadow-sm hover:bg-monkeyGreen/90 hover:text-white"
-                          : "text-gray-600 hover:text-monkeyGreen hover:bg-monkeyGreen/5"
+                          ? "bg-spring-green-500 text-white shadow-sm hover:bg-spring-green-600 hover:text-white"
+                          : "text-gray-600 hover:text-spring-green-600 hover:bg-spring-green-50"
                       )}
                     >
                       <item.icon className="w-4 h-4" />
@@ -127,7 +127,7 @@ const BottomNavigation = () => {
               ))}
 
               <NavigationMenuItem>
-                <NavigationMenuTrigger className="flex items-center space-x-2 text-sm font-medium text-gray-600 hover:text-monkeyGreen hover:bg-monkeyGreen/5 data-[state=open]:bg-monkeyGreen/5 rounded-md">
+                <NavigationMenuTrigger className="flex items-center space-x-2 text-sm font-medium text-gray-600 hover:text-spring-green-600 hover:bg-spring-green-50 data-[state=open]:bg-spring-green-50 rounded-md">
                   <User className="w-4 h-4" />
                   <span className="font-medium">Profile</span>
                 </NavigationMenuTrigger>

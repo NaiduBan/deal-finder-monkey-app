@@ -295,7 +295,7 @@ const LoginScreen = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-500 via-green-400 to-emerald-500">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-spring-green-500 via-spring-green-400 to-spring-green-600">
         <div className="text-white text-center">
           <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p>Checking authentication...</p>
@@ -305,7 +305,7 @@ const LoginScreen = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-green-500 via-green-400 to-emerald-500">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-spring-green-500 via-spring-green-400 to-spring-green-600">
       <div className="flex-1 flex flex-col items-center justify-center p-4">
         <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg mb-6 animate-bounce p-2">
           <img 
@@ -371,7 +371,7 @@ const LoginScreen = () => {
                   
                   <Button 
                     type="submit" 
-                    className="w-full h-12 bg-green-600 hover:bg-green-700"
+                    className="w-full h-12 bg-spring-green-600 hover:bg-spring-green-700"
                     disabled={isLoading}
                   >
                     {isLoading ? 'Signing in...' : 'Sign In'}
@@ -475,7 +475,7 @@ const LoginScreen = () => {
                       <Button 
                         type="button"
                         onClick={detectLocation}
-                        className="bg-green-600 hover:bg-green-700"
+                        className="bg-spring-green-600 hover:bg-spring-green-700"
                         disabled={isLoading || locationDetected}
                       >
                         {locationDetected ? (
@@ -489,7 +489,7 @@ const LoginScreen = () => {
                   
                   <Button 
                     type="submit" 
-                    className="w-full h-12 bg-green-600 hover:bg-green-700"
+                    className="w-full h-12 bg-spring-green-600 hover:bg-spring-green-700"
                     disabled={isLoading}
                   >
                     {isLoading ? 'Creating account...' : 'Create Account'}

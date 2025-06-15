@@ -5,9 +5,9 @@ import { ChevronLeft, Award } from 'lucide-react';
 
 const PointsHistoryScreen = () => {
   return (
-    <div className="pb-16 bg-monkeyBackground min-h-screen">
+    <div className="pb-16 bg-spring-green-50 min-h-screen">
       {/* Header */}
-      <div className="bg-monkeyGreen text-white p-4 flex items-center justify-between sticky top-0 z-10">
+      <div className="bg-spring-green-500 text-white p-4 flex items-center justify-between sticky top-0 z-10">
         <Link to="/profile">
           <ChevronLeft className="w-6 h-6" />
         </Link>
@@ -17,8 +17,8 @@ const PointsHistoryScreen = () => {
       
       {/* Coming soon message */}
       <div className="m-4 bg-white rounded-xl p-6 shadow-sm text-center">
-        <div className="bg-monkeyGreen/10 rounded-full p-3 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-          <Award className="w-8 h-8 text-monkeyGreen" />
+        <div className="bg-spring-green-100 rounded-full p-3 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+          <Award className="w-8 h-8 text-spring-green-600" />
         </div>
         <h2 className="text-2xl font-bold mb-2">Rewards Coming Soon!</h2>
         <p className="text-gray-600 mb-4">We're working on an exciting rewards program for you.</p>
