@@ -96,7 +96,7 @@ const ProfileScreen = () => {
     <div className={`bg-gray-50 dark:bg-gray-900 min-h-screen ${isMobile ? 'pb-16' : ''}`}>
       {/* Header */}
       <div className={`${isMobile ? 'bg-gradient-to-r from-green-500 to-emerald-600 dark:from-green-600 dark:to-emerald-700 text-white py-8 px-4 relative' : 'bg-white dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700/50'}`}>
-        <div className={`${isMobile ? 'relative z-10' : 'max-w-7xl mx-auto px-6 py-10'}`}>
+        <div className={`${isMobile ? 'relative z-10' : 'max-w-7xl mx-auto px-6 py-16'}`}>
           {isMobile ? (
              <>
               <div className="absolute inset-0 bg-black/10"></div>
