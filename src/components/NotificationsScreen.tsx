@@ -1,10 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Bell, CheckCircle, Clock, Gift, AlertCircle, X } from 'lucide-react';
+import { ChevronLeft, Bell, Clock, Gift, AlertCircle, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 interface Notification {
   id: string;
@@ -202,13 +204,13 @@ const NotificationsScreen = () => {
     switch (type) {
       case 'offer':
       case 'preference':
-        return <Gift className="w-5 h-5 text-monkeyGreen" />;
+        return <Gift className="w-6 h-6 text-spring-green-600" />;
       case 'expiry':
-        return <Clock className="w-5 h-5 text-orange-500" />;
+        return <Clock className="w-6 h-6 text-orange-500" />;
       case 'system':
-        return <Bell className="w-5 h-5 text-blue-500" />;
+        return <Bell className="w-6 h-6 text-blue-500" />;
       default:
-        return <AlertCircle className="w-5 h-5 text-gray-500" />;
+        return <AlertCircle className="w-6 h-6 text-gray-500" />;
     }
   };
 
@@ -217,19 +219,19 @@ const NotificationsScreen = () => {
       case 'offer':
       case 'preference':
         return (
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-monkeyGreen text-white">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-spring-green-100 text-spring-green-800">
             New Offer
           </span>
         );
       case 'expiry':
         return (
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-500 text-white">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
             Expiring Soon
           </span>
         );
       case 'system':
         return (
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-500 text-white">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
             System
           </span>
         );
@@ -259,50 +261,56 @@ const NotificationsScreen = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
       {/* Header */}
-      <div className="bg-monkeyGreen text-white py-4 px-4 sticky top-0 z-10">
+      <div className="bg-spring-green-600 text-white py-4 px-4 sticky top-0 z-10 shadow-md">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Link to="/home" className="p-1">
+            <Link to="/home" className="p-1 -ml-1">
               <ChevronLeft className="w-6 h-6" />
             </Link>
-            <Bell className="w-6 h-6" />
-            <h1 className="text-xl font-semibold">Notifications</h1>
+            <div className="flex items-center gap-2">
+              <Bell className="w-6 h-6" />
+              <h1 className="text-xl font-semibold">Notifications</h1>
+            </div>
             {unreadCount > 0 && (
-              <span className="bg-monkeyYellow text-black text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center">
+              <span className="bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center">
                 {unreadCount}
               </span>
             )}
           </div>
           
           {unreadCount > 0 && (
-            <button
+            <Button
               onClick={markAllAsRead}
-              className="bg-monkeyYellow text-black px-3 py-1.5 rounded-full text-sm font-medium hover:bg-yellow-400 transition-colors"
+              variant="secondary"
+              size="sm"
+              className="bg-yellow-400 text-black font-semibold hover:bg-yellow-300"
             >
               Mark all read
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="bg-white px-4 py-3 shadow-sm">
-        <div className="flex space-x-1 overflow-x-auto">
+      <div className="bg-white px-4 py-3 shadow-sm sticky top-[76px] z-10 border-b">
+        <div className="flex space-x-2 overflow-x-auto -mb-1">
           {filterOptions.map((filter) => (
-            <button
+            <Button
               key={filter}
               onClick={() => setActiveFilter(filter)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+              variant={activeFilter === filter ? 'default' : 'outline'}
+              size="sm"
+              className={`whitespace-nowrap rounded-full px-4 ${
                 activeFilter === filter
-                  ? 'bg-monkeyGreen text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-spring-green-600 hover:bg-spring-green-700 text-white'
+                  : 'text-gray-700'
               }`}
             >
               {filter}
-            </button>
+            </Button>
           ))}
           
-          <button
+          <Button
             onClick={() => {
               setNotifications([]);
               setUnreadCount(0);
@@ -311,10 +319,12 @@ const NotificationsScreen = () => {
                 description: "All notifications have been cleared"
               });
             }}
-            className="ml-auto px-3 py-2 text-sm text-gray-500 hover:text-gray-700"
+            variant="ghost"
+            size="sm"
+            className="ml-auto text-gray-500 hover:bg-gray-100 hover:text-gray-700"
           >
             Clear All
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -322,67 +332,70 @@ const NotificationsScreen = () => {
       <div className="p-4">
         {isLoading ? (
           <div className="flex justify-center items-center py-10">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-monkeyGreen"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-spring-green-600"></div>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {filteredNotifications.length > 0 ? (
               filteredNotifications.map((notification) => (
-                <div
+                <Card
                   key={notification.id}
-                  className={`bg-white rounded-xl p-4 shadow-sm border-l-4 relative ${
-                    notification.read ? 'border-gray-300' : 'border-monkeyGreen'
+                  className={`relative overflow-hidden transition-all duration-300 shadow-sm ${
+                    notification.read ? 'bg-white' : 'bg-spring-green-50'
                   }`}
                 >
-                  {/* Dismiss Button */}
+                  <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
+                    notification.read ? 'bg-gray-300' : 'bg-spring-green-500'
+                  }`}></div>
+                  
                   <button
                     onClick={() => dismissNotification(notification.id)}
-                    className="absolute top-3 right-3 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute top-3 right-3 p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors z-10"
+                    aria-label="Dismiss notification"
                   >
                     <X className="w-4 h-4" />
                   </button>
 
-                  <div className="flex items-start space-x-3 pr-8">
-                    <div className="flex-shrink-0 mt-1">
+                  <div className="flex items-start space-x-4 p-4">
+                    <div className={`flex-shrink-0 mt-1 p-2 rounded-full ${
+                      notification.read ? 'bg-gray-100' : 'bg-spring-green-100'
+                    }`}>
                       {getNotificationIcon(notification.type)}
                     </div>
                     
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className={`text-sm font-semibold ${
-                          notification.read ? 'text-gray-600' : 'text-gray-900'
-                        }`}>
-                          {notification.title}
-                        </h3>
-                      </div>
+                    <div className="flex-1 min-w-0 pr-6">
+                      <h3 className={`text-base font-semibold mb-1 ${
+                        notification.read ? 'text-gray-600 font-medium' : 'text-gray-900'
+                      }`}>
+                        {notification.title}
+                      </h3>
                       
-                      <p className={`text-sm mb-3 leading-relaxed ${
+                      <p className={`text-sm mb-3 leading-snug ${
                         notification.read ? 'text-gray-500' : 'text-gray-700'
                       }`}>
                         {notification.message}
                       </p>
                       
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">
-                          {formatTime(notification.created_at)}
-                        </span>
-                        
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>{formatTime(notification.created_at)}</span>
                         {getNotificationBadge(notification.type)}
                       </div>
                     </div>
                   </div>
-                </div>
+                </Card>
               ))
             ) : (
-              <div className="text-center py-10">
-                <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <div className="text-center py-16 px-4 bg-white rounded-xl shadow-sm border">
+                <div className="inline-block bg-spring-green-100 p-4 rounded-full mb-4">
+                  <Bell className="w-12 h-12 text-spring-green-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
                   {activeFilter === 'All' ? 'No notifications yet' : `No ${activeFilter.toLowerCase()} notifications`}
                 </h3>
-                <p className="text-gray-500">
+                <p className="text-gray-500 max-w-sm mx-auto">
                   {activeFilter === 'All' 
-                    ? "We'll notify you when there are new offers and updates."
-                    : `No ${activeFilter.toLowerCase()} notifications to show.`
+                    ? "We'll notify you when there are new offers and updates. Stay tuned!"
+                    : `Check back later for new ${activeFilter.toLowerCase()} notifications.`
                   }
                 </p>
               </div>
