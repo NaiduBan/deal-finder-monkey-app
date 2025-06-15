@@ -1,10 +1,114 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { MapPin, Navigation, Store, Clock, Phone, Star } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser } from '@/contexts/UserContext';
+
+// Child component for deal cards
+const DealCard = React.memo(({ deal, callBusiness, getDirections }) => (
+  <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+    <div className="flex justify-between items-start mb-3">
+      <div className="flex-1">
+        <h3 className="font-semibold">{deal.title}</h3>
+        <p className="text-monkeyGreen font-medium">{deal.store}</p>
+      </div>
+      {deal.isGeoFenced && (
+        <Badge className="bg-orange-100 text-orange-800 text-xs">
+          Geo-Alert
+        </Badge>
+      )}
+    </div>
+    <div className="space-y-2 mb-3">
+      <div className="flex items-center space-x-2 text-sm text-gray-600">
+        <MapPin className="w-4 h-4" />
+        <span>{deal.address}</span>
+        <Badge variant="outline" className="text-xs">{deal.distance}</Badge>
+      </div>
+      <div className="flex items-center space-x-4 text-sm">
+        <div className="flex items-center space-x-1">
+          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+          <span>{deal.rating}</span>
+        </div>
+        <div className="flex items-center space-x-1">
+          <Clock className="w-4 h-4 text-gray-500" />
+          <span className="text-gray-600">{deal.validUntil}</span>
+        </div>
+      </div>
+    </div>
+    <div className="flex space-x-2">
+      <Button 
+        size="sm" 
+        variant="outline"
+        onClick={() => callBusiness(deal.phone)}
+        className="flex-1"
+      >
+        <Phone className="w-3 h-3 mr-1" />
+        Call
+      </Button>
+      <Button 
+        size="sm"
+        onClick={() => getDirections(deal.address)}
+        className="flex-1 bg-monkeyGreen hover:bg-monkeyGreen/90"
+      >
+        <Navigation className="w-3 h-3 mr-1" />
+        Directions
+      </Button>
+    </div>
+  </div>
+));
+
+// Child component for business cards
+const BusinessCard = React.memo(({ business, callBusiness, getDirections }) => (
+  <div className="border rounded-lg p-4">
+    <div className="flex justify-between items-start mb-3">
+      <div>
+        <h3 className="font-semibold">{business.name}</h3>
+        <p className="text-sm text-gray-600">{business.category}</p>
+      </div>
+      <div className="flex items-center space-x-1">
+        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+        <span className="text-sm">{business.rating}</span>
+      </div>
+    </div>
+    <div className="flex items-center space-x-2 text-sm text-gray-600 mb-3">
+      <MapPin className="w-4 h-4" />
+      <span>{business.address}</span>
+      <Badge variant="outline" className="text-xs">{business.distance}</Badge>
+    </div>
+    <div className="mb-3">
+      <p className="text-sm font-medium mb-1">Current Offers:</p>
+      <div className="space-y-1">
+        {business.offers.map((offer, index) => (
+          <div key={index} className="text-xs bg-monkeyGreen/10 text-monkeyGreen px-2 py-1 rounded">
+            {offer}
+          </div>
+        ))}
+      </div>
+    </div>
+    <div className="flex space-x-2">
+      <Button 
+        size="sm" 
+        variant="outline"
+        onClick={() => callBusiness(business.phone)}
+        className="flex-1"
+      >
+        <Phone className="w-3 h-3 mr-1" />
+        Call
+      </Button>
+      <Button 
+        size="sm"
+        onClick={() => getDirections(business.address)}
+        className="flex-1 bg-monkeyGreen hover:bg-monkeyGreen/90"
+      >
+        <Navigation className="w-3 h-3 mr-1" />
+        Visit
+      </Button>
+    </div>
+  </div>
+));
 
 const HyperLocalDeals = () => {
   const [userLocation, setUserLocation] = useState(null);
@@ -80,11 +184,12 @@ const HyperLocalDeals = () => {
   useEffect(() => {
     setNearbyDeals(mockLocalDeals);
     setLocalBusinesses(mockLocalBusinesses);
+    return () => {}; // Clean up if any
   }, []);
 
-  const getCurrentLocation = () => {
+  // Memoized callbacks
+  const getCurrentLocation = useCallback(() => {
     setIsLoadingLocation(true);
-    
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -93,7 +198,6 @@ const HyperLocalDeals = () => {
             lng: position.coords.longitude
           });
           setIsLoadingLocation(false);
-          // Simulate finding more local deals
           console.log('Location updated, finding nearby deals...');
         },
         (error) => {
@@ -105,16 +209,39 @@ const HyperLocalDeals = () => {
       setIsLoadingLocation(false);
       alert('Geolocation is not supported by this browser.');
     }
-  };
+  }, []);
 
-  const callBusiness = (phone) => {
+  const callBusiness = useCallback((phone) => {
     window.open(`tel:${phone}`);
-  };
+  }, []);
 
-  const getDirections = (address) => {
+  const getDirections = useCallback((address) => {
     const encodedAddress = encodeURIComponent(address);
     window.open(`https://maps.google.com/?q=${encodedAddress}`, '_blank');
-  };
+  }, []);
+
+  // Memoize deal and business card lists
+  const DealList = useMemo(() => (
+    nearbyDeals.map((deal) => (
+      <DealCard 
+        key={deal.id} 
+        deal={deal} 
+        callBusiness={callBusiness} 
+        getDirections={getDirections} 
+      />
+    ))
+  ), [nearbyDeals, callBusiness, getDirections]);
+
+  const BusinessList = useMemo(() => (
+    localBusinesses.map((business) => (
+      <BusinessCard 
+        key={business.id} 
+        business={business}
+        callBusiness={callBusiness}
+        getDirections={getDirections}
+      />
+    ))
+  ), [localBusinesses, callBusiness, getDirections]);
 
   return (
     <div className={`bg-monkeyBackground min-h-screen ${isMobile ? 'p-4 pb-20' : 'flex justify-center px-8 py-10 pt-20'}`}>
@@ -141,7 +268,6 @@ const HyperLocalDeals = () => {
             {isLoadingLocation ? 'Locating...' : 'Find Me'}
           </Button>
         </div>
-        
         <div className="flex items-center space-x-2 mb-4">
           <MapPin className="w-4 h-4 text-gray-500" />
           <span className="text-gray-600">{user.location}</span>
@@ -149,7 +275,6 @@ const HyperLocalDeals = () => {
             <Badge className="bg-green-100 text-green-800">Live Location</Badge>
           )}
         </div>
-
         {/* Main Grid for Desktop */}
         <div className={`${isMobile ? '' : 'grid grid-cols-2 gap-8'}`}>
           {/* Nearby Deals */}
@@ -163,64 +288,10 @@ const HyperLocalDeals = () => {
             </CardHeader>
             <CardContent>
               <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1'}`}>
-                {nearbyDeals.map((deal) => (
-                  <div key={deal.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1">
-                        <h3 className="font-semibold">{deal.title}</h3>
-                        <p className="text-monkeyGreen font-medium">{deal.store}</p>
-                      </div>
-                      {deal.isGeoFenced && (
-                        <Badge className="bg-orange-100 text-orange-800 text-xs">
-                          Geo-Alert
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-2 mb-3">
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <MapPin className="w-4 h-4" />
-                        <span>{deal.address}</span>
-                        <Badge variant="outline" className="text-xs">{deal.distance}</Badge>
-                      </div>
-                      
-                      <div className="flex items-center space-x-4 text-sm">
-                        <div className="flex items-center space-x-1">
-                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                          <span>{deal.rating}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Clock className="w-4 h-4 text-gray-500" />
-                          <span className="text-gray-600">{deal.validUntil}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex space-x-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => callBusiness(deal.phone)}
-                        className="flex-1"
-                      >
-                        <Phone className="w-3 h-3 mr-1" />
-                        Call
-                      </Button>
-                      <Button 
-                        size="sm"
-                        onClick={() => getDirections(deal.address)}
-                        className="flex-1 bg-monkeyGreen hover:bg-monkeyGreen/90"
-                      >
-                        <Navigation className="w-3 h-3 mr-1" />
-                        Directions
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                {DealList}
               </div>
             </CardContent>
           </Card>
-
           {/* Local Business Partners */}
           <Card>
             <CardHeader>
@@ -231,57 +302,7 @@ const HyperLocalDeals = () => {
             </CardHeader>
             <CardContent>
               <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1'}`}>
-                {localBusinesses.map((business) => (
-                  <div key={business.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h3 className="font-semibold">{business.name}</h3>
-                        <p className="text-sm text-gray-600">{business.category}</p>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm">{business.rating}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2 text-sm text-gray-600 mb-3">
-                      <MapPin className="w-4 h-4" />
-                      <span>{business.address}</span>
-                      <Badge variant="outline" className="text-xs">{business.distance}</Badge>
-                    </div>
-
-                    <div className="mb-3">
-                      <p className="text-sm font-medium mb-1">Current Offers:</p>
-                      <div className="space-y-1">
-                        {business.offers.map((offer, index) => (
-                          <div key={index} className="text-xs bg-monkeyGreen/10 text-monkeyGreen px-2 py-1 rounded">
-                            {offer}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex space-x-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => callBusiness(business.phone)}
-                        className="flex-1"
-                      >
-                        <Phone className="w-3 h-3 mr-1" />
-                        Call
-                      </Button>
-                      <Button 
-                        size="sm"
-                        onClick={() => getDirections(business.address)}
-                        className="flex-1 bg-monkeyGreen hover:bg-monkeyGreen/90"
-                      >
-                        <Navigation className="w-3 h-3 mr-1" />
-                        Visit
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                {BusinessList}
               </div>
             </CardContent>
           </Card>
