@@ -4,7 +4,7 @@ import { Offer } from '@/types';
 import { Bookmark, BookmarkCheck, Tag, Star } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { Badge } from "@/components/ui/badge";
 
 interface OfferCardProps {
   offer: Offer;
@@ -13,7 +13,6 @@ interface OfferCardProps {
 const OfferCard = ({ offer }: OfferCardProps) => {
   const { isOfferSaved, saveOffer, unsaveOffer } = useUser();
   const { session } = useAuth();
-  const isMobile = useIsMobile();
   const isSaved = isOfferSaved(offer.id);
 
   const handleSaveToggle = (e: React.MouseEvent) => {
@@ -28,84 +27,81 @@ const OfferCard = ({ offer }: OfferCardProps) => {
   };
 
   return (
-    <div className={`offer-card h-full flex flex-col bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow ${
-      offer.sponsored ? 'border-monkeyYellow' : 'border-gray-100'
-    } ${
-      !isMobile ? 'w-full max-w-[400px]' : ''
+    <div className={`h-full flex flex-col bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-lg transition-shadow duration-300 group ${
+      offer.sponsored ? 'border-yellow-400 shadow-yellow-200/50' : 'border-gray-200'
     }`}>
-      {/* Image Container - Different aspect ratios for mobile and desktop */}
-      <div className={`relative bg-gray-50 ${
-        isMobile ? 'aspect-square' : 'aspect-[5/2]'
-      }`}>
+      {/* Image Container */}
+      <div className="relative bg-gray-100 aspect-video">
         <img 
           src={offer.imageUrl || "/placeholder.svg"} 
           alt={offer.title || "Offer"} 
-          className="w-full h-full object-contain p-2"
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
+        
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div> {/* Gradient Overlay */}
         
         {/* Save Button */}
         {session?.user && (
           <button
             onClick={handleSaveToggle}
-            className="absolute top-2 right-2 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-colors"
+            className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-colors z-20"
           >
             {isSaved ? (
-              <BookmarkCheck className="w-4 h-4 text-monkeyGreen" />
+              <BookmarkCheck className="w-5 h-5 text-spring-green-600" />
             ) : (
-              <Bookmark className="w-4 h-4 text-gray-600" />
+              <Bookmark className="w-5 h-5 text-gray-700" />
             )}
           </button>
         )}
         
         {/* Badges Container */}
-        <div className="absolute top-2 left-2 flex items-center gap-2">
+        <div className="absolute bottom-3 left-3 flex items-center gap-2 z-20">
             {offer.sponsored && (
-                <div className="bg-monkeyYellow text-black text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 z-10">
-                    <Star className="w-3 h-3" />
+                <Badge className="bg-yellow-400 text-black shadow-lg border-none">
+                    <Star className="w-3 h-3 mr-1" />
                     Sponsored
-                </div>
+                </Badge>
             )}
-            {/* Code Badge */}
             {offer.code && (
-                <div className="bg-monkeyGreen text-white text-xs font-bold px-2 py-1 rounded-full flex items-center z-10">
+                <Badge className="bg-spring-green-600 text-white shadow-lg border-none">
                     <Tag className="w-3 h-3 mr-1" />
                     CODE
-                </div>
+                </Badge>
             )}
         </div>
       </div>
       
       {/* Content */}
-      <div className="p-3 flex-1 flex flex-col">
+      <div className="p-4 flex-1 flex flex-col">
         {/* Store */}
-        <p className="text-xs text-monkeyGreen font-semibold mb-1">{offer.store || "Store"}</p>
+        <p className="text-sm font-semibold text-spring-green-700 mb-1">{offer.store || "Store"}</p>
         
         {/* Title */}
         {offer.title && (
-          <h3 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2">
+          <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-2 leading-tight">
             {offer.title}
           </h3>
         )}
         
         {/* Description */}
-        <p className="text-sm text-gray-700 line-clamp-2 flex-1 leading-relaxed mb-2">
+        <p className="text-sm text-gray-600 line-clamp-2 flex-1 leading-relaxed">
           {offer.description || "Offer Description"}
         </p>
-        
+
         {/* Long Offer */}
         {offer.longOffer && offer.longOffer !== offer.description && (
-          <p className="text-xs text-gray-600 line-clamp-2 mb-2">
+          <p className="text-xs text-gray-500 line-clamp-1 mt-1">
             {offer.longOffer}
           </p>
         )}
         
         {/* Code Display */}
         {offer.code && (
-          <div className="mt-auto text-center">
-            <span className="text-xs text-gray-500">Code: </span>
-            <span className="text-xs font-mono font-semibold text-monkeyGreen bg-monkeyGreen/10 px-2 py-1 rounded">
+          <div className="mt-4 text-center p-3 border-2 border-dashed border-spring-green-300 rounded-lg bg-spring-green-50 cursor-pointer hover:bg-spring-green-100 transition-colors">
+            <span className="text-xs text-gray-500 uppercase tracking-wider">Use Code</span>
+            <p className="text-lg font-mono font-bold text-spring-green-700">
               {offer.code}
-            </span>
+            </p>
           </div>
         )}
       </div>
