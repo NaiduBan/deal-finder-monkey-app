@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff, Volume2, VolumeX, Settings, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { VoiceRecorder, AudioPlayer, convertBlobToBase64 } from '@/utils/voiceUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface VoiceInterfaceProps {
   onTranscription: (text: string) => void;
@@ -27,6 +27,7 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
   const [volume, setVolume] = useState([0.8]);
   const [showSettings, setShowSettings] = useState(false);
   
+  const isMobile = useIsMobile();
   const recorderRef = useRef<VoiceRecorder | null>(null);
   const playerRef = useRef<AudioPlayer | null>(null);
   const animationRef = useRef<number>();
@@ -55,7 +56,6 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
       setIsRecording(true);
       setIsListening(true);
       
-      // Start audio visualization
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioContextRef.current = new AudioContext();
       analyserRef.current = audioContextRef.current.createAnalyser();
@@ -104,7 +104,6 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
         cancelAnimationFrame(animationRef.current);
       }
 
-      // Convert to base64 and send for transcription
       const base64Audio = await convertBlobToBase64(audioBlob);
       
       toast({
@@ -172,25 +171,25 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardContent className="p-6">
+    <Card className="w-full shadow-sm">
+      <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
         <div className="flex flex-col items-center space-y-6">
-          {/* Voice Visualizer */}
+          {/* Voice Visualizer - Responsive sizing */}
           <div className="relative">
-            <div className="w-32 h-32 rounded-full bg-gradient-to-br from-monkeyGreen/20 to-monkeyGreen/40 flex items-center justify-center">
+            <div className={`${isMobile ? 'w-24 h-24' : 'w-32 h-32'} rounded-full bg-gradient-to-br from-monkeyGreen/20 to-monkeyGreen/40 flex items-center justify-center`}>
               <div 
-                className="w-24 h-24 rounded-full bg-monkeyGreen flex items-center justify-center transition-transform duration-150"
+                className={`${isMobile ? 'w-18 h-18' : 'w-24 h-24'} rounded-full bg-monkeyGreen flex items-center justify-center transition-transform duration-150`}
                 style={{ 
                   transform: `scale(${1 + audioLevel * 0.3})`,
                   boxShadow: `0 0 ${audioLevel * 50}px rgba(46, 125, 50, 0.4)`
                 }}
               >
                 {isProcessing ? (
-                  <Loader2 className="w-8 h-8 text-white animate-spin" />
+                  <Loader2 className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'} text-white animate-spin`} />
                 ) : isRecording ? (
-                  <Mic className="w-8 h-8 text-white" />
+                  <Mic className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'} text-white`} />
                 ) : (
-                  <MicOff className="w-8 h-8 text-white" />
+                  <MicOff className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'} text-white`} />
                 )}
               </div>
             </div>
@@ -210,11 +209,11 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
             )}
           </div>
 
-          {/* Recording Button */}
+          {/* Recording Button - Responsive sizing */}
           <Button
             onClick={toggleRecording}
             disabled={isProcessing}
-            size="lg"
+            size={isMobile ? 'default' : 'lg'}
             className={`w-full ${
               isRecording 
                 ? 'bg-red-500 hover:bg-red-600' 
@@ -239,18 +238,19 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
             onClick={() => setShowSettings(!showSettings)}
             variant="outline"
             size="sm"
+            className="text-sm"
           >
             <Settings className="w-4 h-4 mr-2" />
             Voice Settings
           </Button>
 
-          {/* Voice Settings */}
+          {/* Voice Settings - Responsive layout */}
           {showSettings && (
             <div className="w-full space-y-4 p-4 bg-gray-50 rounded-lg">
               <div>
                 <label className="text-sm font-medium mb-2 block">Voice</label>
                 <Select value={voice} onValueChange={setVoice}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -278,8 +278,8 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
             </div>
           )}
 
-          {/* Status Text */}
-          <p className="text-sm text-gray-600 text-center">
+          {/* Status Text - Responsive text sizing */}
+          <p className={`text-gray-600 text-center ${isMobile ? 'text-sm' : 'text-base'}`}>
             {isProcessing ? (
               "Processing your request..."
             ) : isRecording ? (

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Bot, Mic, Search, Heart, TrendingUp, Zap, MessageCircle, Volume2, Sparkles, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -204,10 +203,10 @@ const AIShoppingAssistant = () => {
   ];
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 ${isMobile ? 'pb-16' : ''}`}>
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Fixed Header */}
+      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <Link to="/home" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -215,53 +214,65 @@ const AIShoppingAssistant = () => {
               </Link>
               <div className="flex items-center space-x-3">
                 <div className="relative">
-                  <div className="w-12 h-12 bg-gradient-to-br from-monkeyGreen to-green-600 rounded-full flex items-center justify-center">
-                    <Bot className="w-6 h-6 text-white" />
+                  <div className="w-10 h-10 bg-gradient-to-br from-monkeyGreen to-green-600 rounded-full flex items-center justify-center">
+                    <Bot className="w-5 h-5 text-white" />
                   </div>
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">AI Shopping Assistant</h1>
+                  <h1 className={`font-bold text-gray-900 ${isMobile ? 'text-lg' : 'text-xl'}`}>
+                    AI Assistant
+                  </h1>
                   <div className="flex items-center space-x-2">
-                    <Sparkles className="w-4 h-4 text-monkeyGreen" />
-                    <span className="text-sm text-gray-600">Powered by Advanced AI</span>
+                    <Sparkles className="w-3 h-3 text-monkeyGreen" />
+                    <span className={`text-gray-600 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                      Powered by AI
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
             
-            <div className="flex items-center space-x-2">
+            {/* Mode Toggle */}
+            <div className="flex items-center space-x-1">
               <Button
                 variant={currentMode === 'text' ? 'default' : 'outline'}
-                size="sm"
+                size={isMobile ? 'sm' : 'sm'}
                 onClick={() => setCurrentMode('text')}
+                className={isMobile ? 'px-2' : 'px-3'}
               >
                 <MessageCircle className="w-4 h-4 mr-1" />
-                Text
+                {!isMobile && 'Text'}
               </Button>
               <Button
                 variant={currentMode === 'voice' ? 'default' : 'outline'}
-                size="sm"
+                size={isMobile ? 'sm' : 'sm'}
                 onClick={() => setCurrentMode('voice')}
+                className={isMobile ? 'px-2' : 'px-3'}
               >
                 <Mic className="w-4 h-4 mr-1" />
-                Voice
+                {!isMobile && 'Voice'}
               </Button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto p-4">
-        <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'}`}>
-          {/* Main Chat Area */}
-          <div className={`${isMobile ? 'order-1' : 'lg:col-span-2'} space-y-4`}>
-            {/* Chat Messages */}
-            <Card className="h-96">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center space-x-2">
-                  <Bot className="w-5 h-5" />
-                  <span>AI Conversation</span>
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto p-4 pb-20">
+        <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-4'}`}>
+          
+          {/* Chat Area - Takes more space on desktop */}
+          <div className={`${isMobile ? 'order-1' : 'lg:col-span-3'} space-y-4`}>
+            
+            {/* Chat Messages Card */}
+            <Card className="shadow-sm">
+              <CardHeader className="pb-3 border-b">
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Bot className="w-5 h-5 text-monkeyGreen" />
+                    <span className={isMobile ? 'text-base' : 'text-lg'}>Conversation</span>
+                  </div>
                   {isProcessing && (
                     <div className="flex items-center space-x-1 text-monkeyGreen">
                       <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce"></div>
@@ -271,15 +282,29 @@ const AIShoppingAssistant = () => {
                   )}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-64 pr-4">
+              <CardContent className="p-0">
+                <ScrollArea className={`${isMobile ? 'h-80' : 'h-96'} p-4`}>
                   <div className="space-y-4">
                     {messages.map((message) => (
                       <div
                         key={message.id}
-                        className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
+                        className={`flex ${message.isUser ? 'justify-end' : 'justify-start'} gap-3`}
                       >
-                        <div className={`max-w-xs lg:max-w-md ${message.isUser ? 'order-2' : 'order-1'}`}>
+                        {/* Avatar */}
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          message.isUser ? 'order-2 bg-gray-400' : 'order-1 bg-monkeyGreen'
+                        }`}>
+                          {message.isUser ? (
+                            <span className="text-white text-xs font-medium">
+                              {user?.name?.charAt(0) || 'U'}
+                            </span>
+                          ) : (
+                            <Bot className="w-4 h-4 text-white" />
+                          )}
+                        </div>
+
+                        {/* Message Bubble */}
+                        <div className={`max-w-xs lg:max-w-sm ${message.isUser ? 'order-1' : 'order-2'}`}>
                           <div
                             className={`rounded-2xl px-4 py-3 ${
                               message.isUser
@@ -298,26 +323,16 @@ const AIShoppingAssistant = () => {
                             </div>
                           </div>
                         </div>
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          message.isUser ? 'order-1 ml-3 bg-gray-400' : 'order-2 mr-3 bg-monkeyGreen'
-                        }`}>
-                          {message.isUser ? (
-                            <span className="text-white text-xs font-medium">
-                              {user?.name?.charAt(0) || 'U'}
-                            </span>
-                          ) : (
-                            <Bot className="w-4 h-4 text-white" />
-                          )}
-                        </div>
                       </div>
                     ))}
 
+                    {/* Typing Indicator */}
                     {isTyping && (
-                      <div className="flex justify-start">
-                        <div className="order-2 mr-3 w-8 h-8 rounded-full bg-monkeyGreen flex items-center justify-center">
+                      <div className="flex justify-start gap-3">
+                        <div className="order-1 w-8 h-8 rounded-full bg-monkeyGreen flex items-center justify-center">
                           <Bot className="w-4 h-4 text-white" />
                         </div>
-                        <div className="order-1 max-w-xs">
+                        <div className="order-2 max-w-xs">
                           <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
                             <div className="flex space-x-1">
                               <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce"></div>
@@ -337,39 +352,41 @@ const AIShoppingAssistant = () => {
 
             {/* Input Interface */}
             {currentMode === 'text' ? (
-              <Card>
+              <Card className="shadow-sm">
                 <CardContent className="p-4">
-                  <form onSubmit={handleTextSubmit} className="flex space-x-3">
-                    <Input
-                      placeholder="Ask me about deals, offers, or anything else..."
-                      value={inputText}
-                      onChange={(e) => setInputText(e.target.value)}
-                      disabled={isProcessing || !session?.user}
-                      className="flex-1"
-                    />
-                    <Button 
-                      type="submit" 
-                      disabled={!inputText.trim() || isProcessing || !session?.user}
-                      className="bg-monkeyGreen hover:bg-monkeyGreen/90"
-                    >
-                      <Search className="w-4 h-4" />
-                    </Button>
-                  </form>
-                  
-                  {/* Quick Actions */}
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {quickActions.map((action, index) => (
-                      <Button
-                        key={index}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setInputText(action)}
-                        className="text-xs"
+                  <form onSubmit={handleTextSubmit} className="space-y-4">
+                    <div className="flex space-x-3">
+                      <Input
+                        placeholder="Ask me about deals, offers, or anything else..."
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                        disabled={isProcessing || !session?.user}
+                        className="flex-1"
+                      />
+                      <Button 
+                        type="submit" 
+                        disabled={!inputText.trim() || isProcessing || !session?.user}
+                        className="bg-monkeyGreen hover:bg-monkeyGreen/90"
                       >
-                        {action}
+                        <Search className="w-4 h-4" />
                       </Button>
-                    ))}
-                  </div>
+                    </div>
+                    
+                    {/* Quick Actions */}
+                    <div className="flex flex-wrap gap-2">
+                      {quickActions.map((action, index) => (
+                        <Button
+                          key={index}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setInputText(action)}
+                          className="text-xs hover:bg-monkeyGreen/10"
+                        >
+                          {action}
+                        </Button>
+                      ))}
+                    </div>
+                  </form>
                 </CardContent>
               </Card>
             ) : (
@@ -381,39 +398,39 @@ const AIShoppingAssistant = () => {
             )}
           </div>
 
-          {/* Sidebar */}
-          <div className={`space-y-4 ${isMobile ? 'order-2' : ''}`}>
+          {/* Sidebar - Responsive positioning */}
+          <div className={`space-y-4 ${isMobile ? 'order-2' : 'lg:col-span-1'}`}>
+            
             {/* Smart Recommendations */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <TrendingUp className="w-5 h-5" />
+            <Card className="shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center space-x-2 text-base">
+                  <TrendingUp className="w-4 h-4 text-monkeyGreen" />
                   <span>Smart Picks</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {recommendations.slice(0, 3).map((offer: any) => (
-                    <div key={offer.id} className="border rounded-lg p-3 hover:shadow-md transition-shadow">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-sm line-clamp-2">{offer.title}</h4>
-                        <Badge variant="secondary" className="text-xs">
-                          {offer.discount}%
-                        </Badge>
-                      </div>
-                      <p className="text-gray-600 text-xs mb-2">{offer.store}</p>
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-monkeyGreen text-sm">₹{offer.price}</span>
-                        <Button size="sm" variant="outline" className="text-xs">
-                          <Heart className="w-3 h-3 mr-1" />
-                          Save
-                        </Button>
-                      </div>
+              <CardContent className="space-y-3">
+                {recommendations.slice(0, isMobile ? 2 : 3).map((offer: any) => (
+                  <div key={offer.id} className="border rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-medium text-sm line-clamp-2 flex-1 mr-2">{offer.title}</h4>
+                      <Badge variant="secondary" className="text-xs whitespace-nowrap">
+                        {offer.discount}%
+                      </Badge>
                     </div>
-                  ))}
-                </div>
+                    <p className="text-gray-600 text-xs mb-2">{offer.store}</p>
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-monkeyGreen text-sm">₹{offer.price}</span>
+                      <Button size="sm" variant="outline" className="text-xs px-2 py-1">
+                        <Heart className="w-3 h-3 mr-1" />
+                        Save
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                
                 {recommendations.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-6 text-gray-500">
                     <TrendingUp className="w-8 h-8 mx-auto mb-2 opacity-50" />
                     <p className="text-sm">Save offers to get personalized recommendations!</p>
                   </div>
@@ -422,35 +439,33 @@ const AIShoppingAssistant = () => {
             </Card>
 
             {/* AI Features */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Zap className="w-5 h-5" />
+            <Card className="shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center space-x-2 text-base">
+                  <Zap className="w-4 h-4 text-monkeyGreen" />
                   <span>AI Features</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3 p-2 bg-green-50 rounded-lg">
-                    <Mic className="w-4 h-4 text-monkeyGreen" />
-                    <div>
-                      <p className="font-medium text-sm">Voice Chat</p>
-                      <p className="text-xs text-gray-600">Talk naturally with AI</p>
-                    </div>
+              <CardContent className="space-y-3">
+                <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+                  <Mic className="w-4 h-4 text-monkeyGreen flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm">Voice Chat</p>
+                    <p className="text-xs text-gray-600">Talk naturally with AI</p>
                   </div>
-                  <div className="flex items-center space-x-3 p-2 bg-blue-50 rounded-lg">
-                    <Search className="w-4 h-4 text-blue-600" />
-                    <div>
-                      <p className="font-medium text-sm">Smart Search</p>
-                      <p className="text-xs text-gray-600">Find deals with AI</p>
-                    </div>
+                </div>
+                <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
+                  <Search className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm">Smart Search</p>
+                    <p className="text-xs text-gray-600">Find deals with AI</p>
                   </div>
-                  <div className="flex items-center space-x-3 p-2 bg-purple-50 rounded-lg">
-                    <TrendingUp className="w-4 h-4 text-purple-600" />
-                    <div>
-                      <p className="font-medium text-sm">Predictions</p>
-                      <p className="text-xs text-gray-600">AI-powered insights</p>
-                    </div>
+                </div>
+                <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
+                  <TrendingUp className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm">Predictions</p>
+                    <p className="text-xs text-gray-600">AI-powered insights</p>
                   </div>
                 </div>
               </CardContent>
