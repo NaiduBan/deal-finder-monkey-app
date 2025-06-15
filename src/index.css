@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Satoshi:wght@400;700&display=swap');
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,41 +7,40 @@
 
 @layer base {
   :root {
-    --background: 242 60% 99%;
-    --foreground: 142 35% 21%;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 142 35% 21%;
+    --card-foreground: 222.2 84% 4.9%;
 
-    --primary: 142 73% 29%;
-    --primary-foreground: 0 0% 100%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
 
-    --secondary: 141 48% 93%;
-    --secondary-foreground: 142 35% 21%;
+    --primary: 122 47% 34%;
+    --primary-foreground: 210 40% 98%;
 
-    --muted: 142 13% 93%;
-    --muted-foreground: 142 15% 40%;
+    --secondary: 120 40% 75%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --accent: 41 98% 67%;
-    --accent-foreground: 141 37% 20%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 39 95% 55%;
+    --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 142 23% 86%;
-    --input: 142 23% 86%;
-    --ring: 142 51% 33%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 122 47% 34%;
 
     --radius: 1rem;
-
-    --dim-green: #237540;
-    --dim-green-dark: #194d2b;
-    --dim-green-light: #317d50;
-    --dim-green-muted: #e6f5e6;
   }
+
   .dark {
-    --background: 142 35% 11%;
-    --foreground: 142 35% 90%;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
 
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
@@ -67,10 +67,15 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 122 47% 34%;
   }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
 
   body {
-    @apply bg-background text-foreground font-satoshi;
-    letter-spacing: 0.02em;
+    @apply bg-background text-foreground font-montserrat;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -92,7 +97,7 @@
   }
 
   .offer-card {
-    @apply bg-white rounded-2xl shadow-lg border border-dim-green-light p-4 transition hover:shadow-2xl hover:scale-105;
+    @apply bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md;
   }
 }
 

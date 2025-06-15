@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { MapPin, Navigation, Store, Clock, Phone, Star, Users, Building2 } from 'lucide-react';
+import { MapPin, Navigation, Store, Clock, Phone, Star } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser } from '@/contexts/UserContext';
 
@@ -44,33 +43,38 @@ interface BusinessCardProps {
   getDirections: (address: string) => void;
 }
 
-// --- Modern Deal Card
+// Child component for deal cards
 const DealCard: React.FC<DealCardProps> = React.memo(({ deal, callBusiness, getDirections }) => (
-  <div className="rounded-2xl shadow-lg bg-white border border-gray-100 p-5 hover:shadow-xl transition-all flex flex-col gap-3">
-    <div className="flex items-start justify-between mb-1">
-      <div>
-        <h3 className="font-bold text-base">{deal.title}</h3>
-        <span className="text-monkeyGreen font-medium text-sm">{deal.store}</span>
+  <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+    <div className="flex justify-between items-start mb-3">
+      <div className="flex-1">
+        <h3 className="font-semibold">{deal.title}</h3>
+        <p className="text-monkeyGreen font-medium">{deal.store}</p>
       </div>
       {deal.isGeoFenced && (
-        <Badge className="bg-orange-50 text-orange-700 text-xs">Geo-Alert</Badge>
+        <Badge className="bg-orange-100 text-orange-800 text-xs">
+          Geo-Alert
+        </Badge>
       )}
     </div>
-    <div className="flex items-center text-gray-500 gap-2 text-sm">
-      <MapPin className="w-4 h-4" />
-      <span className="truncate">{deal.address}</span>
-      <Badge variant="outline" className="text-xs whitespace-nowrap">{deal.distance}</Badge>
-    </div>
-    <div className="flex items-center justify-between text-xs gap-6">
-      <div className="flex items-center gap-1">
-        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" /><span>{deal.rating}</span>
+    <div className="space-y-2 mb-3">
+      <div className="flex items-center space-x-2 text-sm text-gray-600">
+        <MapPin className="w-4 h-4" />
+        <span>{deal.address}</span>
+        <Badge variant="outline" className="text-xs">{deal.distance}</Badge>
       </div>
-      <div className="flex items-center gap-1">
-        <Clock className="w-4 h-4 text-gray-400" />
-        <span>{deal.validUntil}</span>
+      <div className="flex items-center space-x-4 text-sm">
+        <div className="flex items-center space-x-1">
+          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+          <span>{deal.rating}</span>
+        </div>
+        <div className="flex items-center space-x-1">
+          <Clock className="w-4 h-4 text-gray-500" />
+          <span className="text-gray-600">{deal.validUntil}</span>
+        </div>
       </div>
     </div>
-    <div className="flex flex-col gap-2 mt-1 sm:flex-row">
+    <div className="flex space-x-2">
       <Button 
         size="sm" 
         variant="outline"
@@ -83,7 +87,7 @@ const DealCard: React.FC<DealCardProps> = React.memo(({ deal, callBusiness, getD
       <Button 
         size="sm"
         onClick={() => getDirections(deal.address)}
-        className="flex-1 bg-monkeyGreen hover:bg-monkeyGreen/90 text-white"
+        className="flex-1 bg-monkeyGreen hover:bg-monkeyGreen/90"
       >
         <Navigation className="w-3 h-3 mr-1" />
         Directions
@@ -92,33 +96,35 @@ const DealCard: React.FC<DealCardProps> = React.memo(({ deal, callBusiness, getD
   </div>
 ));
 
-// --- Modern Business Card
+// Child component for business cards
 const BusinessCard: React.FC<BusinessCardProps> = React.memo(({ business, callBusiness, getDirections }) => (
-  <div className="rounded-2xl shadow-lg bg-white border border-gray-100 p-5 hover:shadow-xl transition-all flex flex-col gap-3">
-    <div className="flex items-start justify-between mb-1">
+  <div className="border rounded-lg p-4">
+    <div className="flex justify-between items-start mb-3">
       <div>
-        <h3 className="font-bold text-base">{business.name}</h3>
-        <span className="text-gray-500 text-sm">{business.category}</span>
+        <h3 className="font-semibold">{business.name}</h3>
+        <p className="text-sm text-gray-600">{business.category}</p>
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center space-x-1">
         <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
         <span className="text-sm">{business.rating}</span>
       </div>
     </div>
-    <div className="flex items-center text-gray-500 gap-2 text-sm truncate">
+    <div className="flex items-center space-x-2 text-sm text-gray-600 mb-3">
       <MapPin className="w-4 h-4" />
       <span>{business.address}</span>
-      <Badge variant="outline" className="text-xs whitespace-nowrap">{business.distance}</Badge>
+      <Badge variant="outline" className="text-xs">{business.distance}</Badge>
     </div>
-    <div>
-      <span className="text-xs font-semibold text-monkeyGreen">Current Offers:</span>
-      <div className="flex flex-wrap gap-2 mt-1">
-        {business.offers.map((offer, i) => (
-          <div key={i} className="px-2 py-1 rounded bg-green-50 text-monkeyGreen text-xs">{offer}</div>
+    <div className="mb-3">
+      <p className="text-sm font-medium mb-1">Current Offers:</p>
+      <div className="space-y-1">
+        {business.offers.map((offer, index) => (
+          <div key={index} className="text-xs bg-monkeyGreen/10 text-monkeyGreen px-2 py-1 rounded">
+            {offer}
+          </div>
         ))}
       </div>
     </div>
-    <div className="flex flex-col gap-2 mt-1 sm:flex-row">
+    <div className="flex space-x-2">
       <Button 
         size="sm" 
         variant="outline"
@@ -131,7 +137,7 @@ const BusinessCard: React.FC<BusinessCardProps> = React.memo(({ business, callBu
       <Button 
         size="sm"
         onClick={() => getDirections(business.address)}
-        className="flex-1 bg-monkeyGreen hover:bg-monkeyGreen/90 text-white"
+        className="flex-1 bg-monkeyGreen hover:bg-monkeyGreen/90"
       >
         <Navigation className="w-3 h-3 mr-1" />
         Visit
@@ -142,16 +148,14 @@ const BusinessCard: React.FC<BusinessCardProps> = React.memo(({ business, callBu
 
 const HyperLocalDeals = () => {
   const [userLocation, setUserLocation] = useState(null);
-  const [nearbyDeals, setNearbyDeals] = useState<DealType[]>([]);
-  const [localBusinesses, setLocalBusinesses] = useState<BusinessType[]>([]);
+  const [nearbyDeals, setNearbyDeals] = useState([]);
+  const [localBusinesses, setLocalBusinesses] = useState([]);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-  // Tab state for mobile
-  const [activeMobileTab, setActiveMobileTab] = useState<'deals' | 'business'>('deals');
   const isMobile = useIsMobile();
   const { user } = useUser();
 
-  // --- mock data ---
-  const mockLocalDeals: DealType[] = [
+  // Mock local deals data
+  const mockLocalDeals = [
     {
       id: 1,
       title: "Flat 30% off on Pizza",
@@ -190,7 +194,7 @@ const HyperLocalDeals = () => {
     }
   ];
 
-  const mockLocalBusinesses: BusinessType[] = [
+  const mockLocalBusinesses = [
     {
       id: 1,
       name: "Rajesh Electronics",
@@ -252,127 +256,94 @@ const HyperLocalDeals = () => {
     window.open(`https://maps.google.com/?q=${encodedAddress}`, '_blank');
   }, []);
 
+  // Memoize deal and business card lists, passing correct typing
   const DealList = useMemo(() => (
-    <div className={`${isMobile ? 'flex flex-col gap-4' : 'grid grid-cols-2 gap-6'}`}>
-      {nearbyDeals.map((deal) => (
-        <DealCard key={deal.id} deal={deal} callBusiness={callBusiness} getDirections={getDirections} />
-      ))}
-    </div>
-  ), [nearbyDeals, callBusiness, getDirections, isMobile]);
+    nearbyDeals.map((deal: DealType) => (
+      <DealCard 
+        key={deal.id} 
+        deal={deal} 
+        callBusiness={callBusiness} 
+        getDirections={getDirections} 
+      />
+    ))
+  ), [nearbyDeals, callBusiness, getDirections]);
 
   const BusinessList = useMemo(() => (
-    <div className={`${isMobile ? 'flex flex-col gap-4' : 'grid grid-cols-2 gap-6'}`}>
-      {localBusinesses.map((business) => (
-        <BusinessCard key={business.id} business={business} callBusiness={callBusiness} getDirections={getDirections} />
-      ))}
-    </div>
-  ), [localBusinesses, callBusiness, getDirections, isMobile]);
+    localBusinesses.map((business: BusinessType) => (
+      <BusinessCard 
+        key={business.id} 
+        business={business}
+        callBusiness={callBusiness}
+        getDirections={getDirections}
+      />
+    ))
+  ), [localBusinesses, callBusiness, getDirections]);
 
-  // --- Layout ---
   return (
-    <div className="bg-gradient-to-b from-monkeyBackground to-gray-50 min-h-screen w-full pt-20 pb-4 px-0 sm:px-0">
-      {/* Header */}
-      <section className="max-w-2xl mx-auto mt-0 mb-6 px-4 pt-2">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center justify-center rounded-full h-14 w-14 bg-monkeyGreen">
-            <Store className="w-7 h-7 text-white" />
+    <div className={`bg-monkeyBackground min-h-screen ${isMobile ? 'p-4 pb-20' : 'flex justify-center px-8 py-10 pt-20'}`}>
+      <div className={`${isMobile ? '' : 'w-full max-w-6xl flex flex-col gap-8'}`}>
+        {/* Header */}
+        <div className={`${isMobile ? 'mb-6' : 'mb-8 flex items-center justify-between'}`}>
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-monkeyGreen rounded-full flex items-center justify-center">
+              <MapPin className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900`}>
+                Local Deals
+              </h1>
+              <p className="text-gray-600">Discover deals near you</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-bold text-2xl sm:text-3xl text-gray-900 mb-1 tracking-tight">
-              Discover Local Deals Near You
-            </h1>
-            <p className="text-gray-500 text-base">Curated just for your area</p>
-          </div>
-        </div>
-        <div className="mt-6 flex flex-wrap items-center gap-2">
           <Button 
             onClick={getCurrentLocation}
             disabled={isLoadingLocation}
-            className="bg-monkeyGreen hover:bg-monkeyGreen/90 py-2 px-5 text-white rounded-xl shadow"
+            className="bg-monkeyGreen hover:bg-monkeyGreen/90 mt-4 sm:mt-0"
           >
             <Navigation className="w-4 h-4 mr-2" />
-            {isLoadingLocation ? 'Locating...' : 'Use My Location'}
+            {isLoadingLocation ? 'Locating...' : 'Find Me'}
           </Button>
-          <span className="flex items-center text-gray-600 text-sm gap-1 truncate">
-            <MapPin className="w-4 h-4" />
-            {user.location}
-            {userLocation && (
-              <Badge className="bg-green-100 text-green-700 ml-2">Live Location</Badge>
-            )}
-          </span>
         </div>
-      </section>
-
-      {/* Main Section - Responsive */}
-      <main className="max-w-4xl w-full mx-auto px-2 sm:px-4">
-        {isMobile ? (
-          // --- Tabs on mobile ---
-          <Tabs value={activeMobileTab} onValueChange={v => setActiveMobileTab(v as 'deals' | 'business')}>
-            <TabsList className="flex w-full mb-4">
-              <TabsTrigger value="deals" className="flex-1">
-                <Store className="w-4 h-4 mr-2" /> Deals
-              </TabsTrigger>
-              <TabsTrigger value="business" className="flex-1">
-                <Building2 className="w-4 h-4 mr-2" /> Partners
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="deals">
-              <Card className="p-0 bg-gray-50 border-none shadow-none">
-                <CardHeader className="bg-white rounded-t-2xl border-b px-6 pt-6 pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
-                    <Store className="w-5 h-5" /> Nearby Deals
-                    <Badge variant="secondary">{nearbyDeals.length}</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-6 pt-4 pb-6">
-                  {DealList}
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="business">
-              <Card className="p-0 bg-gray-50 border-none shadow-none">
-                <CardHeader className="bg-white rounded-t-2xl border-b px-6 pt-6 pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
-                    <Building2 className="w-5 h-5" /> Local Business Partners
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-6 pt-4 pb-6">
-                  {BusinessList}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        ) : (
-          // --- 2-column for desktop/tablet ---
-          <div className="w-full flex flex-row gap-8">
-            <section className="flex-1">
-              <Card className="bg-gray-50">
-                <CardHeader className="bg-white rounded-t-2xl border-b px-7 pt-7 pb-4">
-                  <CardTitle className="flex items-center gap-2 text-xl font-bold">
-                    <Store className="w-5 h-5" /> Nearby Deals
-                    <Badge variant="secondary">{nearbyDeals.length}</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-7 pt-5 pb-7">
-                  {DealList}
-                </CardContent>
-              </Card>
-            </section>
-            <section className="flex-1">
-              <Card className="bg-gray-50">
-                <CardHeader className="bg-white rounded-t-2xl border-b px-7 pt-7 pb-4">
-                  <CardTitle className="flex items-center gap-2 text-xl font-bold">
-                    <Building2 className="w-5 h-5" /> Local Business Partners
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-7 pt-5 pb-7">
-                  {BusinessList}
-                </CardContent>
-              </Card>
-            </section>
-          </div>
-        )}
-      </main>
+        <div className="flex items-center space-x-2 mb-4">
+          <MapPin className="w-4 h-4 text-gray-500" />
+          <span className="text-gray-600">{user.location}</span>
+          {userLocation && (
+            <Badge className="bg-green-100 text-green-800">Live Location</Badge>
+          )}
+        </div>
+        {/* Main Grid for Desktop */}
+        <div className={`${isMobile ? '' : 'grid grid-cols-2 gap-8'}`}>
+          {/* Nearby Deals */}
+          <Card className={`${isMobile ? 'mb-6' : ''}`}>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Store className="w-5 h-5" />
+                <span>Nearby Deals</span>
+                <Badge variant="secondary">{nearbyDeals.length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1'}`}>
+                {DealList}
+              </div>
+            </CardContent>
+          </Card>
+          {/* Local Business Partners */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Store className="w-5 h-5" />
+                <span>Local Business Partners</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1'}`}>
+                {BusinessList}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 };

@@ -1,380 +1,788 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { MapPin, Navigation, Store, Clock, Phone, Star, Users, Building2 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useIsMobile } from '@/hooks/use-mobile';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { MapPin, Bell, Search, AlertCircle, Bot, Users } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent } from '@/components/ui/card';
 import { useUser } from '@/contexts/UserContext';
+import { useData } from '@/contexts/DataContext';
+import OfferCard from './OfferCard';
+import CuelinkOfferCard from './CuelinkOfferCard';
+import CategoryItem from './CategoryItem';
+import { supabase } from '@/integrations/supabase/client';
+import { applyPreferencesToOffers } from '@/services/supabaseService';
+import { fetchCuelinkOffers } from '@/services/cuelinkService';
+import { Category, Offer, CuelinkOffer } from '@/types';
+import { useIsMobile } from '@/hooks/use-mobile';
+import CuelinkPagination from './CuelinkPagination';
 
-// --- TypeScript interfaces ---
-interface DealType {
-  id: number;
-  title: string;
-  store: string;
-  address: string;
-  distance: string;
-  rating: number;
-  phone: string;
-  validUntil: string;
-  category: string;
-  isGeoFenced: boolean;
-}
-
-interface BusinessType {
-  id: number;
-  name: string;
-  category: string;
-  address: string;
-  distance: string;
-  rating: number;
-  phone: string;
-  offers: string[];
-}
-
-interface DealCardProps {
-  deal: DealType;
-  callBusiness: (phone: string) => void;
-  getDirections: (address: string) => void;
-}
-
-interface BusinessCardProps {
-  business: BusinessType;
-  callBusiness: (phone: string) => void;
-  getDirections: (address: string) => void;
-}
-
-// --- Modern Deal Card
-const DealCard: React.FC<DealCardProps> = React.memo(({ deal, callBusiness, getDirections }) => (
-  <div className="rounded-2xl shadow-lg bg-white border border-gray-100 p-5 hover:shadow-xl transition-all flex flex-col gap-3">
-    <div className="flex items-start justify-between mb-1">
-      <div>
-        <h3 className="font-bold text-base">{deal.title}</h3>
-        <span className="text-monkeyGreen font-medium text-sm">{deal.store}</span>
-      </div>
-      {deal.isGeoFenced && (
-        <Badge className="bg-orange-50 text-orange-700 text-xs">Geo-Alert</Badge>
-      )}
-    </div>
-    <div className="flex items-center text-gray-500 gap-2 text-sm">
-      <MapPin className="w-4 h-4" />
-      <span className="truncate">{deal.address}</span>
-      <Badge variant="outline" className="text-xs whitespace-nowrap">{deal.distance}</Badge>
-    </div>
-    <div className="flex items-center justify-between text-xs gap-6">
-      <div className="flex items-center gap-1">
-        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" /><span>{deal.rating}</span>
-      </div>
-      <div className="flex items-center gap-1">
-        <Clock className="w-4 h-4 text-gray-400" />
-        <span>{deal.validUntil}</span>
-      </div>
-    </div>
-    <div className="flex flex-col gap-2 mt-1 sm:flex-row">
-      <Button 
-        size="sm" 
-        variant="outline"
-        onClick={() => callBusiness(deal.phone)}
-        className="flex-1"
-      >
-        <Phone className="w-3 h-3 mr-1" />
-        Call
-      </Button>
-      <Button 
-        size="sm"
-        onClick={() => getDirections(deal.address)}
-        className="flex-1 bg-monkeyGreen hover:bg-monkeyGreen/90 text-white"
-      >
-        <Navigation className="w-3 h-3 mr-1" />
-        Directions
-      </Button>
-    </div>
-  </div>
-));
-
-// --- Modern Business Card
-const BusinessCard: React.FC<BusinessCardProps> = React.memo(({ business, callBusiness, getDirections }) => (
-  <div className="rounded-2xl shadow-lg bg-white border border-gray-100 p-5 hover:shadow-xl transition-all flex flex-col gap-3">
-    <div className="flex items-start justify-between mb-1">
-      <div>
-        <h3 className="font-bold text-base">{business.name}</h3>
-        <span className="text-gray-500 text-sm">{business.category}</span>
-      </div>
-      <div className="flex items-center gap-1">
-        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-        <span className="text-sm">{business.rating}</span>
-      </div>
-    </div>
-    <div className="flex items-center text-gray-500 gap-2 text-sm truncate">
-      <MapPin className="w-4 h-4" />
-      <span>{business.address}</span>
-      <Badge variant="outline" className="text-xs whitespace-nowrap">{business.distance}</Badge>
-    </div>
-    <div>
-      <span className="text-xs font-semibold text-monkeyGreen">Current Offers:</span>
-      <div className="flex flex-wrap gap-2 mt-1">
-        {business.offers.map((offer, i) => (
-          <div key={i} className="px-2 py-1 rounded bg-green-50 text-monkeyGreen text-xs">{offer}</div>
-        ))}
-      </div>
-    </div>
-    <div className="flex flex-col gap-2 mt-1 sm:flex-row">
-      <Button 
-        size="sm" 
-        variant="outline"
-        onClick={() => callBusiness(business.phone)}
-        className="flex-1"
-      >
-        <Phone className="w-3 h-3 mr-1" />
-        Call
-      </Button>
-      <Button 
-        size="sm"
-        onClick={() => getDirections(business.address)}
-        className="flex-1 bg-monkeyGreen hover:bg-monkeyGreen/90 text-white"
-      >
-        <Navigation className="w-3 h-3 mr-1" />
-        Visit
-      </Button>
-    </div>
-  </div>
-));
-
-const HyperLocalDeals = () => {
-  const [userLocation, setUserLocation] = useState(null);
-  const [nearbyDeals, setNearbyDeals] = useState<DealType[]>([]);
-  const [localBusinesses, setLocalBusinesses] = useState<BusinessType[]>([]);
-  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-  // Tab state for mobile
-  const [activeMobileTab, setActiveMobileTab] = useState<'deals' | 'business'>('deals');
-  const isMobile = useIsMobile();
+const HomeScreen = () => {
+  const [isLoading, setIsLoading] = useState(false);
   const { user } = useUser();
+  const isMobile = useIsMobile();
+  const { 
+    offers, 
+    filteredOffers,
+    categories: allCategories, 
+    isLoading: isDataLoading, 
+    error, 
+    refetchOffers, 
+    isUsingMockData 
+  } = useData();
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [userPreferences, setUserPreferences] = useState<{[key: string]: string[]}>({
+    brands: [],
+    stores: [],
+    banks: []
+  });
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [dynamicCategories, setDynamicCategories] = useState<Category[]>([]);
+  const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
+  const [localFilteredOffers, setLocalFilteredOffers] = useState(filteredOffers);
+  const [cuelinkOffers, setCuelinkOffers] = useState<CuelinkOffer[]>([]);
+  const [isCuelinkLoading, setIsCuelinkLoading] = useState(false);
+  const [cuelinkCurrentPage, setCuelinkCurrentPage] = useState(1);
+  const cuelinkItemsPerPage = 12;
 
-  // --- mock data ---
-  const mockLocalDeals: DealType[] = [
-    {
-      id: 1,
-      title: "Flat 30% off on Pizza",
-      store: "Pizza Hut",
-      address: "MG Road, Near City Mall",
-      distance: "0.5 km",
-      rating: 4.2,
-      phone: "+91 98765 43210",
-      validUntil: "Today 11:59 PM",
-      category: "Food & Dining",
-      isGeoFenced: true
-    },
-    {
-      id: 2,
-      title: "Buy 1 Get 1 Free Coffee",
-      store: "Cafe Coffee Day",
-      address: "Brigade Road",
-      distance: "1.2 km",
-      rating: 4.0,
-      phone: "+91 98765 43211",
-      validUntil: "Tomorrow 6:00 PM",
-      category: "Food & Dining",
-      isGeoFenced: true
-    },
-    {
-      id: 3,
-      title: "20% off on Electronics",
-      store: "Reliance Digital",
-      address: "Forum Mall, Koramangala",
-      distance: "2.1 km",
-      rating: 4.5,
-      phone: "+91 98765 43212",
-      validUntil: "Week End",
-      category: "Electronics",
-      isGeoFenced: false
-    }
-  ];
+  // Debounce search input
+  useEffect(() => {
+    const timerId = setTimeout(() => {
+      setDebouncedSearchTerm(searchQuery);
+    }, 300);
 
-  const mockLocalBusinesses: BusinessType[] = [
-    {
-      id: 1,
-      name: "Rajesh Electronics",
-      category: "Electronics",
-      address: "Commercial Street",
-      distance: "0.8 km",
-      rating: 4.3,
-      phone: "+91 98765 43213",
-      offers: ["10% off on Mobile Accessories", "Free home delivery"]
-    },
-    {
-      id: 2,
-      name: "Anand Sweets",
-      category: "Food",
-      address: "Gandhi Bazaar",
-      distance: "1.5 km",
-      rating: 4.7,
-      phone: "+91 98765 43214",
-      offers: ["Special festival discount", "Bulk order discounts"]
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [searchQuery]);
+
+  // Update local filtered offers when context filtered offers change
+  useEffect(() => {
+    setLocalFilteredOffers(filteredOffers);
+  }, [filteredOffers]);
+
+  // Fetch Cuelink offers
+  useEffect(() => {
+    const loadCuelinkOffers = async () => {
+      setIsCuelinkLoading(true);
+      try {
+        console.log('Loading Cuelink offers...');
+        const cuelinkData = await fetchCuelinkOffers();
+        console.log('Fetched Cuelink data:', cuelinkData);
+        setCuelinkOffers(cuelinkData);
+        console.log('Loaded Cuelink offers:', cuelinkData.length);
+      } catch (error) {
+        console.error('Error loading Cuelink offers:', error);
+      } finally {
+        setIsCuelinkLoading(false);
+      }
+    };
+
+    loadCuelinkOffers();
+  }, []);
+
+  // Extract categories from today's offers and filter out categories with no offers
+  useEffect(() => {
+    if (offers && offers.length > 0) {
+      const categoryCount = new Map<string, number>();
+      
+      // Count offers per category
+      offers.forEach(offer => {
+        if (offer.category) {
+          const categories = offer.category.split(',').map(cat => cat.trim());
+          categories.forEach(cat => {
+            if (cat) {
+              categoryCount.set(cat, (categoryCount.get(cat) || 0) + 1);
+            }
+          });
+        }
+      });
+
+      // Only include categories that have at least 3 offers
+      const categoryObjects: Category[] = Array.from(categoryCount.entries())
+        .filter(([_, count]) => count >= 3) // Filter out categories with less than 3 offers
+        .map(([categoryName, _]) => {
+          const matchingCategory = allCategories.find(c => 
+            c.name.toLowerCase() === categoryName.toLowerCase() ||
+            c.id.toLowerCase() === categoryName.toLowerCase().replace(/\s+/g, '-')
+          );
+
+          if (matchingCategory) {
+            return matchingCategory;
+          }
+
+          return {
+            id: categoryName.toLowerCase().replace(/\s+/g, '-'),
+            name: categoryName,
+            icon: getCategoryIcon(categoryName),
+          };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .slice(0, 12); // Limit to 12 categories to avoid clutter
+
+      console.log('Generated dynamic categories with offer counts:', categoryObjects);
+      setDynamicCategories(categoryObjects);
+    } else {
+      setDynamicCategories([]);
     }
-  ];
+  }, [offers, allCategories]);
+
+  // Helper function to determine an appropriate icon based on the category name
+  const getCategoryIcon = (categoryName: string): string => {
+    const name = categoryName.toLowerCase();
+    
+    if (name.includes('electronics') || name.includes('tech')) return 'laptop';
+    if (name.includes('fashion') || name.includes('clothing') || name.includes('apparel')) return 'shirt';
+    if (name.includes('food') || name.includes('drink') || name.includes('restaurant')) return 'utensils';
+    if (name.includes('home') || name.includes('furniture')) return 'home';
+    if (name.includes('travel') || name.includes('flight')) return 'plane';
+    if (name.includes('beauty') || name.includes('cosmetic')) return 'sparkles';
+    if (name.includes('health') || name.includes('fitness')) return 'heart';
+    if (name.includes('toy') || name.includes('kid')) return 'gift';
+    
+    return 'shopping-bag';
+  };
+
+  // Fetch user preferences when component mounts and apply them immediately
+  useEffect(() => {
+    const fetchAndApplyUserPreferences = async () => {
+      try {
+        console.log("Fetching user preferences...");
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          const { data, error } = await supabase
+            .from('user_preferences')
+            .select('*')
+            .eq('user_id', session.user.id);
+            
+          if (error) {
+            console.error('Error fetching user preferences:', error);
+          } else if (data) {
+            const preferences: {[key: string]: string[]} = {
+              brands: data.filter(p => p.preference_type === 'brands').map(p => p.preference_id),
+              stores: data.filter(p => p.preference_type === 'stores').map(p => p.preference_id),
+              banks: data.filter(p => p.preference_type === 'banks').map(p => p.preference_id)
+            };
+            
+            setUserPreferences(preferences);
+            console.log('Loaded preferences:', preferences);
+
+            // Apply preferences immediately if we have offers
+            if (offers && offers.length > 0) {
+              const hasPreferences = preferences.brands.length > 0 || 
+                                   preferences.stores.length > 0 || 
+                                   preferences.banks.length > 0;
+              
+              if (hasPreferences) {
+                console.log('Applying preferences immediately to offers');
+                const filtered = applyPreferencesToOffers(offers, preferences);
+                const finalOffers = filtered.length > 0 ? filtered : offers;
+                setLocalFilteredOffers(finalOffers);
+                console.log('Applied preferences - showing', finalOffers.length, 'offers');
+              } else {
+                setLocalFilteredOffers(offers);
+              }
+            }
+
+            if (preferences.brands.length > 0 || preferences.stores.length > 0 || preferences.banks.length > 0) {
+              console.log('User has personalization preferences applied');
+            }
+          }
+          
+          setHasLoadedPreferences(true);
+        }
+      } catch (error) {
+        console.error('Error loading user preferences:', error);
+        setHasLoadedPreferences(true);
+      }
+    };
+    
+    fetchAndApplyUserPreferences();
+  }, [offers]); // Re-run when offers change
+
+  // Listen for real-time preference changes and update immediately
+  useEffect(() => {
+    const setupRealtimeListener = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) return;
+
+      console.log('Setting up real-time preference listener for home screen');
+
+      const channel = supabase
+        .channel('home-preference-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'user_preferences',
+            filter: `user_id=eq.${session.user.id}`
+          },
+          async (payload) => {
+            console.log('Home screen detected preference change:', payload);
+            
+            // Refetch all preferences immediately
+            try {
+              const { data, error } = await supabase
+                .from('user_preferences')
+                .select('*')
+                .eq('user_id', session.user.id);
+                
+              if (!error && data) {
+                const newPreferences: {[key: string]: string[]} = {
+                  brands: data.filter(p => p.preference_type === 'brands').map(p => p.preference_id),
+                  stores: data.filter(p => p.preference_type === 'stores').map(p => p.preference_id),
+                  banks: data.filter(p => p.preference_type === 'banks').map(p => p.preference_id)
+                };
+                
+                setUserPreferences(newPreferences);
+                console.log('Updated preferences in home screen:', newPreferences);
+                
+                // Apply new preferences immediately
+                if (offers && offers.length > 0) {
+                  const hasPreferences = newPreferences.brands.length > 0 || 
+                                       newPreferences.stores.length > 0 || 
+                                       newPreferences.banks.length > 0;
+                  
+                  if (hasPreferences) {
+                    console.log('Applying new preferences to offers');
+                    const filtered = applyPreferencesToOffers(offers, newPreferences);
+                    const finalOffers = filtered.length > 0 ? filtered : offers;
+                    setLocalFilteredOffers(finalOffers);
+                    console.log('Applied new preferences - showing', finalOffers.length, 'offers');
+                  } else {
+                    console.log('No preferences, showing all offers');
+                    setLocalFilteredOffers(offers);
+                  }
+                }
+              }
+            } catch (error) {
+              console.error('Error refetching preferences:', error);
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        console.log('Cleaning up home screen preference listener');
+        supabase.removeChannel(channel);
+      };
+    };
+
+    setupRealtimeListener();
+  }, [offers]);
 
   useEffect(() => {
-    setNearbyDeals(mockLocalDeals);
-    setLocalBusinesses(mockLocalBusinesses);
-    return () => {}; // Clean up if any
-  }, []);
+    console.log("Home Screen Rendered");
+    console.log("Offers loaded:", offers ? offers.length : 0);
+    console.log("Filtered offers loaded:", localFilteredOffers ? localFilteredOffers.length : 0);
+    console.log("Categories loaded:", dynamicCategories ? dynamicCategories.length : 0);
+    console.log("Is loading:", isDataLoading);
+    console.log("Error:", error);
+    console.log("Using mock data:", isUsingMockData);
+    console.log("User preferences:", userPreferences);
+    console.log("Selected category:", selectedCategory);
+    console.log("Has loaded preferences:", hasLoadedPreferences);
+  }, [offers, localFilteredOffers, dynamicCategories, isDataLoading, error, isUsingMockData, userPreferences, selectedCategory, hasLoadedPreferences]);
 
-  // Memoized callbacks
-  const getCurrentLocation = useCallback(() => {
-    setIsLoadingLocation(true);
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-          setIsLoadingLocation(false);
-          console.log('Location updated, finding nearby deals...');
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          setIsLoadingLocation(false);
-        }
-      );
-    } else {
-      setIsLoadingLocation(false);
-      alert('Geolocation is not supported by this browser.');
+  const loadMoreOffers = () => {
+    setIsLoading(true);
+    refetchOffers().then(() => {
+      setIsLoading(false);
+    });
+  };
+  
+  // Enhanced search functionality with category filtering on top of already filtered offers
+  const displayedOffers = localFilteredOffers.filter(offer => {
+    if (selectedCategory && offer.category) {
+      const categoryMatch = offer.category.toLowerCase().includes(selectedCategory.toLowerCase()) ||
+                           selectedCategory.toLowerCase().includes(offer.category.toLowerCase());
+      if (!categoryMatch) return false;
     }
-  }, []);
+    
+    if (debouncedSearchTerm) {
+      const searchTermLower = debouncedSearchTerm.toLowerCase();
+      const matchesSearch = 
+        (offer.title && offer.title.toLowerCase().includes(searchTermLower)) ||
+        (offer.store && offer.store.toLowerCase().includes(searchTermLower)) ||
+        (offer.description && offer.description.toLowerCase().includes(searchTermLower)) ||
+        (offer.category && offer.category.toLowerCase().includes(searchTermLower));
+      
+      if (!matchesSearch) return false;
+    }
+    
+    return true;
+  });
 
-  const callBusiness = useCallback((phone) => {
-    window.open(`tel:${phone}`);
-  }, []);
+  // Filter Cuelink offers for Flash Deals tab
+  const displayedCuelinkOffers = cuelinkOffers.filter(offer => {
+    if (debouncedSearchTerm) {
+      const searchTermLower = debouncedSearchTerm.toLowerCase();
+      const matchesSearch = 
+        (offer.Title && offer.Title.toLowerCase().includes(searchTermLower)) ||
+        (offer.Merchant && offer.Merchant.toLowerCase().includes(searchTermLower)) ||
+        (offer.Description && offer.Description.toLowerCase().includes(searchTermLower)) ||
+        (offer.Categories && offer.Categories.toLowerCase().includes(searchTermLower));
+      
+      if (!matchesSearch) return false;
+    }
+    
+    return true;
+  });
 
-  const getDirections = useCallback((address) => {
-    const encodedAddress = encodeURIComponent(address);
-    window.open(`https://maps.google.com/?q=${encodedAddress}`, '_blank');
-  }, []);
+  // Pagination calculations for Cuelink offers
+  const totalCuelinkPages = Math.ceil(displayedCuelinkOffers.length / cuelinkItemsPerPage);
+  const paginatedCuelinkOffers = displayedCuelinkOffers.slice(
+    (cuelinkCurrentPage - 1) * cuelinkItemsPerPage,
+    cuelinkCurrentPage * cuelinkItemsPerPage
+  );
 
-  const DealList = useMemo(() => (
-    <div className={`${isMobile ? 'flex flex-col gap-4' : 'grid grid-cols-2 gap-6'}`}>
-      {nearbyDeals.map((deal) => (
-        <DealCard key={deal.id} deal={deal} callBusiness={callBusiness} getDirections={getDirections} />
-      ))}
-    </div>
-  ), [nearbyDeals, callBusiness, getDirections, isMobile]);
+  const handleCuelinkPageChange = (page: number) => {
+    setCuelinkCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-  const BusinessList = useMemo(() => (
-    <div className={`${isMobile ? 'flex flex-col gap-4' : 'grid grid-cols-2 gap-6'}`}>
-      {localBusinesses.map((business) => (
-        <BusinessCard key={business.id} business={business} callBusiness={callBusiness} getDirections={getDirections} />
-      ))}
-    </div>
-  ), [localBusinesses, callBusiness, getDirections, isMobile]);
+  // Handle category selection
+  const handleCategoryClick = (categoryId: string) => {
+    console.log("Category clicked:", categoryId);
+    if (selectedCategory === categoryId) {
+      setSelectedCategory(null);
+    } else {
+      setSelectedCategory(categoryId);
+    }
+  };
 
-  // --- Layout ---
+  // Updated search handler with debouncing
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    console.log("Searching for:", e.target.value);
+  };
+
   return (
-    <div className="bg-gradient-to-b from-monkeyBackground to-gray-50 min-h-screen w-full pt-20 pb-4 px-0 sm:px-0">
-      {/* Header */}
-      <section className="max-w-2xl mx-auto mt-0 mb-6 px-4 pt-2">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center justify-center rounded-full h-14 w-14 bg-monkeyGreen">
-            <Store className="w-7 h-7 text-white" />
-          </div>
-          <div>
-            <h1 className="font-bold text-2xl sm:text-3xl text-gray-900 mb-1 tracking-tight">
-              Discover Local Deals Near You
-            </h1>
-            <p className="text-gray-500 text-base">Curated just for your area</p>
+    <div className={`bg-monkeyBackground min-h-screen ${isMobile ? 'pb-16' : 'pt-20'}`}>
+      {/* Mobile Header with location - only show on mobile */}
+      {isMobile && (
+        <div className="bg-monkeyGreen text-white py-4 px-4 sticky top-0 z-10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-1">
+              <MapPin className="w-4 h-4" />
+              <span className="text-sm">{user.location}</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Link to="/notifications" className="flex items-center">
+                <Bell className="w-5 h-5 text-white" />
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-monkeyYellow text-[10px] text-black absolute translate-x-3 -translate-y-2">
+                  3
+                </span>
+              </Link>
+            </div>
           </div>
         </div>
-        <div className="mt-6 flex flex-wrap items-center gap-2">
-          <Button 
-            onClick={getCurrentLocation}
-            disabled={isLoadingLocation}
-            className="bg-monkeyGreen hover:bg-monkeyGreen/90 py-2 px-5 text-white rounded-xl shadow"
-          >
-            <Navigation className="w-4 h-4 mr-2" />
-            {isLoadingLocation ? 'Locating...' : 'Use My Location'}
-          </Button>
-          <span className="flex items-center text-gray-600 text-sm gap-1 truncate">
-            <MapPin className="w-4 h-4" />
-            {user.location}
-            {userLocation && (
-              <Badge className="bg-green-100 text-green-700 ml-2">Live Location</Badge>
-            )}
-          </span>
-        </div>
-      </section>
+      )}
+      
+      {/* Main content - desktop with max-width container */}
+      <div className={`space-y-6 ${isMobile ? 'p-4' : 'w-full'}`}>
+        <div className={`${!isMobile ? 'max-w-[1440px] mx-auto px-6 py-8' : ''}`}>
+          {/* Desktop welcome section */}
+          {!isMobile && (
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Welcome back!</h1>
+                <div className="flex items-center space-x-2 mt-2">
+                  <MapPin className="w-4 h-4 text-gray-500" />
+                  <span className="text-gray-600">{user.location}</span>
+                </div>
+              </div>
+              <Link to="/notifications" className="flex items-center bg-monkeyGreen text-white px-4 py-2 rounded-lg hover:bg-monkeyGreen/90 transition-colors">
+                <Bell className="w-5 h-5 mr-2" />
+                <span>Notifications</span>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-monkeyYellow text-xs text-black ml-2">
+                  3
+                </span>
+              </Link>
+            </div>
+          )}
+          
+          {/* New Features Section */}
+          <div className="mb-6">
+            <h2 className="font-bold text-lg mb-3">Smart Shopping Features</h2>
+            <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-3'}`}>
+              <Link to="/ai-assistant" className="block">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Bot className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-blue-900">AI Assistant</h3>
+                        <p className="text-sm text-blue-600">Voice search & smart recommendations</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
 
-      {/* Main Section - Responsive */}
-      <main className="max-w-4xl w-full mx-auto px-2 sm:px-4">
-        {isMobile ? (
-          // --- Tabs on mobile ---
-          <Tabs value={activeMobileTab} onValueChange={v => setActiveMobileTab(v as 'deals' | 'business')}>
-            <TabsList className="flex w-full mb-4">
-              <TabsTrigger value="deals" className="flex-1">
-                <Store className="w-4 h-4 mr-2" /> Deals
-              </TabsTrigger>
-              <TabsTrigger value="business" className="flex-1">
-                <Building2 className="w-4 h-4 mr-2" /> Partners
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="deals">
-              <Card className="p-0 bg-gray-50 border-none shadow-none">
-                <CardHeader className="bg-white rounded-t-2xl border-b px-6 pt-6 pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
-                    <Store className="w-5 h-5" /> Nearby Deals
-                    <Badge variant="secondary">{nearbyDeals.length}</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-6 pt-4 pb-6">
-                  {DealList}
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="business">
-              <Card className="p-0 bg-gray-50 border-none shadow-none">
-                <CardHeader className="bg-white rounded-t-2xl border-b px-6 pt-6 pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
-                    <Building2 className="w-5 h-5" /> Local Business Partners
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-6 pt-4 pb-6">
-                  {BusinessList}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        ) : (
-          // --- 2-column for desktop/tablet ---
-          <div className="w-full flex flex-row gap-8">
-            <section className="flex-1">
-              <Card className="bg-gray-50">
-                <CardHeader className="bg-white rounded-t-2xl border-b px-7 pt-7 pb-4">
-                  <CardTitle className="flex items-center gap-2 text-xl font-bold">
-                    <Store className="w-5 h-5" /> Nearby Deals
-                    <Badge variant="secondary">{nearbyDeals.length}</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-7 pt-5 pb-7">
-                  {DealList}
-                </CardContent>
-              </Card>
-            </section>
-            <section className="flex-1">
-              <Card className="bg-gray-50">
-                <CardHeader className="bg-white rounded-t-2xl border-b px-7 pt-7 pb-4">
-                  <CardTitle className="flex items-center gap-2 text-xl font-bold">
-                    <Building2 className="w-5 h-5" /> Local Business Partners
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-7 pt-5 pb-7">
-                  {BusinessList}
-                </CardContent>
-              </Card>
-            </section>
+              <Link to="/local-deals" className="block">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <MapPin className="w-6 h-6 text-green-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-green-900">Local Deals</h3>
+                        <p className="text-sm text-green-600">Nearby stores & restaurants</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              <Link to="/social-shopping" className="block">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                        <Users className="w-6 h-6 text-purple-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-purple-900">Social Shopping</h3>
+                        <p className="text-sm text-purple-600">Group buys & community deals</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            </div>
           </div>
-        )}
-      </main>
+          
+          {/* Data source alert */}
+          {isUsingMockData && (
+            <Alert className="bg-amber-50 border-amber-200 mb-6">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-700">
+                No real offers found in the Offers_data table. Please check your database.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {/* Personalization badge */}
+          {hasLoadedPreferences && (
+            userPreferences.brands.length > 0 || 
+            userPreferences.stores.length > 0 || 
+            userPreferences.banks.length > 0
+          ) && (
+            <div className="bg-monkeyGreen/10 p-3 rounded-lg flex justify-between items-center mb-6">
+              <div>
+                <h3 className="font-medium text-monkeyGreen">Personalized for You</h3>
+                <p className="text-xs text-gray-600">Offers are filtered based on your preferences</p>
+              </div>
+              <Link 
+                to="/preferences/brands" 
+                className="bg-monkeyGreen text-white text-sm px-3 py-1 rounded-full"
+              >
+                Edit
+              </Link>
+            </div>
+          )}
+          
+          {/* Search Bar */}
+          <div className="relative mb-6">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              type="search"
+              placeholder="Search for offers, stores, categories..."
+              className="pl-10 pr-4 py-2 w-full border-gray-200"
+              value={searchQuery}
+              onChange={handleSearch}
+            />
+          </div>
+          
+          {/* Categories carousel with active state */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="font-bold text-lg">For You</h2>
+              <Link to="/preferences/brands" className="text-monkeyGreen text-sm">
+                Set preferences
+              </Link>
+            </div>
+            
+            {isDataLoading ? (
+              <div className="flex justify-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-monkeyGreen"></div>
+              </div>
+            ) : (
+              <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-hide">
+                {dynamicCategories.length > 0 ? (
+                  dynamicCategories.map((category) => (
+                    <div 
+                      key={category.id} 
+                      onClick={() => handleCategoryClick(category.id)}
+                      className={`cursor-pointer ${selectedCategory === category.id ? 'scale-110 transform transition-transform' : ''}`}
+                    >
+                      <CategoryItem key={category.id} category={category} />
+                      {selectedCategory === category.id && (
+                        <div className="h-1 w-full bg-monkeyGreen rounded-full mt-1"></div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-gray-500 py-2">No categories with sufficient offers available</div>
+                )}
+              </div>
+            )}
+          </div>
+          
+          {/* Active filters */}
+          {(selectedCategory || debouncedSearchTerm) && (
+            <div className="flex flex-wrap gap-2 mb-6">
+              {selectedCategory && (
+                <div className="bg-monkeyGreen/10 text-monkeyGreen px-3 py-1 rounded-full text-sm flex items-center">
+                  {dynamicCategories.find(c => c.id === selectedCategory)?.name}
+                  <button 
+                    onClick={() => setSelectedCategory(null)}
+                    className="ml-1 text-monkeyGreen"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+              {debouncedSearchTerm && (
+                <div className="bg-monkeyGreen/10 text-monkeyGreen px-3 py-1 rounded-full text-sm flex items-center">
+                  "{debouncedSearchTerm}"
+                  <button 
+                    onClick={() => {
+                      setSearchQuery('');
+                      setDebouncedSearchTerm('');
+                    }}
+                    className="ml-1 text-monkeyGreen"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+              {(selectedCategory || debouncedSearchTerm) && (
+                <button 
+                  onClick={() => {
+                    setSelectedCategory(null);
+                    setSearchQuery('');
+                    setDebouncedSearchTerm('');
+                  }}
+                  className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-600"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+          )}
+          
+          {/* Offers section */}
+          <div>
+            <Tabs defaultValue="all">
+              <div className="flex justify-between items-center mb-3">
+                <h2 className="font-bold text-lg">Today's Offers</h2>
+                <TabsList>
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="nearby">Nearby</TabsTrigger>
+                  <TabsTrigger value="flash">Flash Deals</TabsTrigger>
+                  <TabsTrigger value="amazon">Amazon</TabsTrigger>
+                </TabsList>
+              </div>
+              
+              <TabsContent value="all" className="space-y-4 mt-2">
+                {isDataLoading || isLoading ? (
+                  <div className="flex justify-center items-center py-10">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-monkeyGreen"></div>
+                  </div>
+                ) : (
+                  <>
+                    {error && (
+                      <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                        <p className="text-red-600">Error loading offers: {error.message}</p>
+                      </div>
+                    )}
+                    
+                    {!error && displayedOffers.length > 0 ? (
+                      <div className={`grid gap-4 ${
+                        isMobile 
+                          ? 'grid-cols-2' 
+                          : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                      }`}>
+                        {displayedOffers.map((offer) => (
+                          <Link key={offer.id} to={`/offer/${offer.id}`}>
+                            <OfferCard offer={offer} />
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      !error && (
+                        <div className="bg-white p-6 rounded-lg text-center shadow-sm">
+                          <p className="text-gray-500">No offers found</p>
+                          <p className="text-sm text-gray-400 mt-2">
+                            {offers.length === 0 
+                              ? "No offers available in the Offers_data table" 
+                              : "Try a different search term or check back later"
+                            }
+                          </p>
+                          <div className="mt-4 flex flex-col gap-2">
+                            <button
+                              onClick={refetchOffers}
+                              className="bg-monkeyGreen text-white px-4 py-2 rounded-lg w-full"
+                            >
+                              Refresh Data
+                            </button>
+                            
+                            {offers.length > 0 && (
+                              <Link 
+                                to="/preferences/brands" 
+                                className="border border-monkeyGreen text-monkeyGreen px-4 py-2 rounded-lg text-center"
+                              >
+                                Adjust Preferences
+                              </Link>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </>
+                )}
+                
+                {!isDataLoading && !error && displayedOffers.length > 0 && (
+                  <button 
+                    onClick={loadMoreOffers}
+                    className="w-full py-3 text-center text-monkeyGreen border border-monkeyGreen rounded-lg mt-4 flex items-center justify-center"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 rounded-full border-2 border-monkeyGreen border-t-transparent animate-spin"></div>
+                        <span>Loading more...</span>
+                      </div>
+                    ) : (
+                      <span>Load more</span>
+                    )}
+                  </button>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="nearby" className="space-y-4">
+                <div className={`grid gap-4 ${
+                  isMobile 
+                    ? 'grid-cols-2' 
+                    : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                }`}>
+                  {displayedOffers.filter(offer => !offer.isAmazon).map((offer) => (
+                    <Link key={offer.id} to={`/offer/${offer.id}`}>
+                      <OfferCard offer={offer} />
+                    </Link>
+                  ))}
+                </div>
+                
+                {displayedOffers.filter(offer => !offer.isAmazon).length === 0 && (
+                  <div className="bg-white p-6 rounded-lg text-center shadow-sm">
+                    <p className="text-gray-500">No nearby offers found</p>
+                    {offers.length > 0 && (
+                      <Link 
+                        to="/preferences/stores" 
+                        className="mt-4 text-monkeyGreen block underline"
+                      >
+                        Adjust store preferences
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="flash" className="space-y-4">
+                {isCuelinkLoading ? (
+                  <div className="flex justify-center items-center py-10">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-monkeyGreen"></div>
+                  </div>
+                ) : (
+                  <>
+                    {paginatedCuelinkOffers.length > 0 ? (
+                      <>
+                        <div className="mb-4 text-sm text-gray-600">
+                          Showing {((cuelinkCurrentPage - 1) * cuelinkItemsPerPage) + 1}-{Math.min(cuelinkCurrentPage * cuelinkItemsPerPage, displayedCuelinkOffers.length)} of {displayedCuelinkOffers.length} flash deals
+                        </div>
+                        <div className={`grid gap-4 ${
+                          isMobile 
+                            ? 'grid-cols-1 sm:grid-cols-2' 
+                            : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+                        }`}>
+                          {paginatedCuelinkOffers.map((offer) => (
+                            <CuelinkOfferCard key={offer.Id} offer={offer} />
+                          ))}
+                        </div>
+                        <CuelinkPagination 
+                          currentPage={cuelinkCurrentPage}
+                          totalPages={totalCuelinkPages}
+                          onPageChange={handleCuelinkPageChange}
+                        />
+                      </>
+                    ) : (
+                      <div className="bg-white p-6 rounded-lg text-center shadow-sm">
+                        <p className="text-gray-500">No flash deals found</p>
+                        <p className="text-sm text-gray-400 mt-2">
+                          {cuelinkOffers.length === 0 
+                            ? "No flash deals available in the Cuelink_data table" 
+                            : "Try a different search term or check back later"
+                          }
+                        </p>
+                        <div className="mt-4">
+                          <p className="text-xs text-gray-400">
+                            Total Cuelink offers loaded: {cuelinkOffers.length}
+                          </p>
+                          {debouncedSearchTerm && (
+                            <p className="text-xs text-gray-400">
+                              Search term: "{debouncedSearchTerm}"
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="amazon" className="space-y-4">
+                <div className={`grid gap-4 ${
+                  isMobile 
+                    ? 'grid-cols-2' 
+                    : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                }`}>
+                  {displayedOffers.filter(offer => offer.isAmazon).map((offer) => (
+                    <Link key={offer.id} to={`/offer/${offer.id}`}>
+                      <OfferCard offer={offer} />
+                    </Link>
+                  ))}
+                </div>
+                
+                {displayedOffers.filter(offer => offer.isAmazon).length === 0 && (
+                  <div className="bg-white p-6 rounded-lg text-center shadow-sm">
+                    <p className="text-gray-500">No Amazon offers found</p>
+                    {offers.length > 0 && (
+                      <Link 
+                        to="/preferences/stores" 
+                        className="mt-4 text-monkeyGreen block underline"
+                      >
+                        Adjust store preferences
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default HyperLocalDeals;
+export default HomeScreen;

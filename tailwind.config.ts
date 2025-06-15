@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -72,20 +73,10 @@ export default {
 					light: '#FEF7CD',
 				},
 				monkeyBackground: '#F2FCE2',
-				// modern dimmed green, CashKaro-style
-				'dim-green': '#237540',
-				'dim-green-dark': '#194d2b',
-				'dim-green-light': '#317d50',
-				'dim-green-muted': '#e6f5e6',
-				// Adjust or add complementary palette
-				'primary': { DEFAULT: '#237540', foreground: '#fff' },
-				'secondary': { DEFAULT: '#f3faf6', foreground: '#237540' },
-				'accent': { DEFAULT: '#ffd36d', foreground: '#0e301a' },
 			},
 			fontFamily: {
 				montserrat: ['Montserrat', 'sans-serif'],
 				poppins: ['Poppins', 'sans-serif'],
-				satoshi: ['Satoshi', 'Montserrat', 'sans-serif'],
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
