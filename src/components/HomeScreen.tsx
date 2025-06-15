@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Bell, Search, AlertCircle, Bot, Users } from 'lucide-react';
@@ -100,10 +101,14 @@ const HomeScreen = () => {
         }
       });
 
-      // Only include categories that have at least 3 offers
-      const categoryObjects: Category[] = Array.from(categoryCount.entries())
-        .filter(([_, count]) => count >= 3) // Filter out categories with less than 3 offers
-        .map(([categoryName, _]) => {
+      // Get top categories by offer count, filter out those with few offers
+      const topCategoryTuples = Array.from(categoryCount.entries())
+        .filter(([, count]) => count >= 3) // Only include categories that have at least 3 offers
+        .sort(([, countA], [, countB]) => countB - countA) // Sort by offer count descending
+        .slice(0, 8); // Limit to 8 most "used" categories
+
+      // Map to Category objects
+      const categoryObjects: Category[] = topCategoryTuples.map(([categoryName]) => {
           const matchingCategory = allCategories.find(c => 
             c.name.toLowerCase() === categoryName.toLowerCase() ||
             c.id.toLowerCase() === categoryName.toLowerCase().replace(/\s+/g, '-')
@@ -118,11 +123,9 @@ const HomeScreen = () => {
             name: categoryName,
             icon: getCategoryIcon(categoryName),
           };
-        })
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .slice(0, 12); // Limit to 12 categories to avoid clutter
+        });
 
-      console.log('Generated dynamic categories with offer counts:', categoryObjects);
+      console.log('Generated dynamic categories (top 8 by usage):', categoryObjects);
       setDynamicCategories(categoryObjects);
     } else {
       setDynamicCategories([]);
