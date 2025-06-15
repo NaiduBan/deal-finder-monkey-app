@@ -307,8 +307,12 @@ const LoginScreen = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-green-500 via-green-400 to-emerald-500">
       <div className="flex-1 flex flex-col items-center justify-center p-4">
-        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg mb-6 animate-bounce">
-          <span className="text-4xl">🐵</span>
+        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg mb-6 animate-bounce p-2">
+          <img 
+            src="https://offersmonkey.com/favicon.ico" 
+            alt="OffersMonkey Logo" 
+            className="w-full h-full object-contain"
+          />
         </div>
         
         <Card className="w-full max-w-md shadow-2xl border-0">
