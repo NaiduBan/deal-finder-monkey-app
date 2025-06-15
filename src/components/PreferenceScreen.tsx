@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ChevronLeft, Check, Search, Star, Store, Tag, X, Plus, Filter, SortAsc, SortDesc, TrendingUp, Users, BarChart3, RefreshCw, Sparkles, CreditCard } from 'lucide-react';
+import { ChevronLeft, Check, Search, Star, Store, Tag, X, Plus, TrendingUp, Users, BarChart3, RefreshCw, Sparkles, CreditCard, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -9,8 +8,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from "@/lib/utils";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-type SortOption = 'name' | 'count' | 'popular';
+type SortOption = 'name' | 'count';
 type SortDirection = 'asc' | 'desc';
 
 const PreferenceScreen = () => {
@@ -286,9 +289,6 @@ const PreferenceScreen = () => {
         case 'count':
           comparison = a.count - b.count;
           break;
-        case 'popular':
-          comparison = a.count - b.count;
-          break;
         default:
           comparison = a.count - b.count;
       }
@@ -475,7 +475,7 @@ const PreferenceScreen = () => {
   return (
     <div className={`bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 min-h-screen ${isMobile ? 'pb-16' : 'pt-20'}`}>
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-100 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-100 dark:border-gray-700 sticky top-0 z-10">
         <div className={`${isMobile ? 'px-4 py-4' : 'px-8 py-6 max-w-6xl mx-auto'}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -505,53 +505,40 @@ const PreferenceScreen = () => {
             </div>
             
             <div className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={refreshData}
-                disabled={isRefreshing || isSaving}
-                className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              </Button>
-              
               {!bulkSelectMode ? (
                 <>
                   <Button
                     variant="outline"
-                    size="sm"
+                    size={isMobile ? "sm" : "default"}
                     onClick={() => setBulkSelectMode(true)}
                     disabled={isSaving}
-                    className="bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300"
+                    className="bg-white dark:bg-gray-800"
                   >
-                    <Users className="w-4 h-4 mr-1" />
-                    {isMobile ? 'Bulk' : 'Bulk Select'}
+                    <Users className="w-4 h-4 mr-2" />
+                    Bulk Select
                   </Button>
-                  {selectedItems.length > 0 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={clearAllPreferences}
-                      disabled={isSaving}
-                      className="bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900 border-red-200 dark:border-red-700 text-red-700 dark:text-red-300"
-                    >
-                      <X className="w-4 h-4 mr-1" />
-                      {isMobile ? 'Clear' : 'Clear All'}
-                    </Button>
-                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="w-9 h-9">
+                        <MoreVertical className="w-5 h-5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={refreshData} disabled={isRefreshing || isSaving}>
+                        <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        Refresh Data
+                      </DropdownMenuItem>
+                      {selectedItems.length > 0 && (
+                        <DropdownMenuItem onClick={clearAllPreferences} disabled={isSaving} className="text-red-600 dark:text-red-500 focus:bg-red-50 dark:focus:bg-red-900/50 focus:text-red-600 dark:focus:text-red-500">
+                          <X className="w-4 h-4 mr-2" />
+                          Clear All
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </>
               ) : (
                 <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={applyBulkSelection}
-                    disabled={isSaving}
-                    className="bg-white dark:bg-gray-800 hover:bg-green-50 dark:hover:bg-green-900 border-green-200 dark:border-green-700 text-green-700 dark:text-green-300"
-                  >
-                    <Check className="w-4 h-4 mr-1" />
-                    Apply ({pendingSelection.length})
-                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -560,10 +547,19 @@ const PreferenceScreen = () => {
                       setPendingSelection([]);
                     }}
                     disabled={isSaving}
-                    className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300"
+                    className="bg-white dark:bg-gray-800"
                   >
-                    <X className="w-4 h-4 mr-1" />
+                    <X className="w-4 h-4 mr-2" />
                     Cancel
+                  </Button>
+                  <Button
+                    onClick={applyBulkSelection}
+                    disabled={isSaving}
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Check className="w-4 h-4 mr-2" />
+                    Apply ({pendingSelection.length})
                   </Button>
                 </>
               )}
@@ -588,52 +584,39 @@ const PreferenceScreen = () => {
           </div>
 
           {/* Filters and Sort */}
-          <div className={`flex gap-2 items-center justify-between ${isMobile ? 'flex-wrap' : ''}`}>
-            <div className="flex gap-2">
-              <Button
-                variant={showSelected === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setShowSelected('all')}
-                className="text-xs rounded-full"
-              >
-                All ({sortedAndFilteredItems.length})
-              </Button>
-              <Button
-                variant={showSelected === 'selected' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setShowSelected('selected')}
-                className="text-xs rounded-full"
-              >
-                Selected ({selectedFilteredItems.length})
-              </Button>
-              <Button
-                variant={showSelected === 'unselected' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setShowSelected('unselected')}
-                className="text-xs rounded-full"
-              >
-                Available ({unselectedFilteredItems.length})
-              </Button>
-            </div>
+          <div className={`flex gap-4 items-center justify-between ${isMobile ? 'flex-col items-stretch' : ''}`}>
+            <ToggleGroup 
+              type="single" 
+              value={showSelected}
+              onValueChange={(value) => { if (value) setShowSelected(value as any) }} 
+              className="bg-white dark:bg-gray-800 p-1 rounded-full border border-gray-200 dark:border-gray-700"
+            >
+              <ToggleGroupItem value="all" aria-label="Toggle all" className="rounded-full px-4 text-xs md:text-sm">
+                All ({availableItems.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase())).length})
+              </ToggleGroupItem>
+              <ToggleGroupItem value="selected" aria-label="Toggle selected" className="rounded-full px-4 text-xs md:text-sm">
+                Selected ({selectedItems.length})
+              </ToggleGroupItem>
+              <ToggleGroupItem value="unselected" aria-label="Toggle unselected" className="rounded-full px-4 text-xs md:text-sm">
+                Available ({availableItems.length - selectedItems.length})
+              </ToggleGroupItem>
+            </ToggleGroup>
 
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => toggleSort('name')}
-                className="text-xs rounded-full"
-              >
-                Name {sortBy === 'name' && (sortDirection === 'asc' ? <SortAsc className="w-3 h-3 ml-1" /> : <SortDesc className="w-3 h-3 ml-1" />)}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => toggleSort('count')}
-                className="text-xs rounded-full"
-              >
-                Count {sortBy === 'count' && (sortDirection === 'asc' ? <SortAsc className="w-3 h-3 ml-1" /> : <SortDesc className="w-3 h-3 ml-1" />)}
-              </Button>
-            </div>
+            <Select value={`${sortBy}-${sortDirection}`} onValueChange={(value) => {
+                const [newSortBy, newSortDirection] = value.split('-');
+                setSortBy(newSortBy as SortOption);
+                setSortDirection(newSortDirection as SortDirection);
+            }}>
+                <SelectTrigger className="w-full md:w-[200px] bg-white dark:bg-gray-800 rounded-full">
+                    <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="count-desc">Popularity: High to Low</SelectItem>
+                    <SelectItem value="count-asc">Popularity: Low to High</SelectItem>
+                    <SelectItem value="name-asc">Name: A to Z</SelectItem>
+                    <SelectItem value="name-desc">Name: Z to A</SelectItem>
+                </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -735,61 +718,47 @@ const ItemCard: React.FC<{
   
   return (
     <div
-      className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-lg transform hover:scale-[1.02] ${
-        displaySelected 
-          ? `bg-gradient-to-r ${config.gradient.replace('from-', 'from-').replace('via-', 'via-').replace('to-', 'to-')} bg-opacity-10 border-blue-300 dark:border-blue-600 shadow-md` 
-          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10'
-      } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
       onClick={disabled ? undefined : onClick}
+      className={cn(
+        "bg-white dark:bg-gray-800 p-3 rounded-xl border-2 transition-all duration-300 cursor-pointer flex items-center gap-4 group",
+        "hover:shadow-lg hover:-translate-y-1",
+        displaySelected 
+          ? "border-blue-500/50 dark:border-blue-500/70 shadow-sm" 
+          : "border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600",
+        disabled && "opacity-60 cursor-not-allowed"
+      )}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          {isBulkMode && (
-            <Checkbox 
-              checked={isPendingSelection}
-              className="rounded w-5 h-5"
-              disabled={disabled}
-            />
-          )}
-          <div className={`p-2 rounded-lg ${
-            displaySelected ? 'bg-white bg-opacity-50 dark:bg-gray-700 dark:bg-opacity-50' : 'bg-gray-100 dark:bg-gray-700'
-          }`}>
-            <config.icon className={`w-5 h-5 ${
-              displaySelected ? 'text-blue-700 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300'
-            }`} />
-          </div>
-          <div>
-            <h3 className={`font-semibold ${
-              displaySelected ? 'text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-gray-100'
-            }`}>
-              {item.name}
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{item.count} offers</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+      {isBulkMode && (
+        <Checkbox 
+          checked={isPendingSelection}
+          className="rounded-md w-5 h-5 border-gray-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+          disabled={disabled}
+        />
+      )}
+      <div className={cn(
+        "w-12 h-12 rounded-lg flex items-center justify-center transition-colors flex-shrink-0",
+        displaySelected ? `bg-blue-100 dark:bg-blue-900/50` : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30'
+      )}>
+        <config.icon className={cn(
+          "w-6 h-6 transition-colors",
+          displaySelected ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 group-hover:text-blue-600'
+        )} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="font-semibold text-gray-800 dark:text-gray-100 truncate">{item.name}</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{item.count} offers</p>
+      </div>
+      <div className="flex items-center gap-2">
+        {!isBulkMode && (
+          <div className={cn(
+            "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ease-in-out transform",
             displaySelected 
-              ? 'bg-white bg-opacity-50 dark:bg-gray-700 dark:bg-opacity-50 text-blue-700 dark:text-blue-300' 
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-          }`}>
-            {item.count}
-          </span>
-          {!isBulkMode && (
-            <div className={`p-2 rounded-full transition-all ${
-              displaySelected 
-                ? 'bg-white bg-opacity-50 dark:bg-gray-700 dark:bg-opacity-50 text-green-700 dark:text-green-300' 
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400'
-            }`}>
-              {displaySelected ? (
-                <Check className="w-4 h-4" />
-              ) : (
-                <Plus className="w-4 h-4" />
-              )}
-            </div>
-          )}
-        </div>
+              ? 'bg-blue-600 dark:bg-blue-500 text-white scale-100' 
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 scale-0 group-hover:scale-100'
+          )}>
+            {displaySelected ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+          </div>
+        )}
       </div>
     </div>
   );
