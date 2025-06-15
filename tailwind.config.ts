@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -13,7 +12,7 @@ export default {
 	theme: {
 		container: {
 			center: true,
-			padding: '2rem',
+			padding: '1rem', // Adjusted padding
 			screens: {
 				'2xl': '1400px'
 			}
@@ -63,16 +62,13 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// OffersMonkey custom colors
-				monkeyGreen: {
-					DEFAULT: '#2E7D32',
-					light: '#A5D6A7',
-				},
-				monkeyYellow: {
-					DEFAULT: '#F9A825',
-					light: '#FEF7CD',
-				},
-				monkeyBackground: '#F2FCE2',
+				brand: {
+          primary: 'hsl(var(--brand-primary))',
+          'primary-light': 'hsl(var(--brand-primary-light))',
+          secondary: 'hsl(var(--brand-secondary))',
+          background: 'hsl(var(--brand-background))',
+          foreground: 'hsl(var(--brand-foreground))',
+        }
 			},
 			fontFamily: {
 				montserrat: ['Montserrat', 'sans-serif'],
@@ -80,8 +76,8 @@ export default {
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
-				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)'
+				md: 'calc(var(--radius) - 4px)',
+				sm: 'calc(var(--radius) - 6px)' // Adjusted for consistency
 			},
 			keyframes: {
 				'accordion-down': {
