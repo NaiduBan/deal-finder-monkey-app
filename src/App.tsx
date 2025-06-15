@@ -11,6 +11,7 @@ import { DataProvider } from "./contexts/DataContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AdminProvider } from "./contexts/AdminContext";
 import { ThemeProvider } from "./components/ThemeProvider";
+import AppNavbar from "@/components/AppNavbar";
 
 // Components
 import SplashScreen from "./components/SplashScreen";
@@ -74,6 +75,7 @@ const App = () => (
           <ProvidersWrapper>
             <Toaster />
             <Sonner />
+            <AppNavbar /> {/* Added globally */}
             <Routes>
               <Route path="/" element={<Index />} />
               
