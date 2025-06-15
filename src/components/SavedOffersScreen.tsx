@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, Bookmark, Share2, Filter } from 'lucide-react';
@@ -109,6 +110,7 @@ const SavedOffersScreen = () => {
             termsAndConditions: item.terms_and_conditions || "",
             featured: item.featured === "true" || item.featured === "1",
             publisherExclusive: item.publisher_exclusive === "true" || item.publisher_exclusive === "1",
+            sponsored: item.sponsored || false,
             url: item.url || "",
             smartlink: item.smartlink || "",
             offerType: item.type || "",
@@ -205,6 +207,7 @@ const SavedOffersScreen = () => {
             termsAndConditions: item.terms_and_conditions || "",
             featured: item.featured === "true",
             publisherExclusive: item.publisher_exclusive === "true",
+            sponsored: item.sponsored || false,
             url: item.url || "",
             smartlink: item.smartlink || "",
             offerType: item.type || "",

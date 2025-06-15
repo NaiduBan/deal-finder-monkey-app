@@ -1,4 +1,3 @@
-
 import { Offer, Category, User, BannerItem } from "@/types";
 import { mockOffers, mockCategories, mockBanners, mockUser } from "@/mockData";
 
@@ -105,6 +104,7 @@ export const addOffer = async (offerData: Partial<Offer>): Promise<Offer> => {
     termsAndConditions: offerData.termsAndConditions || null,
     featured: offerData.featured || false,
     publisherExclusive: offerData.publisherExclusive || false,
+    sponsored: offerData.sponsored || false,
     url: offerData.url || null,
     smartlink: offerData.smartlink || null,
     offerType: offerData.offerType || null,
