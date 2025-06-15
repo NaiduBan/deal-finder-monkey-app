@@ -52,24 +52,24 @@ const BottomNavigation = () => {
     );
   }
 
-  // Desktop top navigation - full width
+  // Desktop top navigation - improved layout
   return (
     <div className="fixed top-0 left-0 right-0 z-20 bg-white border-b shadow-sm">
-      <div className="w-full px-6 py-4">
+      <div className="max-w-7xl mx-auto px-6 py-3">
         <div className="flex items-center justify-between">
-          {/* Logo and branding */}
+          {/* Logo and branding - more compact */}
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-monkeyGreen rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-lg">🐵</span>
+            <div className="w-8 h-8 bg-monkeyGreen rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-sm">🐵</span>
             </div>
             <div>
-              <h1 className="text-xl font-bold text-monkeyGreen">OffersMonkey</h1>
-              <p className="text-xs text-gray-500">Find the best deals</p>
+              <h1 className="text-lg font-bold text-monkeyGreen">OffersMonkey</h1>
+              <p className="text-xs text-gray-500 leading-none">Find the best deals</p>
             </div>
           </div>
 
-          {/* Navigation items */}
-          <nav className="flex items-center space-x-8">
+          {/* Navigation items - more compact spacing */}
+          <nav className="flex items-center space-x-2">
             {navItems.map((item) => {
               const active = isActive(item.path);
               const IconComponent = item.icon;
@@ -78,13 +78,13 @@ const BottomNavigation = () => {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors text-sm ${
                     active 
-                      ? 'bg-monkeyGreen text-white' 
-                      : 'text-gray-600 hover:text-monkeyGreen hover:bg-monkeyGreen/10'
+                      ? 'bg-monkeyGreen text-white shadow-sm' 
+                      : 'text-gray-600 hover:text-monkeyGreen hover:bg-monkeyGreen/5'
                   }`}
                 >
-                  <IconComponent className="w-5 h-5" />
+                  <IconComponent className="w-4 h-4" />
                   <span className="font-medium">{item.label}</span>
                 </Link>
               );
