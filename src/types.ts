@@ -85,3 +85,54 @@ export interface Message {
   isUser: boolean;
   timestamp: Date;
 }
+
+export interface GroupBuy {
+  id: string;
+  title: string;
+  description: string;
+  currentParticipants: number;
+  targetParticipants: number;
+  pricePerPerson: string;
+  originalPrice: string;
+  savings: string;
+  endTime: string;
+  organizer: string;
+  category: string;
+  location: string;
+  imageUrl: string;
+  tags: string[];
+  isJoined: boolean;
+}
+
+export interface DealPost {
+  id: number;
+  user: string;
+  avatar: string;
+  dealTitle: string;
+  description: string;
+  likes: number;
+  comments: number;
+  shares: number;
+  verified: boolean;
+  rating: number;
+  timeAgo: string;
+  image: string;
+  store: string;
+  originalPrice: string;
+  discountedPrice: string;
+  discount: string;
+  category: string;
+  isLiked: boolean;
+}
+
+export interface LeaderboardMember {
+  id: string;
+  name: string;
+  points: number;
+  deals: number;
+  rank: number;
+  badge: string;
+  avatar: string;
+  savings: string;
+  level: string;
+}

@@ -9,59 +9,9 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser } from '@/contexts/UserContext';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-
-interface GroupBuy {
-  id: number;
-  title: string;
-  description: string;
-  currentParticipants: number;
-  targetParticipants: number;
-  pricePerPerson: string;
-  originalPrice: string;
-  savings: string;
-  endTime: string;
-  organizer: string;
-  category: string;
-  location: string;
-  imageUrl: string;
-  tags: string[];
-  isJoined: boolean;
-}
-
-interface DealPost {
-  id: number;
-  user: string;
-  avatar: string;
-  dealTitle: string;
-  description: string;
-  likes: number;
-  comments: number;
-  shares: number;
-  verified: boolean;
-  rating: number;
-  timeAgo: string;
-  image: string;
-  store: string;
-  originalPrice: string;
-  discountedPrice: string;
-  discount: string;
-  category: string;
-  isLiked: boolean;
-}
-
-interface LeaderboardMember {
-  id: number;
-  name: string;
-  points: number;
-  deals: number;
-  rank: number;
-  badge: string;
-  avatar: string;
-  savings: string;
-  level: string;
-}
+import { fetchSocialDealPosts, fetchSocialLeaderboard } from '@/services/supabaseService';
+import { GroupBuy, DealPost, LeaderboardMember } from '@/types';
 
 const SocialShopping = () => {
   const [groupBuys, setGroupBuys] = useState<GroupBuy[]>([]);
@@ -77,7 +27,7 @@ const SocialShopping = () => {
   // Enhanced mock data with more realistic content
   const mockGroupBuys: GroupBuy[] = [
     {
-      id: 1,
+      id: "1",
       title: "iPhone 15 Pro Group Buy",
       description: "Get additional 8% off when 15 people join. Original Apple warranty included.",
       currentParticipants: 12,
@@ -94,7 +44,7 @@ const SocialShopping = () => {
       isJoined: false
     },
     {
-      id: 2,
+      id: "2",
       title: "Bulk Organic Grocery Purchase",
       description: "Premium organic groceries at wholesale prices. Direct from farms.",
       currentParticipants: 18,
@@ -111,7 +61,7 @@ const SocialShopping = () => {
       isJoined: true
     },
     {
-      id: 3,
+      id: "3",
       title: "Designer Sneakers Collection",
       description: "Limited edition Nike & Adidas sneakers. Authentic guaranteed.",
       currentParticipants: 8,
@@ -129,88 +79,22 @@ const SocialShopping = () => {
     }
   ];
 
-  const mockDealPosts: DealPost[] = [
-    {
-      id: 1,
-      user: "Anita Patel",
-      avatar: "AP",
-      dealTitle: "MacBook Air M3 - Lowest Price Ever!",
-      description: "Found this amazing deal at Flipkart. Usually costs ₹1,15,000. Grabbed it for ₹95,000! Use code APPLE15 for extra cashback.",
-      likes: 247,
-      comments: 34,
-      shares: 89,
-      verified: true,
-      rating: 4.8,
-      timeAgo: "2 hours ago",
-      image: "/placeholder.svg",
-      store: "Flipkart",
-      originalPrice: "₹1,15,000",
-      discountedPrice: "₹95,000",
-      discount: "17% OFF",
-      category: "Electronics",
-      isLiked: false
-    },
-    {
-      id: 2,
-      user: "Vikram Singh",
-      avatar: "VS",
-      dealTitle: "Nike Air Max 270 - Flash Sale",
-      description: "Incredible 60% off on Nike shoes! Perfect for running and casual wear. Size 7-11 available.",
-      likes: 189,
-      comments: 23,
-      shares: 56,
-      verified: true,
-      rating: 4.6,
-      timeAgo: "4 hours ago",
-      image: "/placeholder.svg",
-      store: "Myntra",
-      originalPrice: "₹12,995",
-      discountedPrice: "₹5,200",
-      discount: "60% OFF",
-      category: "Fashion",
-      isLiked: true
-    },
-    {
-      id: 3,
-      user: "Meera Joshi",
-      avatar: "MJ",
-      dealTitle: "Samsung 55\" 4K Smart TV Deal",
-      description: "Amazing price drop on Samsung Neo QLED TV. Crystal clear picture quality. Perfect for movie nights!",
-      likes: 156,
-      comments: 19,
-      shares: 41,
-      verified: false,
-      rating: 4.4,
-      timeAgo: "6 hours ago",
-      image: "/placeholder.svg",
-      store: "Amazon",
-      originalPrice: "₹85,000",
-      discountedPrice: "₹58,000",
-      discount: "32% OFF",
-      category: "Electronics",
-      isLiked: false
-    }
-  ];
-
-  const mockLeaderboard: LeaderboardMember[] = [
-    { id: 1, name: "Priya Sharma", points: 15420, deals: 89, rank: 1, badge: "Deal Ninja", avatar: "PS", savings: "₹2,45,000", level: "Platinum" },
-    { id: 2, name: "Rahul Kumar", points: 13890, deals: 76, rank: 2, badge: "Bargain Master", avatar: "RK", savings: "₹1,98,000", level: "Gold" },
-    { id: 3, name: "Anita Patel", points: 12750, deals: 68, rank: 3, badge: "Smart Saver", avatar: "AP", savings: "₹1,76,000", level: "Gold" },
-    { id: 4, name: "Vikram Singh", points: 11200, deals: 54, rank: 4, badge: "Deal Hunter", avatar: "VS", savings: "₹1,34,000", level: "Silver" },
-    { id: 5, name: "You", points: 8950, deals: 42, rank: 5, badge: "Rising Star", avatar: "YU", savings: "₹98,000", level: "Silver" }
-  ];
-
   useEffect(() => {
-    // Simulate real-time data loading
     const loadData = async () => {
       setIsLoading(true);
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Fetch real data from Supabase
+      const [deals, board] = await Promise.all([
+        fetchSocialDealPosts(),
+        fetchSocialLeaderboard()
+      ]);
       
+      setDealPosts(deals);
+      setLeaderboard(board);
+
+      // Use mock data for group buys for now
       setGroupBuys(mockGroupBuys);
-      setDealPosts(mockDealPosts);
-      setLeaderboard(mockLeaderboard);
+
       setIsLoading(false);
     };
 
@@ -222,7 +106,7 @@ const SocialShopping = () => {
       setGroupBuys(prevBuys => 
         prevBuys.map(buy => ({
           ...buy,
-          currentParticipants: Math.min(buy.currentParticipants + Math.random() > 0.8 ? 1 : 0, buy.targetParticipants)
+          currentParticipants: Math.min(buy.currentParticipants + (Math.random() > 0.8 ? 1 : 0), buy.targetParticipants)
         }))
       );
 
@@ -239,7 +123,7 @@ const SocialShopping = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const joinGroupBuy = (groupId: number) => {
+  const joinGroupBuy = (groupId: string) => {
     setGroupBuys(groupBuys.map(group => 
       group.id === groupId 
         ? { 

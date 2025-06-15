@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
-import { Offer, Category, BannerItem } from "@/types";
+import { Offer, Category, BannerItem, DealPost, LeaderboardMember } from "@/types";
+import { formatDistanceToNow } from 'date-fns';
 
 // Function to fetch all categories
 export async function fetchCategories(): Promise<Category[]> {
@@ -693,4 +694,106 @@ export async function deleteBanner(id: string): Promise<void> {
       console.error('Error deleting banner:', error);
       throw error;
     }
+}
+
+export async function fetchSocialDealPosts(): Promise<DealPost[]> {
+  const offers = await fetchOffers();
+  if (!offers || offers.length === 0) return [];
+
+  const { data: profiles } = await supabase.from('profiles').select('name').limit(10);
+
+  const dealPosts: DealPost[] = offers.slice(0, 6).map((offer) => {
+    const randomProfile = profiles && profiles.length > 0 ? profiles[Math.floor(Math.random() * profiles.length)] : { name: 'Deal Finder' };
+    
+    return {
+      id: offer.lmdId,
+      user: randomProfile.name || 'Deal Finder',
+      avatar: (randomProfile.name || 'Deal Finder').split(' ').map(n => n[0]).join('').toUpperCase(),
+      dealTitle: offer.title || 'Untitled Deal',
+      description: offer.description || '',
+      likes: Math.floor(Math.random() * 300),
+      comments: Math.floor(Math.random() * 50),
+      shares: Math.floor(Math.random() * 100),
+      verified: offer.featured,
+      rating: parseFloat((Math.random() * (5 - 3.5) + 3.5).toFixed(1)),
+      timeAgo: offer.startDate ? formatDistanceToNow(new Date(offer.startDate), { addSuffix: true }) : 'Recently',
+      image: offer.imageUrl || "/placeholder.svg",
+      store: offer.store || 'Unknown Store',
+      originalPrice: `₹${offer.originalPrice.toLocaleString()}`,
+      discountedPrice: `₹${offer.price.toLocaleString()}`,
+      discount: typeof offer.savings === 'number' ? `₹${offer.savings.toLocaleString()}` : offer.savings,
+      category: offer.categories?.split(',')[0] || 'General',
+      isLiked: false,
+    };
+  });
+  return dealPosts;
+}
+
+export async function fetchSocialLeaderboard(): Promise<LeaderboardMember[]> {
+  const { data: pointsData, error: pointsError } = await supabase
+    .from('user_points')
+    .select('user_id, points');
+
+  if (pointsError) {
+    console.error('Error fetching user points for leaderboard', pointsError);
+    return [];
+  }
+  if (!pointsData) return [];
+
+  const userPoints: { [key: string]: { points: number, deals: number } } = {};
+  pointsData.forEach(item => {
+    if (item.user_id) {
+        userPoints[item.user_id] = {
+            points: (userPoints[item.user_id]?.points || 0) + (item.points || 0),
+            deals: (userPoints[item.user_id]?.deals || 0) + 1
+        }
+    }
+  });
+
+  const userIds = Object.keys(userPoints);
+  if (userIds.length === 0) return [];
+  
+  const { data: profilesData, error: profilesError } = await supabase
+    .from('profiles')
+    .select('id, name')
+    .in('id', userIds);
+
+  if (profilesError) {
+    console.error('Error fetching profiles for leaderboard', profilesError);
+    return [];
+  }
+  if (!profilesData) return [];
+
+  const leaderboardData = profilesData.map(profile => ({
+    id: profile.id,
+    name: profile.name || 'Anonymous',
+    points: userPoints[profile.id]?.points || 0,
+    deals: userPoints[profile.id]?.deals || 0,
+    avatar: (profile.name || 'A').split(' ').map(n => n[0]).join('').toUpperCase(),
+    savings: `₹${(Math.random() * 200000).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
+    level: 'Silver',
+    badge: 'Rising Star',
+    rank: 0,
+  }));
+  
+  const you = {
+    id: 'user-you',
+    name: "You",
+    points: 8950,
+    deals: 42,
+    rank: 0,
+    badge: "Rising Star",
+    avatar: "YU",
+    savings: "₹98,000",
+    level: "Silver"
+  };
+
+  const finalLeaderboard = [...leaderboardData, you]
+    .sort((a, b) => b.points - a.points)
+    .map((member, index) => ({
+      ...member,
+      rank: index + 1,
+    }));
+
+  return finalLeaderboard.slice(0, 5);
 }
