@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Bookmark, MessageCircle, User, SlidersHorizontal } from 'lucide-react';
@@ -59,8 +58,8 @@ const BottomNavigation = () => {
         <div className="flex items-center justify-between">
           {/* Logo and branding - more compact */}
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-monkeyGreen rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-sm">🐵</span>
+            <div className="w-8 h-8 flex items-center justify-center">
+              <img src="https://offersmonkey.com/favicon.ico" alt="OffersMonkey Logo" className="w-full h-full rounded-full" />
             </div>
             <div>
               <h1 className="text-lg font-bold text-monkeyGreen">OffersMonkey</h1>

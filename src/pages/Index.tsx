@@ -81,8 +81,8 @@ const Index = () => {
         <div className="text-center space-y-6 lg:space-y-8">
           {/* Logo and Main Heading */}
           <div className="flex flex-col items-center space-y-4">
-            <div className="w-20 h-20 lg:w-24 lg:h-24 bg-monkeyGreen rounded-full flex items-center justify-center shadow-lg">
-              <span className="text-3xl lg:text-4xl">🐵</span>
+            <div className="w-20 h-20 lg:w-24 lg:h-24 flex items-center justify-center">
+              <img src="https://offersmonkey.com/favicon.ico" alt="OffersMonkey Logo" className="w-full h-full rounded-full shadow-lg" />
             </div>
             <div>
               <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 mb-2">OffersMonkey</h1>
@@ -151,7 +151,7 @@ const Index = () => {
       <div className="container mx-auto px-4 py-12 lg:py-16">
         <div className="text-center mb-12">
           <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-            Why Choose MonkeyOffers?
+            Why Choose OffersMonkey?
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             We make finding and saving on deals easier than ever with our intelligent platform
@@ -210,7 +210,7 @@ const Index = () => {
             Ready to Start Saving?
           </h2>
           <p className="text-lg lg:text-xl mb-8 opacity-90">
-            Join MonkeyOffers today and never pay full price again!
+            Join OffersMonkey today and never pay full price again!
           </p>
           <Button 
             onClick={() => window.location.href = '/splash'}
@@ -226,8 +226,8 @@ const Index = () => {
       <footer className="bg-gray-900 text-white py-8">
         <div className="container mx-auto px-4 text-center">
           <div className="flex items-center justify-center space-x-2 mb-4">
-            <span className="text-2xl">🐵</span>
-            <span className="text-xl font-bold">MonkeyOffers</span>
+            <img src="https://offersmonkey.com/favicon.ico" alt="OffersMonkey Logo" className="w-8 h-8 rounded-full" />
+            <span className="text-xl font-bold">OffersMonkey</span>
           </div>
           <p className="text-gray-400 mb-4">
             Your smart shopping companion for the best deals
@@ -239,7 +239,7 @@ const Index = () => {
             <a href="#" className="hover:text-white transition-colors">Contact</a>
           </div>
           <div className="mt-6 pt-6 border-t border-gray-800 text-gray-500 text-sm">
-            © 2024 MonkeyOffers. All rights reserved.
+            © 2024 OffersMonkey. All rights reserved.
           </div>
         </div>
       </footer>

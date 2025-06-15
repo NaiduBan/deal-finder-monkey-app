@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Button } from '@/components/ui/button';
@@ -42,7 +41,7 @@ const AdminPanel = () => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Admin CRM</h1>
-                <p className="text-sm text-gray-500">MonkeyOffers Management</p>
+                <p className="text-sm text-gray-500">OffersMonkey Management</p>
               </div>
             </div>
             
