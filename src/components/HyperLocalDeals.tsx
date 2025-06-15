@@ -118,171 +118,176 @@ const HyperLocalDeals = () => {
   };
 
   return (
-    <div className={`bg-monkeyBackground min-h-screen ${isMobile ? 'p-4 pb-20' : 'max-w-6xl mx-auto p-6'}`}>
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
+    <div className={`bg-monkeyBackground min-h-screen ${isMobile ? 'p-4 pb-20' : 'flex justify-center px-8 py-10'}`}>
+      <div className={`${isMobile ? '' : 'w-full max-w-6xl flex flex-col gap-8'}`}>
+        {/* Header */}
+        <div className={`${isMobile ? 'mb-6' : 'mb-8 flex items-center justify-between'}`}>
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-monkeyGreen rounded-full flex items-center justify-center">
               <MapPin className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Local Deals</h1>
+              <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900`}>
+                Local Deals
+              </h1>
               <p className="text-gray-600">Discover deals near you</p>
             </div>
           </div>
           <Button 
             onClick={getCurrentLocation}
             disabled={isLoadingLocation}
-            className="bg-monkeyGreen hover:bg-monkeyGreen/90"
+            className="bg-monkeyGreen hover:bg-monkeyGreen/90 mt-4 sm:mt-0"
           >
             <Navigation className="w-4 h-4 mr-2" />
             {isLoadingLocation ? 'Locating...' : 'Find Me'}
           </Button>
         </div>
         
-        <div className="flex items-center space-x-2 mt-3">
+        <div className="flex items-center space-x-2 mb-4">
           <MapPin className="w-4 h-4 text-gray-500" />
           <span className="text-gray-600">{user.location}</span>
           {userLocation && (
             <Badge className="bg-green-100 text-green-800">Live Location</Badge>
           )}
         </div>
-      </div>
 
-      {/* Nearby Deals */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Store className="w-5 h-5" />
-            <span>Nearby Deals</span>
-            <Badge variant="secondary">{nearbyDeals.length}</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
-            {nearbyDeals.map((deal) => (
-              <div key={deal.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex-1">
-                    <h3 className="font-semibold">{deal.title}</h3>
-                    <p className="text-monkeyGreen font-medium">{deal.store}</p>
-                  </div>
-                  {deal.isGeoFenced && (
-                    <Badge className="bg-orange-100 text-orange-800 text-xs">
-                      Geo-Alert
-                    </Badge>
-                  )}
-                </div>
-                
-                <div className="space-y-2 mb-3">
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <MapPin className="w-4 h-4" />
-                    <span>{deal.address}</span>
-                    <Badge variant="outline" className="text-xs">{deal.distance}</Badge>
-                  </div>
-                  
-                  <div className="flex items-center space-x-4 text-sm">
-                    <div className="flex items-center space-x-1">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span>{deal.rating}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Clock className="w-4 h-4 text-gray-500" />
-                      <span className="text-gray-600">{deal.validUntil}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex space-x-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => callBusiness(deal.phone)}
-                    className="flex-1"
-                  >
-                    <Phone className="w-3 h-3 mr-1" />
-                    Call
-                  </Button>
-                  <Button 
-                    size="sm"
-                    onClick={() => getDirections(deal.address)}
-                    className="flex-1 bg-monkeyGreen hover:bg-monkeyGreen/90"
-                  >
-                    <Navigation className="w-3 h-3 mr-1" />
-                    Directions
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Local Business Partners */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Store className="w-5 h-5" />
-            <span>Local Business Partners</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
-            {localBusinesses.map((business) => (
-              <div key={business.id} className="border rounded-lg p-4">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h3 className="font-semibold">{business.name}</h3>
-                    <p className="text-sm text-gray-600">{business.category}</p>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm">{business.rating}</span>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2 text-sm text-gray-600 mb-3">
-                  <MapPin className="w-4 h-4" />
-                  <span>{business.address}</span>
-                  <Badge variant="outline" className="text-xs">{business.distance}</Badge>
-                </div>
-
-                <div className="mb-3">
-                  <p className="text-sm font-medium mb-1">Current Offers:</p>
-                  <div className="space-y-1">
-                    {business.offers.map((offer, index) => (
-                      <div key={index} className="text-xs bg-monkeyGreen/10 text-monkeyGreen px-2 py-1 rounded">
-                        {offer}
+        {/* Main Grid for Desktop */}
+        <div className={`${isMobile ? '' : 'grid grid-cols-2 gap-8'}`}>
+          {/* Nearby Deals */}
+          <Card className={`${isMobile ? 'mb-6' : ''}`}>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Store className="w-5 h-5" />
+                <span>Nearby Deals</span>
+                <Badge variant="secondary">{nearbyDeals.length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1'}`}>
+                {nearbyDeals.map((deal) => (
+                  <div key={deal.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1">
+                        <h3 className="font-semibold">{deal.title}</h3>
+                        <p className="text-monkeyGreen font-medium">{deal.store}</p>
                       </div>
-                    ))}
-                  </div>
-                </div>
+                      {deal.isGeoFenced && (
+                        <Badge className="bg-orange-100 text-orange-800 text-xs">
+                          Geo-Alert
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2 mb-3">
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <MapPin className="w-4 h-4" />
+                        <span>{deal.address}</span>
+                        <Badge variant="outline" className="text-xs">{deal.distance}</Badge>
+                      </div>
+                      
+                      <div className="flex items-center space-x-4 text-sm">
+                        <div className="flex items-center space-x-1">
+                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                          <span>{deal.rating}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Clock className="w-4 h-4 text-gray-500" />
+                          <span className="text-gray-600">{deal.validUntil}</span>
+                        </div>
+                      </div>
+                    </div>
 
-                <div className="flex space-x-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => callBusiness(business.phone)}
-                    className="flex-1"
-                  >
-                    <Phone className="w-3 h-3 mr-1" />
-                    Call
-                  </Button>
-                  <Button 
-                    size="sm"
-                    onClick={() => getDirections(business.address)}
-                    className="flex-1 bg-monkeyGreen hover:bg-monkeyGreen/90"
-                  >
-                    <Navigation className="w-3 h-3 mr-1" />
-                    Visit
-                  </Button>
-                </div>
+                    <div className="flex space-x-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => callBusiness(deal.phone)}
+                        className="flex-1"
+                      >
+                        <Phone className="w-3 h-3 mr-1" />
+                        Call
+                      </Button>
+                      <Button 
+                        size="sm"
+                        onClick={() => getDirections(deal.address)}
+                        className="flex-1 bg-monkeyGreen hover:bg-monkeyGreen/90"
+                      >
+                        <Navigation className="w-3 h-3 mr-1" />
+                        Directions
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+
+          {/* Local Business Partners */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Store className="w-5 h-5" />
+                <span>Local Business Partners</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1'}`}>
+                {localBusinesses.map((business) => (
+                  <div key={business.id} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="font-semibold">{business.name}</h3>
+                        <p className="text-sm text-gray-600">{business.category}</p>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                        <span className="text-sm">{business.rating}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2 text-sm text-gray-600 mb-3">
+                      <MapPin className="w-4 h-4" />
+                      <span>{business.address}</span>
+                      <Badge variant="outline" className="text-xs">{business.distance}</Badge>
+                    </div>
+
+                    <div className="mb-3">
+                      <p className="text-sm font-medium mb-1">Current Offers:</p>
+                      <div className="space-y-1">
+                        {business.offers.map((offer, index) => (
+                          <div key={index} className="text-xs bg-monkeyGreen/10 text-monkeyGreen px-2 py-1 rounded">
+                            {offer}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex space-x-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => callBusiness(business.phone)}
+                        className="flex-1"
+                      >
+                        <Phone className="w-3 h-3 mr-1" />
+                        Call
+                      </Button>
+                      <Button 
+                        size="sm"
+                        onClick={() => getDirections(business.address)}
+                        className="flex-1 bg-monkeyGreen hover:bg-monkeyGreen/90"
+                      >
+                        <Navigation className="w-3 h-3 mr-1" />
+                        Visit
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 };
