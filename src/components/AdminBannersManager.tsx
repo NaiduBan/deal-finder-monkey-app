@@ -18,6 +18,7 @@ type Banner = {
   link: string;
   is_active: boolean;
   created_at: string;
+  updated_at: string;
 };
 
 const AdminBannersManager = () => {
@@ -93,22 +94,30 @@ const AdminBannersManager = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Image</TableHead>
+              <TableHead className="w-[150px]">ID</TableHead>
               <TableHead>Title</TableHead>
+              <TableHead>Image URL</TableHead>
               <TableHead>Link</TableHead>
               <TableHead>Active</TableHead>
+              <TableHead>Created At</TableHead>
+              <TableHead>Updated At</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {banners?.map((banner) => (
               <TableRow key={banner.id}>
-                <TableCell>
-                  <img src={banner.image_url} alt={banner.title} className="h-10 w-20 object-cover rounded-md" />
+                <TableCell className="font-mono text-xs truncate max-w-[150px]" title={banner.id}>
+                  {banner.id}
                 </TableCell>
                 <TableCell className="font-medium">{banner.title}</TableCell>
                 <TableCell>
-                  <a href={banner.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline truncate max-w-xs block">
+                  <a href={banner.image_url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline truncate max-w-[200px] block" title={banner.image_url}>
+                    {banner.image_url}
+                  </a>
+                </TableCell>
+                <TableCell>
+                  <a href={banner.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline truncate max-w-[200px] block" title={banner.link}>
                     {banner.link}
                   </a>
                 </TableCell>
@@ -118,6 +127,8 @@ const AdminBannersManager = () => {
                     onCheckedChange={(checked) => updateMutation.mutate({ id: banner.id, data: { is_active: checked } })}
                   />
                 </TableCell>
+                <TableCell>{new Date(banner.created_at).toLocaleString()}</TableCell>
+                <TableCell>{new Date(banner.updated_at).toLocaleString()}</TableCell>
                 <TableCell>
                   <div className="flex space-x-2 justify-end">
                     <Button variant="outline" size="icon" onClick={() => handleOpenDialog(banner)}>
