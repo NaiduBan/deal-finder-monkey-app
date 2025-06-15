@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Bookmark, MessageCircle, User, SlidersHorizontal } from 'lucide-react';
@@ -52,7 +51,7 @@ const BottomNavigation = () => {
   if (isMobile) {
     // Mobile bottom navigation
     return (
-      <div className="fixed bottom-0 left-0 right-0 z-10 bg-spring-green-600 border-t border-spring-green-700 overflow-x-auto">
+      <div className="fixed bottom-0 left-0 right-0 z-30 bg-spring-green-600 border-t border-spring-green-700 overflow-x-auto">
         <div className="flex justify-around items-center">
           {navItems.map((item) => {
             const active = isActive(item.path);

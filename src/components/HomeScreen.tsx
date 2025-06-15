@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Bell, Search, AlertCircle, Bot, Users } from 'lucide-react';
@@ -368,7 +369,7 @@ const HomeScreen = () => {
     <div className={`bg-monkeyBackground min-h-screen ${isMobile ? 'pb-16' : 'pt-20'}`}>
       {/* Mobile Header with location - only show on mobile */}
       {isMobile && (
-        <div className="bg-spring-green-600 text-white py-4 px-4 sticky top-0 z-10">
+        <div className="bg-spring-green-600 text-white py-4 px-4 sticky top-0 z-30">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-1">
               <MapPin className="w-4 h-4" />
