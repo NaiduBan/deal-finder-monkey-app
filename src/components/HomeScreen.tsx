@@ -368,7 +368,7 @@ const HomeScreen = () => {
     <div className={`bg-monkeyBackground min-h-screen ${isMobile ? 'pb-16' : 'pt-20'}`}>
       {/* Mobile Header with location - only show on mobile */}
       {isMobile && (
-        <div className="bg-monkeyGreen text-white py-4 px-4 sticky top-0 z-10">
+        <div className="bg-spring-green-600 text-white py-4 px-4 sticky top-0 z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-1">
               <MapPin className="w-4 h-4" />
@@ -399,7 +399,7 @@ const HomeScreen = () => {
                   <span className="text-gray-600">{user.location}</span>
                 </div>
               </div>
-              <Link to="/notifications" className="flex items-center bg-monkeyGreen text-white px-4 py-2 rounded-lg hover:bg-monkeyGreen/90 transition-colors">
+              <Link to="/notifications" className="flex items-center bg-spring-green-600 text-white px-4 py-2 rounded-lg hover:bg-spring-green-700 transition-colors">
                 <Bell className="w-5 h-5 mr-2" />
                 <span>Notifications</span>
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-monkeyYellow text-xs text-black ml-2">
@@ -479,14 +479,14 @@ const HomeScreen = () => {
             userPreferences.stores.length > 0 || 
             userPreferences.banks.length > 0
           ) && (
-            <div className="bg-monkeyGreen/10 p-3 rounded-lg flex justify-between items-center mb-6">
+            <div className="bg-spring-green-50 p-3 rounded-lg flex justify-between items-center mb-6">
               <div>
-                <h3 className="font-medium text-monkeyGreen">Personalized for You</h3>
+                <h3 className="font-medium text-spring-green-700">Personalized for You</h3>
                 <p className="text-xs text-gray-600">Offers are filtered based on your preferences</p>
               </div>
               <Link 
                 to="/preferences/brands" 
-                className="bg-monkeyGreen text-white text-sm px-3 py-1 rounded-full"
+                className="bg-spring-green-600 text-white text-sm px-3 py-1 rounded-full"
               >
                 Edit
               </Link>
@@ -509,14 +509,14 @@ const HomeScreen = () => {
           <div className="mb-6">
             <div className="flex justify-between items-center mb-3">
               <h2 className="font-bold text-lg">For You</h2>
-              <Link to="/preferences/brands" className="text-monkeyGreen text-sm">
+              <Link to="/preferences/brands" className="text-spring-green-600 text-sm">
                 Set preferences
               </Link>
             </div>
             
             {isDataLoading ? (
               <div className="flex justify-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-monkeyGreen"></div>
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-spring-green-600"></div>
               </div>
             ) : (
               <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-hide">
@@ -529,7 +529,7 @@ const HomeScreen = () => {
                     >
                       <CategoryItem category={category} />
                       {selectedCategory === category.id && (
-                        <div className="h-1 w-full bg-monkeyGreen rounded-full mt-1"></div>
+                        <div className="h-1 w-full bg-spring-green-600 rounded-full mt-1"></div>
                       )}
                     </div>
                   ))
@@ -544,25 +544,25 @@ const HomeScreen = () => {
           {(selectedCategory || debouncedSearchTerm) && (
             <div className="flex flex-wrap gap-2 mb-6">
               {selectedCategory && (
-                <div className="bg-monkeyGreen/10 text-monkeyGreen px-3 py-1 rounded-full text-sm flex items-center">
+                <div className="bg-spring-green-50 text-spring-green-700 px-3 py-1 rounded-full text-sm flex items-center">
                   {dynamicCategories.find(c => c.id === selectedCategory)?.name}
                   <button 
                     onClick={() => setSelectedCategory(null)}
-                    className="ml-1 text-monkeyGreen"
+                    className="ml-1 text-spring-green-700"
                   >
                     ✕
                   </button>
                 </div>
               )}
               {debouncedSearchTerm && (
-                <div className="bg-monkeyGreen/10 text-monkeyGreen px-3 py-1 rounded-full text-sm flex items-center">
+                <div className="bg-spring-green-50 text-spring-green-700 px-3 py-1 rounded-full text-sm flex items-center">
                   "{debouncedSearchTerm}"
                   <button 
                     onClick={() => {
                       setSearchQuery('');
                       setDebouncedSearchTerm('');
                     }}
-                    className="ml-1 text-monkeyGreen"
+                    className="ml-1 text-spring-green-700"
                   >
                     ✕
                   </button>
@@ -599,7 +599,7 @@ const HomeScreen = () => {
               <TabsContent value="all" className="space-y-4 mt-2">
                 {isDataLoading || isLoading ? (
                   <div className="flex justify-center items-center py-10">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-monkeyGreen"></div>
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-spring-green-600"></div>
                   </div>
                 ) : (
                   <>
@@ -634,7 +634,7 @@ const HomeScreen = () => {
                           <div className="mt-4 flex flex-col gap-2">
                             <button
                               onClick={refetchOffers}
-                              className="bg-monkeyGreen text-white px-4 py-2 rounded-lg w-full"
+                              className="bg-spring-green-600 text-white px-4 py-2 rounded-lg w-full"
                             >
                               Refresh Data
                             </button>
@@ -642,7 +642,7 @@ const HomeScreen = () => {
                             {offers.length > 0 && (
                               <Link 
                                 to="/preferences/brands" 
-                                className="border border-monkeyGreen text-monkeyGreen px-4 py-2 rounded-lg text-center"
+                                className="border border-spring-green-600 text-spring-green-600 px-4 py-2 rounded-lg text-center"
                               >
                                 Adjust Preferences
                               </Link>
@@ -657,12 +657,12 @@ const HomeScreen = () => {
                 {!isDataLoading && !error && displayedOffers.length > 0 && (
                   <button 
                     onClick={loadMoreOffers}
-                    className="w-full py-3 text-center text-monkeyGreen border border-monkeyGreen rounded-lg mt-4 flex items-center justify-center"
+                    className="w-full py-3 text-center text-spring-green-600 border border-spring-green-600 rounded-lg mt-4 flex items-center justify-center"
                     disabled={isLoading}
                   >
                     {isLoading ? (
                       <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 rounded-full border-2 border-monkeyGreen border-t-transparent animate-spin"></div>
+                        <div className="w-4 h-4 rounded-full border-2 border-spring-green-600 border-t-transparent animate-spin"></div>
                         <span>Loading more...</span>
                       </div>
                     ) : (
@@ -691,7 +691,7 @@ const HomeScreen = () => {
                     {offers.length > 0 && (
                       <Link 
                         to="/preferences/stores" 
-                        className="mt-4 text-monkeyGreen block underline"
+                        className="mt-4 text-spring-green-600 block underline"
                       >
                         Adjust store preferences
                       </Link>
@@ -703,7 +703,7 @@ const HomeScreen = () => {
               <TabsContent value="flash" className="space-y-4">
                 {isCuelinkLoading ? (
                   <div className="flex justify-center items-center py-10">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-monkeyGreen"></div>
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-spring-green-600"></div>
                   </div>
                 ) : (
                   <>
@@ -771,7 +771,7 @@ const HomeScreen = () => {
                     {offers.length > 0 && (
                       <Link 
                         to="/preferences/stores" 
-                        className="mt-4 text-monkeyGreen block underline"
+                        className="mt-4 text-spring-green-600 block underline"
                       >
                         Adjust store preferences
                       </Link>

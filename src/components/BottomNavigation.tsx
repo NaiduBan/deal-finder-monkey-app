@@ -50,9 +50,9 @@ const BottomNavigation = () => {
   ];
 
   if (isMobile) {
-    // Mobile bottom navigation (unchanged)
+    // Mobile bottom navigation
     return (
-      <div className="fixed bottom-0 left-0 right-0 z-10 bg-white border-t overflow-x-auto">
+      <div className="fixed bottom-0 left-0 right-0 z-10 bg-spring-green-600 border-t border-spring-green-700 overflow-x-auto">
         <div className="flex justify-around items-center">
           {navItems.map((item) => {
             const active = isActive(item.path);
@@ -63,10 +63,10 @@ const BottomNavigation = () => {
                 key={item.path}
                 to={item.path}
                 className={`flex flex-col items-center py-2 px-2 ${
-                  active ? 'text-monkeyYellow' : 'text-gray-600'
+                  active ? 'text-monkeyYellow' : 'text-white/80'
                 }`}
               >
-                <div className={`p-1 rounded-full ${active ? 'bg-spring-green-500' : ''}`}>
+                <div className={`p-1 rounded-full ${active ? 'bg-white/20' : ''}`}>
                   <IconComponent className="w-5 h-5" />
                 </div>
                 <span className="text-xs mt-1">{item.label}</span>
