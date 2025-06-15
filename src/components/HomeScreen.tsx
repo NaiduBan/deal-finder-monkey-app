@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Bell, Search, AlertCircle, Bot, Users } from 'lucide-react';
@@ -16,7 +17,6 @@ import { fetchCuelinkOffers } from '@/services/cuelinkService';
 import { Category, Offer, CuelinkOffer } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import CuelinkPagination from './CuelinkPagination';
-import BannerCarousel from './BannerCarousel';
 
 const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -365,72 +365,6 @@ const HomeScreen = () => {
     console.log("Searching for:", e.target.value);
   };
 
-  const renderOffersWithBanners = (offersToRender: Offer[]) => {
-    const groupSize = isMobile ? 4 : 8;
-  
-    const content: React.ReactNode[] = [];
-    for (let i = 0; i < offersToRender.length; i += groupSize) {
-      const groupOfOffers = offersToRender.slice(i, i + groupSize);
-      content.push(
-        <div
-          key={`group-${i}`}
-          className={`grid gap-4 ${
-            isMobile
-              ? 'grid-cols-2'
-              : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
-          }`}
-        >
-          {groupOfOffers.map((offer) => (
-            <Link key={offer.id} to={`/offer/${offer.id}`}>
-              <OfferCard offer={offer} isMobile={isMobile} />
-            </Link>
-          ))}
-        </div>
-      );
-  
-      if (i + groupSize < offersToRender.length) {
-        content.push(
-          <div key={`banner-group-${i}`} className="my-6">
-            <BannerCarousel />
-          </div>
-        );
-      }
-    }
-    return <>{content}</>;
-  };
-  
-  const renderCuelinkOffersWithBanners = (offersToRender: CuelinkOffer[]) => {
-    const groupSize = isMobile ? 4 : 6;
-  
-    const content: React.ReactNode[] = [];
-    for (let i = 0; i < offersToRender.length; i += groupSize) {
-      const groupOfOffers = offersToRender.slice(i, i + groupSize);
-      content.push(
-        <div
-          key={`cuelink-group-${i}`}
-          className={`grid gap-4 ${
-            isMobile 
-              ? 'grid-cols-1 sm:grid-cols-2' 
-              : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-          }`}
-        >
-          {groupOfOffers.map((offer) => (
-            <CuelinkOfferCard key={offer.Id} offer={offer} />
-          ))}
-        </div>
-      );
-  
-      if (i + groupSize < offersToRender.length) {
-        content.push(
-          <div key={`cuelink-banner-group-${i}`} className="my-6">
-            <BannerCarousel />
-          </div>
-        );
-      }
-    }
-    return <>{content}</>;
-  };
-
   return (
     <div className={`bg-monkeyBackground min-h-screen ${isMobile ? 'pb-16' : 'pt-20'}`}>
       {/* Mobile Header with location - only show on mobile */}
@@ -677,7 +611,17 @@ const HomeScreen = () => {
                     )}
                     
                     {!error && displayedOffers.length > 0 ? (
-                      renderOffersWithBanners(displayedOffers)
+                      <div className={`grid gap-4 ${
+                        isMobile 
+                          ? 'grid-cols-2' 
+                          : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                      }`}>
+                        {displayedOffers.map((offer) => (
+                          <Link key={offer.id} to={`/offer/${offer.id}`}>
+                            <OfferCard offer={offer} isMobile={isMobile} />
+                          </Link>
+                        ))}
+                      </div>
                     ) : (
                       !error && (
                         <div className="bg-white p-6 rounded-lg text-center shadow-sm">
@@ -730,9 +674,19 @@ const HomeScreen = () => {
               </TabsContent>
               
               <TabsContent value="nearby" className="space-y-4">
-                {displayedOffers.filter(offer => !offer.isAmazon).length > 0 ? (
-                  renderOffersWithBanners(displayedOffers.filter(offer => !offer.isAmazon))
-                ) : (
+                <div className={`grid gap-4 ${
+                  isMobile 
+                    ? 'grid-cols-2' 
+                    : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                }`}>
+                  {displayedOffers.filter(offer => !offer.isAmazon).map((offer) => (
+                    <Link key={offer.id} to={`/offer/${offer.id}`}>
+                      <OfferCard offer={offer} isMobile={isMobile} />
+                    </Link>
+                  ))}
+                </div>
+                
+                {displayedOffers.filter(offer => !offer.isAmazon).length === 0 && (
                   <div className="bg-white p-6 rounded-lg text-center shadow-sm">
                     <p className="text-gray-500">No nearby offers found</p>
                     {offers.length > 0 && (
@@ -759,7 +713,15 @@ const HomeScreen = () => {
                         <div className="mb-4 text-sm text-gray-600">
                           Showing {((cuelinkCurrentPage - 1) * cuelinkItemsPerPage) + 1}-{Math.min(cuelinkCurrentPage * cuelinkItemsPerPage, displayedCuelinkOffers.length)} of {displayedCuelinkOffers.length} flash deals
                         </div>
-                        {renderCuelinkOffersWithBanners(paginatedCuelinkOffers)}
+                        <div className={`grid gap-4 ${
+                          isMobile 
+                            ? 'grid-cols-1 sm:grid-cols-2' 
+                            : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+                        }`}>
+                          {paginatedCuelinkOffers.map((offer) => (
+                            <CuelinkOfferCard key={offer.Id} offer={offer} />
+                          ))}
+                        </div>
                         <CuelinkPagination 
                           currentPage={cuelinkCurrentPage}
                           totalPages={totalCuelinkPages}
@@ -792,9 +754,19 @@ const HomeScreen = () => {
               </TabsContent>
               
               <TabsContent value="amazon" className="space-y-4">
-                {displayedOffers.filter(offer => offer.isAmazon).length > 0 ? (
-                  renderOffersWithBanners(displayedOffers.filter(offer => offer.isAmazon))
-                ) : (
+                <div className={`grid gap-4 ${
+                  isMobile 
+                    ? 'grid-cols-2' 
+                    : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                }`}>
+                  {displayedOffers.filter(offer => offer.isAmazon).map((offer) => (
+                    <Link key={offer.id} to={`/offer/${offer.id}`}>
+                      <OfferCard offer={offer} isMobile={isMobile} />
+                    </Link>
+                  ))}
+                </div>
+                
+                {displayedOffers.filter(offer => offer.isAmazon).length === 0 && (
                   <div className="bg-white p-6 rounded-lg text-center shadow-sm">
                     <p className="text-gray-500">No Amazon offers found</p>
                     {offers.length > 0 && (
