@@ -145,7 +145,7 @@ const ProfileScreen = () => {
       </div>
 
       {/* Content */}
-      <div className={`p-4 md:p-6 lg:p-8 ${!isMobile ? 'max-w-7xl mx-auto' : ''}`}>
+      <div className={`${isMobile ? 'p-4' : 'max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-12'}`}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           
           {/* Left Column */}
