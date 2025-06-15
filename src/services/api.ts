@@ -1,5 +1,6 @@
 import { Offer, Category, User, BannerItem } from "@/types";
-import { mockOffers, mockCategories, mockBanners, mockUser } from "@/mockData";
+import { mockOffers, mockCategories, mockUser } from "@/mockData";
+import { fetchBanners as fetchBannersFromDb } from './supabaseService';
 
 // Function to simulate API call delay
 const delay = (ms: number): Promise<void> => {
@@ -39,8 +40,7 @@ export const getCategories = async (): Promise<Category[]> => {
 
 // Get banner items
 export const getBanners = async (): Promise<BannerItem[]> => {
-  await delay(200); // Simulate network delay
-  return mockBanners;
+  return await fetchBannersFromDb();
 };
 
 // Get user data

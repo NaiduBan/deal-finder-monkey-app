@@ -1,4 +1,3 @@
-
 import { Offer, Category, User, BannerItem } from './types';
 
 export const mockUser: User = {
@@ -431,23 +430,4 @@ export const mockCategories: Category[] = [
   }
 ];
 
-export const mockBanners: BannerItem[] = [
-  {
-    id: 'banner1',
-    imageUrl: '/banner1.jpg',
-    title: 'Summer Sale',
-    link: '/offers?category=fashion'
-  },
-  {
-    id: 'banner2',
-    imageUrl: '/banner2.jpg',
-    title: 'Electronics Fest',
-    link: '/offers?category=electronics'
-  },
-  {
-    id: 'banner3',
-    imageUrl: '/banner3.jpg',
-    title: 'Food Offers',
-    link: '/offers?category=food'
-  }
-];
+export const mockBanners: BannerItem[] = [];

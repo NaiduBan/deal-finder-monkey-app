@@ -1,6 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
-import { Offer, Category } from "@/types";
+import { Offer, Category, BannerItem } from "@/types";
 
 // Function to fetch all categories
 export async function fetchCategories(): Promise<Category[]> {
@@ -600,4 +599,98 @@ export function applyPreferencesToOffers(offers: Offer[], preferences: {[key: st
   
   console.log(`Filtered down to ${filteredOffers.length} offers matching preferences`);
   return filteredOffers;
+}
+
+// Function to fetch all active banners for the public site
+export async function fetchBanners(): Promise<BannerItem[]> {
+  try {
+    const { data, error } = await supabase
+      .from('banners')
+      .select('id, title, image_url, link')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching banners:', error);
+      throw error;
+    }
+
+    return data.map((banner: any) => ({
+      id: banner.id,
+      title: banner.title,
+      imageUrl: banner.image_url,
+      link: banner.link,
+    }));
+  } catch (error) {
+    console.error('Error in fetchBanners:', error);
+    return [];
+  }
+}
+
+// ADMIN FUNCTIONS FOR BANNERS
+
+// Admin function to fetch all banners (active and inactive)
+export async function fetchAllBanners(): Promise<any[]> {
+  try {
+    const { data, error } = await supabase
+      .from('banners')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching all banners:', error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error in fetchAllBanners:', error);
+    return [];
+  }
+}
+
+// Admin function to create a banner
+export async function createBanner(bannerData: { title: string; image_url: string; link: string; is_active: boolean; }): Promise<any> {
+    const { data, error } = await supabase
+      .from('banners')
+      .insert([bannerData])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating banner:', error);
+      throw error;
+    }
+    
+    return data;
+}
+
+// Admin function to update a banner
+export async function updateBanner(id: string, bannerData: Partial<{ title: string; image_url: string; link: string; is_active: boolean; }>): Promise<any> {
+    const { data, error } = await supabase
+      .from('banners')
+      .update(bannerData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating banner:', error);
+      throw error;
+    }
+    
+    return data;
+}
+
+// Admin function to delete a banner
+export async function deleteBanner(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('banners')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting banner:', error);
+      throw error;
+    }
 }

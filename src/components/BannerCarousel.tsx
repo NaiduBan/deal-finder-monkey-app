@@ -1,28 +1,37 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { BannerItem } from '@/types';
+import { getBanners } from '@/services/api';
 
-interface BannerCarouselProps {
-  banners: BannerItem[];
-}
-
-const BannerCarousel = ({ banners }: BannerCarouselProps) => {
+const BannerCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  const { data: banners, isLoading } = useQuery<BannerItem[]>({
+    queryKey: ['banners'],
+    queryFn: getBanners
+  });
+
   useEffect(() => {
-    if (banners.length <= 1) return;
+    if (!banners || banners.length <= 1) return;
 
     const interval = setInterval(() => {
       setCurrentIndex(prevIndex => 
-        prevIndex === banners.length - 1 ? 0 : prevIndex + 1
+        prevIndex === (banners?.length ?? 0) - 1 ? 0 : prevIndex + 1
       );
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [banners.length]);
+  }, [banners]);
 
-  if (!banners.length) return null;
+  if (isLoading) {
+    return (
+      <div className="relative overflow-hidden rounded-xl h-40 bg-gray-200 animate-pulse"></div>
+    );
+  }
+
+  if (!banners || banners.length === 0) return null;
 
   return (
     <div className="relative overflow-hidden rounded-xl">

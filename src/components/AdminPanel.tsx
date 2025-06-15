@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import AdminOffersManager from './AdminOffersManager';
 import AdminCuelinkManager from './AdminCuelinkManager';
 import AdminCategoriesManager from './AdminCategoriesManager';
 import AdminSettings from './AdminSettings';
+import AdminBannersManager from './AdminBannersManager';
 import { 
   LogOut, 
   BarChart3, 
@@ -16,7 +18,8 @@ import {
   Package, 
   FolderOpen, 
   Settings,
-  Shield
+  Shield,
+  LayoutGrid
 } from 'lucide-react';
 
 const AdminPanel = () => {
@@ -65,7 +68,7 @@ const AdminPanel = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 lg:w-fit">
+          <TabsList className="grid w-full grid-cols-7 lg:w-fit">
             <TabsTrigger value="dashboard" className="flex items-center space-x-2">
               <BarChart3 className="h-4 w-4" />
               <span className="hidden sm:inline">Dashboard</span>
@@ -81,6 +84,10 @@ const AdminPanel = () => {
             <TabsTrigger value="cuelink" className="flex items-center space-x-2">
               <Package className="h-4 w-4" />
               <span className="hidden sm:inline">Cuelink</span>
+            </TabsTrigger>
+            <TabsTrigger value="banners" className="flex items-center space-x-2">
+              <LayoutGrid className="h-4 w-4" />
+              <span className="hidden sm:inline">Banners</span>
             </TabsTrigger>
             <TabsTrigger value="categories" className="flex items-center space-x-2">
               <FolderOpen className="h-4 w-4" />
@@ -106,6 +113,10 @@ const AdminPanel = () => {
           
           <TabsContent value="cuelink">
             <AdminCuelinkManager />
+          </TabsContent>
+
+          <TabsContent value="banners">
+            <AdminBannersManager />
           </TabsContent>
           
           <TabsContent value="categories">
