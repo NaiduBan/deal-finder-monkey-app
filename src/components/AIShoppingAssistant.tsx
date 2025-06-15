@@ -1,68 +1,61 @@
 
-import React, { useState, useEffect } from 'react';
-import { Bot, Mic, MicOff, Bell, TrendingUp, Search, Heart } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Bot, Mic, Search, Heart, TrendingUp, Zap, MessageCircle, Volume2, Sparkles, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
+import { Link } from 'react-router-dom';
+import VoiceInterface from './VoiceInterface';
 
-// Extend Window interface for Speech Recognition
-declare global {
-  interface Window {
-    webkitSpeechRecognition: any;
-    SpeechRecognition: any;
-  }
+interface Message {
+  id: string;
+  text: string;
+  isUser: boolean;
+  timestamp: Date;
+  hasAudio?: boolean;
 }
 
 const AIShoppingAssistant = () => {
-  const [isListening, setIsListening] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [priceAlerts, setPriceAlerts] = useState([]);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 'welcome',
+      text: "Hello! 👋 I'm your OffersMonkey AI Assistant. I can help you find amazing deals, answer questions, and even have voice conversations! Try asking me about deals or use the voice feature below.",
+      isUser: false,
+      timestamp: new Date()
+    }
+  ]);
+  const [inputText, setInputText] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [currentMode, setCurrentMode] = useState<'text' | 'voice'>('text');
   const [recommendations, setRecommendations] = useState([]);
-  const [voiceText, setVoiceText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  
   const isMobile = useIsMobile();
   const { user } = useUser();
   const { offers } = useData();
+  const { session } = useAuth();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Voice recognition setup
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-      const recognition = new SpeechRecognition();
-      
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setVoiceText(transcript);
-        setSearchQuery(transcript);
-        handleVoiceSearch(transcript);
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-
-      if (isListening) {
-        recognition.start();
-      }
-
-      return () => {
-        recognition.stop();
-      };
-    }
-  }, [isListening]);
+    scrollToBottom();
+  }, [messages]);
 
   // Generate AI recommendations based on user behavior
   useEffect(() => {
     const generateRecommendations = () => {
       if (offers && offers.length > 0) {
-        // Simple ML-like algorithm based on user's saved offers and browsing patterns
         const userCategories = user.savedOffers.length > 0 
           ? offers.filter(offer => user.savedOffers.includes(offer.id))
                   .map(offer => offer.category)
@@ -75,7 +68,7 @@ const AIShoppingAssistant = () => {
           categoryPreferences.some(cat => 
             offer.category && offer.category.toLowerCase().includes(cat.toLowerCase())
           )
-        ).slice(0, 5);
+        ).slice(0, 4);
 
         setRecommendations(recommended);
       }
@@ -84,145 +77,387 @@ const AIShoppingAssistant = () => {
     generateRecommendations();
   }, [offers, user.savedOffers]);
 
-  const handleVoiceSearch = (query: string) => {
-    console.log('Voice search:', query);
-    // Implement voice-based deal discovery logic here
+  const getUserContext = async () => {
+    if (!session?.user) return null;
+
+    try {
+      const { data: savedOffers } = await supabase
+        .from('saved_offers')
+        .select('offer_id')
+        .eq('user_id', session.user.id);
+
+      return {
+        location: user?.location || 'Not specified',
+        savedOffersCount: savedOffers?.length || 0,
+        userInfo: {
+          name: user?.name || 'User',
+          email: user?.email || session.user.email
+        }
+      };
+    } catch (error) {
+      console.error('Error getting user context:', error);
+      return null;
+    }
   };
 
-  const toggleVoiceRecognition = () => {
-    setIsListening(!isListening);
-  };
+  const sendMessage = async (text: string, fromVoice = false) => {
+    if (!text.trim() || isProcessing || !session?.user) return;
 
-  const createPriceAlert = (offerId: string) => {
-    const newAlert = {
-      id: Date.now(),
-      offerId,
-      createdAt: new Date(),
-      threshold: 'any_price_drop'
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
+      text,
+      isUser: true,
+      timestamp: new Date()
     };
-    setPriceAlerts([...priceAlerts, newAlert]);
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputText('');
+    setIsProcessing(true);
+    setIsTyping(true);
+
+    try {
+      const context = await getUserContext();
+      
+      const { data, error } = await supabase.functions.invoke('chat-with-ai', {
+        body: {
+          message: text,
+          context: context
+        }
+      });
+
+      if (error) throw error;
+
+      const botMessage: Message = {
+        id: `bot-${Date.now()}`,
+        text: data.response,
+        isUser: false,
+        timestamp: new Date(),
+        hasAudio: fromVoice
+      };
+
+      setMessages(prev => [...prev, botMessage]);
+
+      // If request came from voice, play audio response
+      if (fromVoice) {
+        await playAudioResponse(data.response);
+      }
+
+      toast({
+        title: "AI Response",
+        description: "Got a personalized response!",
+      });
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      
+      const errorMessage: Message = {
+        id: `bot-error-${Date.now()}`,
+        text: "I'm having trouble connecting right now. Please try again in a moment! 🐒",
+        isUser: false,
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, errorMessage]);
+      
+      toast({
+        title: "Connection Error",
+        description: "Unable to get AI response. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+      setIsTyping(false);
+    }
   };
+
+  const playAudioResponse = async (text: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('text-to-speech', {
+        body: { text, voice: 'alloy' }
+      });
+
+      if (error) throw error;
+
+      if (data?.audioContent) {
+        const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
+        await audio.play();
+      }
+    } catch (error) {
+      console.error('Error playing audio response:', error);
+    }
+  };
+
+  const handleVoiceTranscription = (text: string) => {
+    setInputText(text);
+    sendMessage(text, true);
+  };
+
+  const handleTextSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessage(inputText);
+  };
+
+  const quickActions = [
+    "Show me today's best deals",
+    "Find electronics offers",
+    "What's trending now?",
+    "Help me save money"
+  ];
 
   return (
-    <div className={`bg-monkeyBackground min-h-screen ${isMobile ? 'p-4 pb-20' : 'max-w-6xl mx-auto p-6'}`}>
+    <div className={`min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 ${isMobile ? 'pb-16' : ''}`}>
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center space-x-3 mb-2">
-          <div className="w-10 h-10 bg-monkeyGreen rounded-full flex items-center justify-center">
-            <Bot className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">AI Shopping Assistant</h1>
-            <p className="text-gray-600">Your personal deal finder powered by AI</p>
+      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Link to="/home" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <ArrowLeft className="w-5 h-5 text-gray-600" />
+              </Link>
+              <div className="flex items-center space-x-3">
+                <div className="relative">
+                  <div className="w-12 h-12 bg-gradient-to-br from-monkeyGreen to-green-600 rounded-full flex items-center justify-center">
+                    <Bot className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900">AI Shopping Assistant</h1>
+                  <div className="flex items-center space-x-2">
+                    <Sparkles className="w-4 h-4 text-monkeyGreen" />
+                    <span className="text-sm text-gray-600">Powered by Advanced AI</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Button
+                variant={currentMode === 'text' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCurrentMode('text')}
+              >
+                <MessageCircle className="w-4 h-4 mr-1" />
+                Text
+              </Button>
+              <Button
+                variant={currentMode === 'voice' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCurrentMode('voice')}
+              >
+                <Mic className="w-4 h-4 mr-1" />
+                Voice
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Voice Search Section */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Mic className="w-5 h-5" />
-            <span>Voice Deal Discovery</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex space-x-3">
-            <div className="flex-1">
-              <Input
-                placeholder="Say something like 'Find me laptop deals under 50000'"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="mb-2"
-              />
-              {voiceText && (
-                <p className="text-sm text-gray-600">Heard: "{voiceText}"</p>
-              )}
-            </div>
-            <Button
-              onClick={toggleVoiceRecognition}
-              variant={isListening ? "destructive" : "default"}
-              className={isListening ? "bg-red-500 hover:bg-red-600" : "bg-monkeyGreen hover:bg-monkeyGreen/90"}
-            >
-              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="max-w-6xl mx-auto p-4">
+        <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'}`}>
+          {/* Main Chat Area */}
+          <div className={`${isMobile ? 'order-1' : 'lg:col-span-2'} space-y-4`}>
+            {/* Chat Messages */}
+            <Card className="h-96">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center space-x-2">
+                  <Bot className="w-5 h-5" />
+                  <span>AI Conversation</span>
+                  {isProcessing && (
+                    <div className="flex items-center space-x-1 text-monkeyGreen">
+                      <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce delay-100"></div>
+                      <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce delay-200"></div>
+                    </div>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-64 pr-4">
+                  <div className="space-y-4">
+                    {messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div className={`max-w-xs lg:max-w-md ${message.isUser ? 'order-2' : 'order-1'}`}>
+                          <div
+                            className={`rounded-2xl px-4 py-3 ${
+                              message.isUser
+                                ? 'bg-monkeyGreen text-white rounded-br-md'
+                                : 'bg-white border border-gray-200 text-gray-800 rounded-bl-md shadow-sm'
+                            }`}
+                          >
+                            <p className="text-sm leading-relaxed">{message.text}</p>
+                            <div className="flex items-center justify-between mt-2">
+                              <span className={`text-xs ${message.isUser ? 'text-green-100' : 'text-gray-400'}`}>
+                                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              {message.hasAudio && !message.isUser && (
+                                <Volume2 className="w-3 h-3 text-monkeyGreen" />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          message.isUser ? 'order-1 ml-3 bg-gray-400' : 'order-2 mr-3 bg-monkeyGreen'
+                        }`}>
+                          {message.isUser ? (
+                            <span className="text-white text-xs font-medium">
+                              {user?.name?.charAt(0) || 'U'}
+                            </span>
+                          ) : (
+                            <Bot className="w-4 h-4 text-white" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
 
-      {/* AI Recommendations */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <TrendingUp className="w-5 h-5" />
-            <span>Smart Recommendations</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-3'}`}>
-            {recommendations.map((offer: any) => (
-              <div key={offer.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-semibold text-sm">{offer.title}</h3>
-                  <Badge variant="secondary" className="text-xs">
-                    {offer.discount}% off
-                  </Badge>
-                </div>
-                <p className="text-gray-600 text-sm mb-2">{offer.store}</p>
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-monkeyGreen">₹{offer.price}</span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => createPriceAlert(offer.id)}
-                    className="text-xs"
-                  >
-                    <Bell className="w-3 h-3 mr-1" />
-                    Alert
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-          {recommendations.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <Bot className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Start saving offers to get personalized recommendations!</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Price Alerts */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Bell className="w-5 h-5" />
-            <span>Active Price Alerts</span>
-            <Badge variant="secondary">{priceAlerts.length}</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {priceAlerts.length > 0 ? (
-            <div className="space-y-3">
-              {priceAlerts.map((alert: any) => (
-                <div key={alert.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="font-medium">Price alert active</p>
-                    <p className="text-sm text-gray-600">Created {alert.createdAt.toLocaleDateString()}</p>
+                    {isTyping && (
+                      <div className="flex justify-start">
+                        <div className="order-2 mr-3 w-8 h-8 rounded-full bg-monkeyGreen flex items-center justify-center">
+                          <Bot className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="order-1 max-w-xs">
+                          <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
+                            <div className="flex space-x-1">
+                              <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce"></div>
+                              <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce delay-100"></div>
+                              <div className="w-2 h-2 bg-monkeyGreen rounded-full animate-bounce delay-200"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div ref={messagesEndRef} />
                   </div>
-                  <Badge className="bg-green-100 text-green-800">Active</Badge>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+
+            {/* Input Interface */}
+            {currentMode === 'text' ? (
+              <Card>
+                <CardContent className="p-4">
+                  <form onSubmit={handleTextSubmit} className="flex space-x-3">
+                    <Input
+                      placeholder="Ask me about deals, offers, or anything else..."
+                      value={inputText}
+                      onChange={(e) => setInputText(e.target.value)}
+                      disabled={isProcessing || !session?.user}
+                      className="flex-1"
+                    />
+                    <Button 
+                      type="submit" 
+                      disabled={!inputText.trim() || isProcessing || !session?.user}
+                      className="bg-monkeyGreen hover:bg-monkeyGreen/90"
+                    >
+                      <Search className="w-4 h-4" />
+                    </Button>
+                  </form>
+                  
+                  {/* Quick Actions */}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {quickActions.map((action, index) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setInputText(action)}
+                        className="text-xs"
+                      >
+                        {action}
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <VoiceInterface
+                onTranscription={handleVoiceTranscription}
+                onAudioResponse={() => {}}
+                isProcessing={isProcessing}
+              />
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <div className={`space-y-4 ${isMobile ? 'order-2' : ''}`}>
+            {/* Smart Recommendations */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <TrendingUp className="w-5 h-5" />
+                  <span>Smart Picks</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {recommendations.slice(0, 3).map((offer: any) => (
+                    <div key={offer.id} className="border rounded-lg p-3 hover:shadow-md transition-shadow">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-medium text-sm line-clamp-2">{offer.title}</h4>
+                        <Badge variant="secondary" className="text-xs">
+                          {offer.discount}%
+                        </Badge>
+                      </div>
+                      <p className="text-gray-600 text-xs mb-2">{offer.store}</p>
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-monkeyGreen text-sm">₹{offer.price}</span>
+                        <Button size="sm" variant="outline" className="text-xs">
+                          <Heart className="w-3 h-3 mr-1" />
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No active price alerts. Create one from recommendations above!</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                {recommendations.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <TrendingUp className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Save offers to get personalized recommendations!</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* AI Features */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Zap className="w-5 h-5" />
+                  <span>AI Features</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3 p-2 bg-green-50 rounded-lg">
+                    <Mic className="w-4 h-4 text-monkeyGreen" />
+                    <div>
+                      <p className="font-medium text-sm">Voice Chat</p>
+                      <p className="text-xs text-gray-600">Talk naturally with AI</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3 p-2 bg-blue-50 rounded-lg">
+                    <Search className="w-4 h-4 text-blue-600" />
+                    <div>
+                      <p className="font-medium text-sm">Smart Search</p>
+                      <p className="text-xs text-gray-600">Find deals with AI</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3 p-2 bg-purple-50 rounded-lg">
+                    <TrendingUp className="w-4 h-4 text-purple-600" />
+                    <div>
+                      <p className="font-medium text-sm">Predictions</p>
+                      <p className="text-xs text-gray-600">AI-powered insights</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
