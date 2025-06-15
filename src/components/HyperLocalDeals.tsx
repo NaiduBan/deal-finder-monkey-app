@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { MapPin, Navigation, Store, Clock, Phone, Star } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -118,7 +117,7 @@ const HyperLocalDeals = () => {
   };
 
   return (
-    <div className={`bg-monkeyBackground min-h-screen ${isMobile ? 'p-4 pb-20' : 'flex justify-center px-8 py-10'}`}>
+    <div className={`bg-monkeyBackground min-h-screen ${isMobile ? 'p-4 pb-20' : 'flex justify-center px-8 py-10 pt-20'}`}>
       <div className={`${isMobile ? '' : 'w-full max-w-6xl flex flex-col gap-8'}`}>
         {/* Header */}
         <div className={`${isMobile ? 'mb-6' : 'mb-8 flex items-center justify-between'}`}>
