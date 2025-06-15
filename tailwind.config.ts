@@ -77,6 +77,7 @@ export default {
                     '900': '#0a5d35',
                     '950': '#00341b',
                 },
+                monkeyGreen: '#01b85a', // Using spring-green-600 for consistency
 				monkeyYellow: {
 					DEFAULT: '#F9A825',
 					light: '#FEF7CD',

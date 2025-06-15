@@ -32,7 +32,7 @@ const Index = () => {
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-spring-green-50 to-spring-green-100 overflow-x-hidden">
       <HeroSection />
       <StatsSection />
       <LiveDealsSection />
