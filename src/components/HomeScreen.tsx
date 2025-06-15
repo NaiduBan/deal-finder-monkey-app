@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Bell, Search, AlertCircle, Bot, Users } from 'lucide-react';
+import { MapPin, Bell, Search, AlertCircle, Bot, Users, icons } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -46,6 +46,27 @@ const HomeScreen = () => {
   const [isCuelinkLoading, setIsCuelinkLoading] = useState(false);
   const [cuelinkCurrentPage, setCuelinkCurrentPage] = useState(1);
   const cuelinkItemsPerPage = 12;
+
+  const toPascalCase = (str: string) => str.replace(/(^\w|-\w)/g, c => c.replace('-', '').toUpperCase());
+
+  const categoryImageMapping: { [key: string]: string } = {
+    'electronics': 'photo-1649972904349-6e44c42644a7',
+    'tech': 'photo-1581091226825-a6a2a5aee158',
+    'home': 'photo-1721322800607-8c38375eef04',
+    'furniture': 'photo-1721322800607-8c38375eef04',
+    'travel': 'photo-1506744038136-46273834b3fb',
+    'flight': 'photo-1506744038136-46273834b3fb',
+  };
+
+  const getCategoryImage = (categoryName: string) => {
+    const name = categoryName.toLowerCase();
+    for (const key in categoryImageMapping) {
+      if (name.includes(key)) {
+        return `https://images.unsplash.com/${categoryImageMapping[key]}?w=400&auto=format&fit=crop`;
+      }
+    }
+    return null;
+  };
 
   // Debounce search input
   useEffect(() => {
@@ -517,22 +538,34 @@ const HomeScreen = () => {
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-monkeyGreen"></div>
               </div>
             ) : (
-              <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-hide">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {dynamicCategories.length > 0 ? (
-                  dynamicCategories.map((category) => (
-                    <div 
-                      key={category.id} 
-                      onClick={() => handleCategoryClick(category.id)}
-                      className={`cursor-pointer ${selectedCategory === category.id ? 'scale-110 transform transition-transform' : ''}`}
-                    >
-                      <CategoryItem key={category.id} category={category} />
-                      {selectedCategory === category.id && (
-                        <div className="h-1 w-full bg-monkeyGreen rounded-full mt-1"></div>
-                      )}
-                    </div>
-                  ))
+                  dynamicCategories.map((category) => {
+                    const imageUrl = getCategoryImage(category.name);
+                    const IconComponent = category.icon ? icons[toPascalCase(category.icon) as keyof typeof icons] : null;
+
+                    return (
+                      <div
+                        key={category.id}
+                        onClick={() => handleCategoryClick(category.id)}
+                        className={`relative aspect-[4/3] rounded-lg overflow-hidden cursor-pointer group transition-all duration-300 ${selectedCategory === category.id ? 'ring-4 ring-monkeyGreen ring-offset-2 scale-105 shadow-lg' : 'hover:scale-105 hover:shadow-md'}`}
+                      >
+                        {imageUrl ? (
+                          <img src={imageUrl} alt={category.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                        ) : (
+                          <div className="w-full h-full bg-monkeyGreen/10 flex items-center justify-center">
+                            {IconComponent ? <IconComponent className="w-10 h-10 text-monkeyGreen" /> : <div className="w-10 h-10 bg-monkeyGreen/20 rounded-full" />}
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                        <div className="absolute bottom-0 left-0 p-3">
+                          <h3 className="text-white font-semibold text-base drop-shadow-md">{category.name}</h3>
+                        </div>
+                      </div>
+                    );
+                  })
                 ) : (
-                  <div className="text-gray-500 py-2">No categories with sufficient offers available</div>
+                  <div className="col-span-full text-gray-500 py-2 text-center bg-gray-100 rounded-lg">No categories with sufficient offers available</div>
                 )}
               </div>
             )}
