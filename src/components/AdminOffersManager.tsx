@@ -193,12 +193,11 @@ const AdminOffersManager = () => {
   };
 
   const exportToCSV = () => {
-    // Following exact database column order from Offers_data table
     const headers = [
-      'lmd_id', 'title', 'description', 'long_offer', 'store', 'merchant_homepage', 
-      'categories', 'status', 'start_date', 'end_date', 'offer_value', 'offer',
-      'type', 'image_url', 'smartlink', 'url', 'publisher_exclusive', 'featured',
-      'terms_and_conditions', 'code', 'sponsored'
+      'lmd_id', 'store', 'merchant_homepage', 'long_offer', 'title', 'description', 
+      'code', 'terms_and_conditions', 'categories', 'featured', 'publisher_exclusive', 
+      'url', 'smartlink', 'image_url', 'type', 'offer', 'offer_value', 
+      'status', 'start_date', 'end_date', 'sponsored'
     ];
     
     const csvContent = [
@@ -295,25 +294,25 @@ const AdminOffersManager = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>LMD ID</TableHead>
-                  <TableHead className="min-w-[200px]">Title</TableHead>
-                  <TableHead className="min-w-[200px]">Description</TableHead>
-                  <TableHead className="min-w-[200px]">Long Offer</TableHead>
                   <TableHead>Store</TableHead>
                   <TableHead>Merchant Homepage</TableHead>
+                  <TableHead className="min-w-[200px]">Long Offer</TableHead>
+                  <TableHead className="min-w-[200px]">Title</TableHead>
+                  <TableHead className="min-w-[200px]">Description</TableHead>
+                  <TableHead>Code</TableHead>
+                  <TableHead className="min-w-[200px]">Terms & Conditions</TableHead>
                   <TableHead>Categories</TableHead>
+                  <TableHead>Featured</TableHead>
+                  <TableHead>Publisher Exclusive</TableHead>
+                  <TableHead>URL</TableHead>
+                  <TableHead>Smartlink</TableHead>
+                  <TableHead>Image URL</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead className="min-w-[200px]">Offer</TableHead>
+                  <TableHead>Offer Value</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Start Date</TableHead>
                   <TableHead>End Date</TableHead>
-                  <TableHead>Offer Value</TableHead>
-                  <TableHead className="min-w-[200px]">Offer</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Image URL</TableHead>
-                  <TableHead>Smartlink</TableHead>
-                  <TableHead>URL</TableHead>
-                  <TableHead>Publisher Exclusive</TableHead>
-                  <TableHead>Featured</TableHead>
-                  <TableHead className="min-w-[200px]">Terms & Conditions</TableHead>
-                  <TableHead>Code</TableHead>
                   <TableHead>Sponsored</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -322,36 +321,11 @@ const AdminOffersManager = () => {
                 {filteredOffers.map((offer) => (
                   <TableRow key={offer.lmd_id}>
                     <TableCell className="font-medium">{offer.lmd_id}</TableCell>
-                    <TableCell className="max-w-xs truncate">{offer.title || 'N/A'}</TableCell>
-                    <TableCell className="max-w-xs truncate">{offer.description || 'N/A'}</TableCell>
-                    <TableCell className="max-w-xs truncate">{offer.long_offer || 'N/A'}</TableCell>
                     <TableCell>{offer.store || 'N/A'}</TableCell>
                     <TableCell className="max-w-xs truncate">{offer.merchant_homepage || 'N/A'}</TableCell>
-                    <TableCell>{offer.categories || 'N/A'}</TableCell>
-                    <TableCell>
-                      <Badge variant={offer.status === 'active' ? 'default' : 'secondary'}>
-                        {offer.status || 'unknown'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{offer.start_date ? new Date(offer.start_date).toLocaleDateString() : 'N/A'}</TableCell>
-                    <TableCell>{offer.end_date ? new Date(offer.end_date).toLocaleDateString() : 'N/A'}</TableCell>
-                    <TableCell>{offer.offer_value || 'N/A'}</TableCell>
-                    <TableCell className="max-w-xs truncate">{offer.offer || 'N/A'}</TableCell>
-                    <TableCell>{offer.type || 'N/A'}</TableCell>
-                    <TableCell className="max-w-xs truncate">{offer.image_url || 'N/A'}</TableCell>
-                    <TableCell className="max-w-xs truncate">{offer.smartlink || 'N/A'}</TableCell>
-                    <TableCell className="max-w-xs truncate">{offer.url || 'N/A'}</TableCell>
-                    <TableCell>
-                      {offer.publisher_exclusive === 'true' && (
-                        <Badge variant="outline">Exclusive</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {offer.featured === 'true' && (
-                        <Badge variant="destructive">Featured</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate">{offer.terms_and_conditions || 'N/A'}</TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.long_offer || 'N/A'}</TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.title || 'N/A'}</TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.description || 'N/A'}</TableCell>
                     <TableCell>
                       {offer.code ? (
                         <Badge variant="outline">{offer.code}</Badge>
@@ -359,6 +333,31 @@ const AdminOffersManager = () => {
                         'N/A'
                       )}
                     </TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.terms_and_conditions || 'N/A'}</TableCell>
+                    <TableCell>{offer.categories || 'N/A'}</TableCell>
+                    <TableCell>
+                      {offer.featured === 'true' && (
+                        <Badge variant="destructive">Featured</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {offer.publisher_exclusive === 'true' && (
+                        <Badge variant="outline">Exclusive</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.url || 'N/A'}</TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.smartlink || 'N/A'}</TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.image_url || 'N/A'}</TableCell>
+                    <TableCell>{offer.type || 'N/A'}</TableCell>
+                    <TableCell className="max-w-xs truncate">{offer.offer || 'N/A'}</TableCell>
+                    <TableCell>{offer.offer_value || 'N/A'}</TableCell>
+                    <TableCell>
+                      <Badge variant={offer.status === 'active' ? 'default' : 'secondary'}>
+                        {offer.status || 'unknown'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{offer.start_date ? new Date(offer.start_date).toLocaleDateString() : 'N/A'}</TableCell>
+                    <TableCell>{offer.end_date ? new Date(offer.end_date).toLocaleDateString() : 'N/A'}</TableCell>
                     <TableCell>
                       <Switch
                         checked={offer.sponsored}
