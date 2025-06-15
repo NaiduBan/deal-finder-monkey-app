@@ -32,13 +32,23 @@ const StatsSection = () => {
         <div className="bg-white/80 backdrop-blur-sm py-12 lg:py-16">
             <div className="container mx-auto px-4">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-                    {(isLoading ? Array.from({ length: 4 }) : stats)?.map((stat, index) => (
+                    {isLoading && Array.from({ length: 4 }).map((_, index) => (
                         <div key={index} className="text-center animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
                             <div className="text-2xl lg:text-4xl font-bold text-monkeyGreen mb-2">
-                                {isLoading ? <Skeleton className="h-10 w-24 mx-auto" /> : stat.number}
+                                <Skeleton className="h-10 w-24 mx-auto" />
                             </div>
                             <div className="text-sm lg:text-base text-gray-600">
-                                {isLoading ? <Skeleton className="h-6 w-32 mx-auto" /> : stat.label}
+                                <Skeleton className="h-6 w-32 mx-auto" />
+                            </div>
+                        </div>
+                    ))}
+                    {!isLoading && stats?.map((stat, index) => (
+                        <div key={index} className="text-center animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
+                            <div className="text-2xl lg:text-4xl font-bold text-monkeyGreen mb-2">
+                                {stat.number}
+                            </div>
+                            <div className="text-sm lg:text-base text-gray-600">
+                                {stat.label}
                             </div>
                         </div>
                     ))}

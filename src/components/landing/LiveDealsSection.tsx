@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -58,8 +57,6 @@ const LiveDealsSection = () => {
         };
     }, []);
 
-    const offersToDisplay = isLoading ? Array.from({ length: 4 }) : latestOffers;
-
     return (
         <div className="container mx-auto px-4 py-12 lg:py-16">
             <Toaster richColors position="top-center" />
@@ -72,8 +69,7 @@ const LiveDealsSection = () => {
                 </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-                {offersToDisplay.map((offer, index) =>
-                  isLoading || !offer ? (
+                {isLoading && Array.from({ length: 4 }).map((_, index) => (
                     <div key={index}>
                       <Skeleton className="aspect-video w-full rounded-t-xl" />
                       <div className="p-4 space-y-2">
@@ -82,12 +78,12 @@ const LiveDealsSection = () => {
                         <Skeleton className="h-4 w-full" />
                       </div>
                     </div>
-                  ) : (
+                ))}
+                {!isLoading && latestOffers.map((offer) => (
                     <div className="animate-scale-in" key={offer.id}>
                       <OfferCard offer={offer} />
                     </div>
-                  )
-                )}
+                ))}
             </div>
         </div>
     );
