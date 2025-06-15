@@ -7,25 +7,25 @@
 
 @layer base {
   :root {
-    --background: 120 20% 98%; /* Off-white with green tint */
-    --foreground: 224 71% 4%; /* Dark Blue/Almost Black */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 224 71% 4%;
+    --card-foreground: 222.2 84% 4.9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 224 71% 4%;
+    --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 124 34% 20%; /* Deep Green */
-    --primary-foreground: 0 0% 100%;
+    --primary: 122 47% 34%;
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 145 58% 59%; /* Light Green */
-    --secondary-foreground: 124 34% 20%;
+    --secondary: 120 40% 75%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 45 95% 55%; /* Bright Yellow/Gold */
+    --accent: 39 95% 55%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
@@ -33,16 +33,9 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 124 34% 20%; /* Ring is primary green */
+    --ring: 122 47% 34%;
 
-    --radius: 0.75rem;
-
-    /* New Brand colors */
-    --brand-primary: 124 34% 20%; /* #1E4620 */
-    --brand-primary-light: 145 58% 59%; /* #66BB6A */
-    --brand-secondary: 45 95% 55%; /* #F9A825 */
-    --brand-background: 120 20% 98%; /* #F7FAF7 */
-    --brand-foreground: 224 71% 4%;
+    --radius: 1rem;
   }
 
   .dark {
@@ -55,16 +48,16 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 124 34% 30%;
+    --primary: 122 47% 34%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 145 58% 40%;
+    --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
 
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 45 95% 55%;
+    --accent: 39 95% 55%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 62.8% 30.6%;
@@ -72,7 +65,7 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 124 34% 30%;
+    --ring: 122 47% 34%;
   }
 }
 
@@ -82,7 +75,7 @@
   }
 
   body {
-    @apply bg-brand-background text-brand-foreground font-montserrat;
+    @apply bg-background text-foreground font-montserrat;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -91,31 +84,47 @@
 }
 
 @layer components {
-  /* Replaced monkey classes with brand classes */
-  .brand-gradient {
-    @apply bg-gradient-to-br from-primary to-secondary;
+  .monkey-gradient {
+    @apply bg-gradient-to-b from-green-600 to-green-500;
   }
   
-  .brand-button {
-    @apply bg-accent text-accent-foreground font-semibold py-3 px-6 rounded-full shadow-md hover:shadow-lg transition-all duration-300 active:scale-95;
+  .monkey-button {
+    @apply bg-yellow-400 text-black font-semibold py-3 px-6 rounded-full shadow-md hover:shadow-lg transition-all duration-300 active:scale-95;
   }
 
   .category-card {
-    @apply bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-transparent hover:border-primary hover:shadow-lg transition-all flex flex-col items-center justify-center gap-2 cursor-pointer;
+    @apply bg-white dark:bg-gray-800 rounded-xl p-4 shadow-md flex flex-col items-center justify-center gap-2;
   }
 
   .offer-card {
-    @apply bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md transition-all hover:shadow-lg;
+    @apply bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md;
   }
 }
 
 /* Custom animations */
 @keyframes splash-logo {
-/* ... keep existing code */
+  0% {
+    transform: scale(0.8) rotate(-10deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1) rotate(5deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
 }
 
 @keyframes fade-up {
-/* ... keep existing code */
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-splash-logo {

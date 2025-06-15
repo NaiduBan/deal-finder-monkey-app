@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Bell, Search, AlertCircle, Bot, Users } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from '@/components/ui/card';
 import { useUser } from '@/contexts/UserContext';
@@ -15,7 +16,6 @@ import { fetchCuelinkOffers } from '@/services/cuelinkService';
 import { Category, Offer, CuelinkOffer } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import CuelinkPagination from './CuelinkPagination';
-import SearchBar from './SearchBar'; // New search bar
 
 const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -363,376 +363,422 @@ const HomeScreen = () => {
   };
 
   return (
-    <div className={`min-h-screen ${isMobile ? 'pb-16' : 'py-8'}`}>
-      <div className="container mx-auto px-4 space-y-8">
-        {/* New Welcome Header */}
-        <header className="py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800">
-                Welcome back, {user?.name?.split(' ')[0] || 'friend'}!
-              </h1>
-              <p className="text-gray-500">Let's find you some great deals today.</p>
+    <div className={`bg-monkeyBackground min-h-screen ${isMobile ? 'pb-16' : 'pt-20'}`}>
+      {/* Mobile Header with location - only show on mobile */}
+      {isMobile && (
+        <div className="bg-monkeyGreen text-white py-4 px-4 sticky top-0 z-10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-1">
+              <MapPin className="w-4 h-4" />
+              <span className="text-sm">{user.location}</span>
             </div>
-            <Link to="/notifications" className="relative">
-              <Bell className="w-6 h-6 text-gray-600" />
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-accent text-xs text-white absolute -top-1 -right-1">
-                3
-              </span>
-            </Link>
-          </div>
-        </header>
-
-        {/* Search Bar */}
-        <SearchBar
-          value={searchQuery}
-          onChange={handleSearch}
-        />
-
-        {/* New Features Section */}
-        <div>
-          <h2 className="text-xl font-bold mb-4">Smart Shopping</h2>
-          <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-3'}`}>
-            <Link to="/ai-assistant" className="block">
-              <Card className="p-4 flex items-center gap-4 bg-gradient-to-br from-blue-50 to-indigo-100 border-blue-200">
-                <div className="p-3 bg-blue-200 rounded-full">
-                  <Bot className="w-6 h-6 text-blue-800" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-blue-900">AI Assistant</h3>
-                  <p className="text-sm text-blue-700">Voice search & recommendations</p>
-                </div>
-              </Card>
-            </Link>
-            <Link to="/local-deals" className="block">
-              <Card className="p-4 flex items-center gap-4 bg-gradient-to-br from-green-50 to-emerald-100 border-green-200">
-                <div className="p-3 bg-green-200 rounded-full">
-                  <MapPin className="w-6 h-6 text-green-800" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-green-900">Local Deals</h3>
-                  <p className="text-sm text-green-700">Explore deals in your area</p>
-                </div>
-              </Card>
-            </Link>
-            <Link to="/social-shopping" className="block">
-              <Card className="p-4 flex items-center gap-4 bg-gradient-to-br from-purple-50 to-pink-100 border-purple-200">
-                <div className="p-3 bg-purple-200 rounded-full">
-                  <Users className="w-6 h-6 text-purple-800" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-purple-900">Social Shopping</h3>
-                  <p className="text-sm text-purple-700">Group buys & community deals</p>
-                </div>
-              </Card>
-            </Link>
+            <div className="flex items-center space-x-3">
+              <Link to="/notifications" className="flex items-center">
+                <Bell className="w-5 h-5 text-white" />
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-monkeyYellow text-[10px] text-black absolute translate-x-3 -translate-y-2">
+                  3
+                </span>
+              </Link>
+            </div>
           </div>
         </div>
-          
-        {/* Data source alert */}
-        {isUsingMockData && (
-          <Alert className="bg-amber-50 border-amber-200">
-            <AlertCircle className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="text-amber-700">
-              You're viewing mock data. Please check your database connection for live offers.
-            </AlertDescription>
-          </Alert>
-        )}
-          
-        {/* Personalization badge */}
-        {hasLoadedPreferences && (
-          userPreferences.brands.length > 0 || 
-          userPreferences.stores.length > 0 || 
-          userPreferences.banks.length > 0
-        ) && (
-          <div className="bg-primary/10 p-4 rounded-xl flex justify-between items-center">
-            <div>
-              <h3 className="font-medium text-primary">Personalized for You</h3>
-              <p className="text-xs text-gray-600">Offers are filtered based on your preferences</p>
-            </div>
-            <Link 
-              to="/preferences/brands" 
-              className="bg-primary text-primary-foreground text-sm px-4 py-2 rounded-full font-semibold"
-            >
-              Edit
-            </Link>
-          </div>
-        )}
-          
-        {/* Categories carousel */}
-        <div>
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="font-bold text-xl">Top Categories</h2>
-            <Link to="/preferences/brands" className="text-primary font-medium text-sm hover:underline">
-              Set preferences
-            </Link>
-          </div>
-            
-          {isDataLoading ? (
-            <div className="flex justify-center py-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : (
-            <div className="flex space-x-4 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
-              {dynamicCategories.length > 0 ? (
-                dynamicCategories.map((category) => (
-                  <div 
-                    key={category.id} 
-                    onClick={() => handleCategoryClick(category.id)}
-                    className={`flex-shrink-0 ${selectedCategory === category.id ? 'scale-105 transform transition-transform' : ''}`}
-                  >
-                    <CategoryItem key={category.id} category={category} />
-                    {selectedCategory === category.id && (
-                      <div className="h-1 w-3/4 mx-auto bg-primary rounded-full mt-1.5"></div>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <div className="text-gray-500 py-2 w-full text-center">No categories with sufficient offers available</div>
-              )}
+      )}
+      
+      {/* Main content - desktop with max-width container */}
+      <div className={`space-y-6 ${isMobile ? 'p-4' : 'w-full'}`}>
+        <div className={`${!isMobile ? 'max-w-[1440px] mx-auto px-6 py-8' : ''}`}>
+          {/* Desktop welcome section */}
+          {!isMobile && (
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Welcome back!</h1>
+                <div className="flex items-center space-x-2 mt-2">
+                  <MapPin className="w-4 h-4 text-gray-500" />
+                  <span className="text-gray-600">{user.location}</span>
+                </div>
+              </div>
+              <Link to="/notifications" className="flex items-center bg-monkeyGreen text-white px-4 py-2 rounded-lg hover:bg-monkeyGreen/90 transition-colors">
+                <Bell className="w-5 h-5 mr-2" />
+                <span>Notifications</span>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-monkeyYellow text-xs text-black ml-2">
+                  3
+                </span>
+              </Link>
             </div>
           )}
-        </div>
           
-        {/* Active filters */}
-        {(selectedCategory || debouncedSearchTerm) && (
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-sm font-medium mr-2">Active Filters:</h3>
-            {selectedCategory && (
-              <div className="bg-primary/10 text-primary pl-3 pr-2 py-1 rounded-full text-sm flex items-center gap-1">
-                {dynamicCategories.find(c => c.id === selectedCategory)?.name}
-                <button 
-                  onClick={() => setSelectedCategory(null)}
-                  className="text-primary/70 hover:text-primary"
-                >
-                  <AlertCircle className="w-4 h-4" />
-                </button>
+          {/* New Features Section */}
+          <div className="mb-6">
+            <h2 className="font-bold text-lg mb-3">Smart Shopping Features</h2>
+            <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-3'}`}>
+              <Link to="/ai-assistant" className="block">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Bot className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-blue-900">AI Assistant</h3>
+                        <p className="text-sm text-blue-600">Voice search & smart recommendations</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              <Link to="/local-deals" className="block">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <MapPin className="w-6 h-6 text-green-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-green-900">Local Deals</h3>
+                        <p className="text-sm text-green-600">Nearby stores & restaurants</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              <Link to="/social-shopping" className="block">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                        <Users className="w-6 h-6 text-purple-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-purple-900">Social Shopping</h3>
+                        <p className="text-sm text-purple-600">Group buys & community deals</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            </div>
+          </div>
+          
+          {/* Data source alert */}
+          {isUsingMockData && (
+            <Alert className="bg-amber-50 border-amber-200 mb-6">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-700">
+                No real offers found in the Offers_data table. Please check your database.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {/* Personalization badge */}
+          {hasLoadedPreferences && (
+            userPreferences.brands.length > 0 || 
+            userPreferences.stores.length > 0 || 
+            userPreferences.banks.length > 0
+          ) && (
+            <div className="bg-monkeyGreen/10 p-3 rounded-lg flex justify-between items-center mb-6">
+              <div>
+                <h3 className="font-medium text-monkeyGreen">Personalized for You</h3>
+                <p className="text-xs text-gray-600">Offers are filtered based on your preferences</p>
+              </div>
+              <Link 
+                to="/preferences/brands" 
+                className="bg-monkeyGreen text-white text-sm px-3 py-1 rounded-full"
+              >
+                Edit
+              </Link>
+            </div>
+          )}
+          
+          {/* Search Bar */}
+          <div className="relative mb-6">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              type="search"
+              placeholder="Search for offers, stores, categories..."
+              className="pl-10 pr-4 py-2 w-full border-gray-200"
+              value={searchQuery}
+              onChange={handleSearch}
+            />
+          </div>
+          
+          {/* Categories carousel with active state */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="font-bold text-lg">For You</h2>
+              <Link to="/preferences/brands" className="text-monkeyGreen text-sm">
+                Set preferences
+              </Link>
+            </div>
+            
+            {isDataLoading ? (
+              <div className="flex justify-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-monkeyGreen"></div>
+              </div>
+            ) : (
+              <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-hide">
+                {dynamicCategories.length > 0 ? (
+                  dynamicCategories.map((category) => (
+                    <div 
+                      key={category.id} 
+                      onClick={() => handleCategoryClick(category.id)}
+                      className={`cursor-pointer ${selectedCategory === category.id ? 'scale-110 transform transition-transform' : ''}`}
+                    >
+                      <CategoryItem key={category.id} category={category} />
+                      {selectedCategory === category.id && (
+                        <div className="h-1 w-full bg-monkeyGreen rounded-full mt-1"></div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-gray-500 py-2">No categories with sufficient offers available</div>
+                )}
               </div>
             )}
-            {debouncedSearchTerm && (
-              <div className="bg-primary/10 text-primary pl-3 pr-2 py-1 rounded-full text-sm flex items-center gap-1">
-                "{debouncedSearchTerm}"
+          </div>
+          
+          {/* Active filters */}
+          {(selectedCategory || debouncedSearchTerm) && (
+            <div className="flex flex-wrap gap-2 mb-6">
+              {selectedCategory && (
+                <div className="bg-monkeyGreen/10 text-monkeyGreen px-3 py-1 rounded-full text-sm flex items-center">
+                  {dynamicCategories.find(c => c.id === selectedCategory)?.name}
+                  <button 
+                    onClick={() => setSelectedCategory(null)}
+                    className="ml-1 text-monkeyGreen"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+              {debouncedSearchTerm && (
+                <div className="bg-monkeyGreen/10 text-monkeyGreen px-3 py-1 rounded-full text-sm flex items-center">
+                  "{debouncedSearchTerm}"
+                  <button 
+                    onClick={() => {
+                      setSearchQuery('');
+                      setDebouncedSearchTerm('');
+                    }}
+                    className="ml-1 text-monkeyGreen"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+              {(selectedCategory || debouncedSearchTerm) && (
                 <button 
                   onClick={() => {
+                    setSelectedCategory(null);
                     setSearchQuery('');
                     setDebouncedSearchTerm('');
                   }}
-                  className="text-primary/70 hover:text-primary"
+                  className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-600"
                 >
-                  <AlertCircle className="w-4 h-4" />
+                  Clear all
                 </button>
-              </div>
-            )}
-            <button 
-              onClick={() => {
-                setSelectedCategory(null);
-                setSearchQuery('');
-                setDebouncedSearchTerm('');
-              }}
-              className="text-sm text-gray-500 hover:text-gray-800 underline"
-            >
-              Clear all
-            </button>
-          </div>
-        )}
-          
-        {/* Offers section */}
-        <div>
-          <Tabs defaultValue="all">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="font-bold text-xl">Today's Deals</h2>
-              <TabsList className="bg-gray-200/50 p-1 rounded-full">
-                <TabsTrigger value="all" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md rounded-full px-4">All</TabsTrigger>
-                <TabsTrigger value="nearby" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md rounded-full px-4">Nearby</TabsTrigger>
-                <TabsTrigger value="flash" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md rounded-full px-4">Flash</TabsTrigger>
-                <TabsTrigger value="amazon" className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md rounded-full px-4">Amazon</TabsTrigger>
-              </TabsList>
+              )}
             </div>
-            
-            <TabsContent value="all" className="space-y-4 mt-2">
-              {isDataLoading || isLoading ? (
-                <div className="flex justify-center items-center py-10">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+          )}
+          
+          {/* Offers section */}
+          <div>
+            <Tabs defaultValue="all">
+              <div className="flex justify-between items-center mb-3">
+                <h2 className="font-bold text-lg">Today's Offers</h2>
+                <TabsList>
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="nearby">Nearby</TabsTrigger>
+                  <TabsTrigger value="flash">Flash Deals</TabsTrigger>
+                  <TabsTrigger value="amazon">Amazon</TabsTrigger>
+                </TabsList>
+              </div>
+              
+              <TabsContent value="all" className="space-y-4 mt-2">
+                {isDataLoading || isLoading ? (
+                  <div className="flex justify-center items-center py-10">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-monkeyGreen"></div>
+                  </div>
+                ) : (
+                  <>
+                    {error && (
+                      <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                        <p className="text-red-600">Error loading offers: {error.message}</p>
+                      </div>
+                    )}
+                    
+                    {!error && displayedOffers.length > 0 ? (
+                      <div className={`grid gap-4 ${
+                        isMobile 
+                          ? 'grid-cols-2' 
+                          : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                      }`}>
+                        {displayedOffers.map((offer) => (
+                          <Link key={offer.id} to={`/offer/${offer.id}`}>
+                            <OfferCard offer={offer} />
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      !error && (
+                        <div className="bg-white p-6 rounded-lg text-center shadow-sm">
+                          <p className="text-gray-500">No offers found</p>
+                          <p className="text-sm text-gray-400 mt-2">
+                            {offers.length === 0 
+                              ? "No offers available in the Offers_data table" 
+                              : "Try a different search term or check back later"
+                            }
+                          </p>
+                          <div className="mt-4 flex flex-col gap-2">
+                            <button
+                              onClick={refetchOffers}
+                              className="bg-monkeyGreen text-white px-4 py-2 rounded-lg w-full"
+                            >
+                              Refresh Data
+                            </button>
+                            
+                            {offers.length > 0 && (
+                              <Link 
+                                to="/preferences/brands" 
+                                className="border border-monkeyGreen text-monkeyGreen px-4 py-2 rounded-lg text-center"
+                              >
+                                Adjust Preferences
+                              </Link>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </>
+                )}
+                
+                {!isDataLoading && !error && displayedOffers.length > 0 && (
+                  <button 
+                    onClick={loadMoreOffers}
+                    className="w-full py-3 text-center text-monkeyGreen border border-monkeyGreen rounded-lg mt-4 flex items-center justify-center"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 rounded-full border-2 border-monkeyGreen border-t-transparent animate-spin"></div>
+                        <span>Loading more...</span>
+                      </div>
+                    ) : (
+                      <span>Load more</span>
+                    )}
+                  </button>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="nearby" className="space-y-4">
+                <div className={`grid gap-4 ${
+                  isMobile 
+                    ? 'grid-cols-2' 
+                    : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                }`}>
+                  {displayedOffers.filter(offer => !offer.isAmazon).map((offer) => (
+                    <Link key={offer.id} to={`/offer/${offer.id}`}>
+                      <OfferCard offer={offer} />
+                    </Link>
+                  ))}
                 </div>
-              ) : (
-                <>
-                  {error && (
-                    <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                      <p className="text-red-600">Error loading offers: {error.message}</p>
-                    </div>
-                  )}
-                  
-                  {!error && displayedOffers.length > 0 ? (
-                    <div className={`grid gap-4 ${
-                      isMobile 
-                        ? 'grid-cols-2' 
-                        : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
-                    }`}>
-                      {displayedOffers.map((offer) => (
-                        <Link key={offer.id} to={`/offer/${offer.id}`}>
-                          <OfferCard offer={offer} />
-                        </Link>
-                      ))}
-                    </div>
-                  ) : (
-                    !error && (
-                      <div className="bg-white p-8 rounded-xl text-center shadow-sm">
-                        <h3 className="font-bold text-lg text-gray-700">No Offers Found</h3>
-                        <p className="text-sm text-gray-500 mt-2">
-                          {offers.length === 0 
-                            ? "We couldn't find any offers right now. Please check back later." 
-                            : "Try adjusting your search or preferences to see more results."
+                
+                {displayedOffers.filter(offer => !offer.isAmazon).length === 0 && (
+                  <div className="bg-white p-6 rounded-lg text-center shadow-sm">
+                    <p className="text-gray-500">No nearby offers found</p>
+                    {offers.length > 0 && (
+                      <Link 
+                        to="/preferences/stores" 
+                        className="mt-4 text-monkeyGreen block underline"
+                      >
+                        Adjust store preferences
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="flash" className="space-y-4">
+                {isCuelinkLoading ? (
+                  <div className="flex justify-center items-center py-10">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-monkeyGreen"></div>
+                  </div>
+                ) : (
+                  <>
+                    {paginatedCuelinkOffers.length > 0 ? (
+                      <>
+                        <div className="mb-4 text-sm text-gray-600">
+                          Showing {((cuelinkCurrentPage - 1) * cuelinkItemsPerPage) + 1}-{Math.min(cuelinkCurrentPage * cuelinkItemsPerPage, displayedCuelinkOffers.length)} of {displayedCuelinkOffers.length} flash deals
+                        </div>
+                        <div className={`grid gap-4 ${
+                          isMobile 
+                            ? 'grid-cols-1 sm:grid-cols-2' 
+                            : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+                        }`}>
+                          {paginatedCuelinkOffers.map((offer) => (
+                            <CuelinkOfferCard key={offer.Id} offer={offer} />
+                          ))}
+                        </div>
+                        <CuelinkPagination 
+                          currentPage={cuelinkCurrentPage}
+                          totalPages={totalCuelinkPages}
+                          onPageChange={handleCuelinkPageChange}
+                        />
+                      </>
+                    ) : (
+                      <div className="bg-white p-6 rounded-lg text-center shadow-sm">
+                        <p className="text-gray-500">No flash deals found</p>
+                        <p className="text-sm text-gray-400 mt-2">
+                          {cuelinkOffers.length === 0 
+                            ? "No flash deals available in the Cuelink_data table" 
+                            : "Try a different search term or check back later"
                           }
                         </p>
-                        <div className="mt-6 flex flex-col gap-3">
-                          <button
-                            onClick={refetchOffers}
-                            className="bg-primary text-white px-5 py-2.5 rounded-full w-full font-semibold"
-                          >
-                            Refresh Data
-                          </button>
-                          
-                          {offers.length > 0 && (
-                            <Link 
-                              to="/preferences/brands" 
-                              className="border border-primary text-primary px-5 py-2.5 rounded-full text-center font-semibold"
-                            >
-                              Adjust Preferences
-                            </Link>
+                        <div className="mt-4">
+                          <p className="text-xs text-gray-400">
+                            Total Cuelink offers loaded: {cuelinkOffers.length}
+                          </p>
+                          {debouncedSearchTerm && (
+                            <p className="text-xs text-gray-400">
+                              Search term: "{debouncedSearchTerm}"
+                            </p>
                           )}
                         </div>
                       </div>
-                    )
-                  )}
-                </>
-              )}
+                    )}
+                  </>
+                )}
+              </TabsContent>
               
-              {!isDataLoading && !error && displayedOffers.length > 0 && (
-                <button 
-                  onClick={loadMoreOffers}
-                  className="w-full py-3 text-center text-primary border border-primary rounded-lg mt-4 flex items-center justify-center font-semibold hover:bg-primary/5"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
-                      <span>Loading...</span>
-                    </div>
-                  ) : (
-                    <span>Load More Deals</span>
-                  )}
-                </button>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="nearby" className="space-y-4">
-              <div className={`grid gap-4 ${
-                isMobile 
-                  ? 'grid-cols-2' 
-                  : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
-              }`}>
-                {displayedOffers.filter(offer => !offer.isAmazon).map((offer) => (
-                  <Link key={offer.id} to={`/offer/${offer.id}`}>
-                    <OfferCard offer={offer} />
-                  </Link>
-                ))}
-              </div>
-              
-              {displayedOffers.filter(offer => !offer.isAmazon).length === 0 && (
-                <div className="bg-white p-6 rounded-lg text-center shadow-sm">
-                  <p className="text-gray-500">No nearby offers found</p>
-                  {offers.length > 0 && (
-                    <Link 
-                      to="/preferences/stores" 
-                      className="mt-4 text-monkeyGreen block underline"
-                    >
-                      Adjust store preferences
+              <TabsContent value="amazon" className="space-y-4">
+                <div className={`grid gap-4 ${
+                  isMobile 
+                    ? 'grid-cols-2' 
+                    : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                }`}>
+                  {displayedOffers.filter(offer => offer.isAmazon).map((offer) => (
+                    <Link key={offer.id} to={`/offer/${offer.id}`}>
+                      <OfferCard offer={offer} />
                     </Link>
-                  )}
+                  ))}
                 </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="flash" className="space-y-4">
-              {isCuelinkLoading ? (
-                <div className="flex justify-center items-center py-10">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-monkeyGreen"></div>
-                </div>
-              ) : (
-                <>
-                  {paginatedCuelinkOffers.length > 0 ? (
-                    <>
-                      <div className="mb-4 text-sm text-gray-600">
-                        Showing {((cuelinkCurrentPage - 1) * cuelinkItemsPerPage) + 1}-{Math.min(cuelinkCurrentPage * cuelinkItemsPerPage, displayedCuelinkOffers.length)} of {displayedCuelinkOffers.length} flash deals
-                      </div>
-                      <div className={`grid gap-4 ${
-                        isMobile 
-                          ? 'grid-cols-1 sm:grid-cols-2' 
-                          : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-                      }`}>
-                        {paginatedCuelinkOffers.map((offer) => (
-                          <CuelinkOfferCard key={offer.Id} offer={offer} />
-                        ))}
-                      </div>
-                      <CuelinkPagination 
-                        currentPage={cuelinkCurrentPage}
-                        totalPages={totalCuelinkPages}
-                        onPageChange={handleCuelinkPageChange}
-                      />
-                    </>
-                  ) : (
-                    <div className="bg-white p-6 rounded-lg text-center shadow-sm">
-                      <p className="text-gray-500">No flash deals found</p>
-                      <p className="text-sm text-gray-400 mt-2">
-                        {cuelinkOffers.length === 0 
-                          ? "No flash deals available in the Cuelink_data table" 
-                          : "Try a different search term or check back later"
-                        }
-                      </p>
-                      <div className="mt-4">
-                        <p className="text-xs text-gray-400">
-                          Total Cuelink offers loaded: {cuelinkOffers.length}
-                        </p>
-                        {debouncedSearchTerm && (
-                          <p className="text-xs text-gray-400">
-                            Search term: "{debouncedSearchTerm}"
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="amazon" className="space-y-4">
-              <div className={`grid gap-4 ${
-                isMobile 
-                  ? 'grid-cols-2' 
-                  : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
-              }`}>
-                {displayedOffers.filter(offer => offer.isAmazon).map((offer) => (
-                  <Link key={offer.id} to={`/offer/${offer.id}`}>
-                    <OfferCard offer={offer} />
-                  </Link>
-                ))}
-              </div>
-              
-              {displayedOffers.filter(offer => offer.isAmazon).length === 0 && (
-                <div className="bg-white p-6 rounded-lg text-center shadow-sm">
-                  <p className="text-gray-500">No Amazon offers found</p>
-                  {offers.length > 0 && (
-                    <Link 
-                      to="/preferences/stores" 
-                      className="mt-4 text-monkeyGreen block underline"
-                    >
-                      Adjust store preferences
-                    </Link>
-                  )}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
+                
+                {displayedOffers.filter(offer => offer.isAmazon).length === 0 && (
+                  <div className="bg-white p-6 rounded-lg text-center shadow-sm">
+                    <p className="text-gray-500">No Amazon offers found</p>
+                    {offers.length > 0 && (
+                      <Link 
+                        to="/preferences/stores" 
+                        className="mt-4 text-monkeyGreen block underline"
+                      >
+                        Adjust store preferences
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </div>
     </div>
