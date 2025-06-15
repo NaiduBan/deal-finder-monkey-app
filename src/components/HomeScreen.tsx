@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Bell, Search, AlertCircle, Bot, Users } from 'lucide-react';
@@ -618,7 +617,7 @@ const HomeScreen = () => {
                       }`}>
                         {displayedOffers.map((offer) => (
                           <Link key={offer.id} to={`/offer/${offer.id}`}>
-                            <OfferCard offer={offer} />
+                            <OfferCard offer={offer} isMobile={isMobile} />
                           </Link>
                         ))}
                       </div>
@@ -681,7 +680,7 @@ const HomeScreen = () => {
                 }`}>
                   {displayedOffers.filter(offer => !offer.isAmazon).map((offer) => (
                     <Link key={offer.id} to={`/offer/${offer.id}`}>
-                      <OfferCard offer={offer} />
+                      <OfferCard offer={offer} isMobile={isMobile} />
                     </Link>
                   ))}
                 </div>
@@ -761,7 +760,7 @@ const HomeScreen = () => {
                 }`}>
                   {displayedOffers.filter(offer => offer.isAmazon).map((offer) => (
                     <Link key={offer.id} to={`/offer/${offer.id}`}>
-                      <OfferCard offer={offer} />
+                      <OfferCard offer={offer} isMobile={isMobile} />
                     </Link>
                   ))}
                 </div>

@@ -8,9 +8,10 @@ import { Badge } from "@/components/ui/badge";
 
 interface OfferCardProps {
   offer: Offer;
+  isMobile?: boolean;
 }
 
-const OfferCard = ({ offer }: OfferCardProps) => {
+const OfferCard = ({ offer, isMobile }: OfferCardProps) => {
   const { isOfferSaved, saveOffer, unsaveOffer } = useUser();
   const { session } = useAuth();
   const isSaved = isOfferSaved(offer.id);
@@ -28,7 +29,7 @@ const OfferCard = ({ offer }: OfferCardProps) => {
 
   return (
     <div className={`h-full flex flex-col bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-lg transition-shadow duration-300 group ${
-      offer.sponsored ? 'border-yellow-400 shadow-yellow-200/50' : 'border-gray-200'
+      offer.sponsored ? 'border-yellow-400 shadow-yellow-200/50' : isMobile ? 'border-spring-green-600' : 'border-gray-200'
     }`}>
       {/* Image Container */}
       <div className="relative bg-gray-100 aspect-video">
