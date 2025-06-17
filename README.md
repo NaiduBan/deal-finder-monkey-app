@@ -1,73 +1,136 @@
-# Welcome to your Lovable project
+# 🐒 OffersMonkey
 
-## Project info
+[![Website](https://img.shields.io/website?url=https%3A%2F%2Foffersmonkey.com)](https://offersmonkey.com)
+[![License](https://img.shields.io/github/license/offersmonkey/app)](LICENSE)
 
-**URL**: https://lovable.dev/projects/2ebe8641-0ef8-445c-b93a-bb4e392f65b3
+OffersMonkey is an AI-powered, real-time offer discovery platform that brings users the best deals across categories like electronics, fashion, travel, and more — all in one place. With smart filtering, chatbot assistance, affiliate integration, and gamified rewards, OffersMonkey helps users save money effortlessly while shopping online or in-store.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 🚀 Live Site
 
-**Use Lovable**
+👉 [Visit OffersMonkey](https://offersmonkey.com)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/2ebe8641-0ef8-445c-b93a-bb4e392f65b3) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## 📱 Key Features
 
-**Use your preferred IDE**
+- 🔍 **Offer Discovery** – View latest offers from top affiliate networks (LinkMyDeals, Cuelinks).
+- 🤖 **Smart Chatbot** – Get offer recommendations via AI chatbot interaction.
+- 🧭 **Location-Based Deals** – Discover nearby in-store offers.
+- 🏆 **Loyalty System** – Earn rewards and coins for using the app regularly.
+- 💬 **User Reviews** – Read and add reviews/ratings for offers.
+- 📊 **Analytics Dashboard (Admin)** – Monitor offer stats, clicks, engagement, and more.
+- 🛠️ **Admin Control Panel** – Add, remove, or update offers and categories in real time.
+- 🧾 **Offer Details** – Includes product name, image, description, terms, and redirection URL.
+- 🎡 **Dynamic UI** – Clean, green-themed responsive interface with carousel and category filters.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🧰 Tech Stack
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
+**Frontend:**
+- React.js / Next.js
 - Tailwind CSS
+- Axios
+- PWA Support
 
-## How can I deploy this project?
+**Backend:**
+- Node.js / Express.js
+- Supabase (Database & Auth)
+- REST APIs (LinkMyDeals, Cuelinks)
 
-Simply open [Lovable](https://lovable.dev/projects/2ebe8641-0ef8-445c-b93a-bb4e392f65b3) and click on Share -> Publish.
+**Others:**
+- Firebase (Push Notifications)
+- Stripe / Razorpay (optional future monetization)
+- Google Maps API (for location-based offers)
+- Vercel / Netlify (Deployment)
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
+## 🗂️ Folder Structure (Example)
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+OffersMonkey/
+├── public/
+├── src/
+│ ├── components/
+│ ├── pages/
+│ ├── assets/
+│ ├── services/ # API calls
+│ ├── utils/
+│ └── styles/
+├── supabase/
+│ └── schema.sql
+├── .env
+├── README.md
+└── package.json
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+yaml
+Copy
+Edit
+
+---
+
+## 🧪 Setup and Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/offersmonkey.git
+
+# Navigate into the directory
+cd offersmonkey
+
+# Install dependencies
+npm install
+
+# Create a .env file and add required API keys
+cp .env.example .env
+
+# Start development server
+npm run dev
+🔐 Environment Variables (Sample)
+makefile
+Copy
+Edit
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+CUELINKS_API_KEY=
+LINKMYDEALS_API_KEY=
+FIREBASE_API_KEY=
+NEXT_PUBLIC_MAPS_API_KEY=
+👨‍💻 Admin Credentials (For Testing)
+⚠️ Use only in dev or demo mode — don’t expose admin info in production.
+
+📌 To-Do / Upcoming Features
+ Native mobile app (Flutter)
+
+ Affiliate earnings dashboard for users
+
+ Custom push notifications
+
+ Referral system
+
+ Dark mode support
+
+ More bank/UPI cashback filters
+
+🤝 Contributing
+Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change or improve.
+
+📃 License
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+📬 Contact
+OffersMonkey Team
+📧 support@offersmonkey.com
+🌐 https://offersmonkey.com
+
+“Shop smart. Save big. Every time. 🐵”
+
+python
+Copy
+Edit
+
+---
+
+Let me know if you'd like this tailored for GitHub or a developer portfolio, or if you're using a different tech stac
