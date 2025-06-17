@@ -75,12 +75,6 @@ const AdminLogin = () => {
               {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
-
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 font-medium">Demo Credentials:</p>
-            <p className="text-sm text-gray-600">Email: admin@monkeyoffers.com</p>
-            <p className="text-sm text-gray-600">Password: AdminMonkey123!</p>
-          </div>
         </CardContent>
       </Card>
     </div>
