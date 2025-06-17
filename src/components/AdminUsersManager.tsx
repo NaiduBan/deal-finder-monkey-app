@@ -1,27 +1,15 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { 
-  Search, 
-  Eye, 
-  Edit, 
-  Trash2, 
-  Plus, 
-  Upload, 
-  Download, 
-  Filter,
-  Users,
-  MoreHorizontal
-} from 'lucide-react';
+import { Users } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminUserDetails from './AdminUserDetails';
 import AdminBulkActions from './AdminBulkActions';
+import AdminUsersTable from './AdminUsersTable';
+import AdminUsersFilters from './AdminUsersFilters';
+import AdminUsersPagination from './AdminUsersPagination';
+import AdminUsersStats from './AdminUsersStats';
+import AdminUsersActions from './AdminUsersActions';
 
 interface User {
   id: string;
@@ -280,187 +268,38 @@ const AdminUsersManager = () => {
               </CardTitle>
               <p className="text-gray-600">Manage user accounts and profiles</p>
             </div>
-            <div className="flex items-center space-x-2">
-              <Badge variant="secondary">{users.length} Total Users</Badge>
-              {selectedUsers.length > 0 && (
-                <Badge className="bg-blue-100 text-blue-800">
-                  {selectedUsers.length} Selected
-                </Badge>
-              )}
-            </div>
+            <AdminUsersStats totalUsers={users.length} selectedCount={selectedUsers.length} />
           </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-4 mb-6">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search users by any field..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              {selectedUsers.length > 0 && (
-                <Button 
-                  onClick={() => setShowBulkActions(true)}
-                  className="flex items-center space-x-2"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                  <span>Bulk Actions ({selectedUsers.length})</span>
-                </Button>
-              )}
-              <Button 
-                onClick={exportToCSV}
-                variant="outline"
-                className="flex items-center space-x-2"
-              >
-                <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">Export CSV</span>
-              </Button>
-              <Button 
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                variant="outline"
-                className="flex items-center space-x-2"
-              >
-                <Upload className="h-4 w-4" />
-                <span className="hidden sm:inline">{uploading ? 'Uploading...' : 'Upload CSV'}</span>
-              </Button>
-              <Button className="flex items-center space-x-2">
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Add User</span>
-              </Button>
-            </div>
+            <AdminUsersFilters searchTerm={searchTerm} onSearchChange={setSearchTerm} />
+            <AdminUsersActions
+              selectedCount={selectedUsers.length}
+              uploading={uploading}
+              onBulkActions={() => setShowBulkActions(true)}
+              onExportCSV={exportToCSV}
+              onUploadClick={() => fileInputRef.current?.click()}
+            />
           </div>
 
-          <div className="border rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <Checkbox
-                        checked={allCurrentPageSelected}
-                        onCheckedChange={handleSelectAll}
-                      />
-                    </TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Verification</TableHead>
-                    <TableHead>Joined</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentPageUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedUsers.includes(user.id)}
-                          onCheckedChange={(checked) => handleSelectUser(user.id, checked as boolean)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                            {user.name?.charAt(0) || user.email.charAt(0)}
-                          </div>
-                          <div>
-                            <p className="font-medium">{user.name || 'Anonymous'}</p>
-                            <p className="text-sm text-gray-600">{user.email}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="text-sm">{user.phone || 'No phone'}</p>
-                          <p className="text-xs text-gray-500">{user.occupation || 'No occupation'}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="text-sm">{user.city || 'Unknown'}</p>
-                          <p className="text-xs text-gray-500">{user.country || 'Unknown'}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col space-y-1">
-                          {user.is_email_verified ? (
-                            <Badge variant="default" className="text-xs w-fit">Email ✓</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs w-fit">Email ✗</Badge>
-                          )}
-                          {user.is_phone_verified ? (
-                            <Badge variant="default" className="text-xs w-fit">Phone ✓</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs w-fit">Phone ✗</Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <p className="text-sm">{new Date(user.created_at).toLocaleDateString()}</p>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setSelectedUser(user.id)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => deleteUser(user.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
+          <AdminUsersTable
+            users={currentPageUsers}
+            selectedUsers={selectedUsers}
+            onSelectUser={handleSelectUser}
+            onSelectAll={handleSelectAll}
+            onViewUser={setSelectedUser}
+            onDeleteUser={deleteUser}
+            allSelected={allCurrentPageSelected}
+          />
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6">
-              <p className="text-sm text-gray-600">
-                Showing {((currentPage - 1) * usersPerPage) + 1} to {Math.min(currentPage * usersPerPage, filteredUsers.length)} of {filteredUsers.length} users
-              </p>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </Button>
-                <span className="text-sm">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+          <AdminUsersPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalUsers={filteredUsers.length}
+            usersPerPage={usersPerPage}
+            onPageChange={setCurrentPage}
+          />
 
           {filteredUsers.length === 0 && (
             <div className="text-center py-8 text-gray-500">
