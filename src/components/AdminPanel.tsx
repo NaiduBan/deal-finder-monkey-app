@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import AdminCuelinkManager from './AdminCuelinkManager';
 import AdminCategoriesManager from './AdminCategoriesManager';
 import AdminSettings from './AdminSettings';
 import AdminBannersManager from './AdminBannersManager';
+import AdminSystemHealth from './AdminSystemHealth';
 import { 
   LogOut, 
   BarChart3, 
@@ -18,7 +20,8 @@ import {
   FolderOpen, 
   Settings,
   Shield,
-  LayoutGrid
+  LayoutGrid,
+  Activity
 } from 'lucide-react';
 
 const AdminPanel = () => {
@@ -67,7 +70,7 @@ const AdminPanel = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 lg:w-fit">
+          <TabsList className="grid w-full grid-cols-8 lg:w-fit">
             <TabsTrigger value="dashboard" className="flex items-center space-x-2">
               <BarChart3 className="h-4 w-4" />
               <span className="hidden sm:inline">Dashboard</span>
@@ -91,6 +94,10 @@ const AdminPanel = () => {
             <TabsTrigger value="categories" className="flex items-center space-x-2">
               <FolderOpen className="h-4 w-4" />
               <span className="hidden sm:inline">Categories</span>
+            </TabsTrigger>
+            <TabsTrigger value="system" className="flex items-center space-x-2">
+              <Activity className="h-4 w-4" />
+              <span className="hidden sm:inline">System</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center space-x-2">
               <Settings className="h-4 w-4" />
@@ -120,6 +127,10 @@ const AdminPanel = () => {
           
           <TabsContent value="categories">
             <AdminCategoriesManager />
+          </TabsContent>
+
+          <TabsContent value="system">
+            <AdminSystemHealth />
           </TabsContent>
           
           <TabsContent value="settings">
