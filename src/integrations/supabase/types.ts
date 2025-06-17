@@ -1110,9 +1110,35 @@ export type Database = {
           session_token: string
         }[]
       }
+      create_admin_user: {
+        Args: {
+          p_email: string
+          p_password: string
+          p_name: string
+          p_role?: string
+        }
+        Returns: {
+          admin_id: string
+          admin_name: string
+          admin_email: string
+          admin_role: string
+          success: boolean
+        }[]
+      }
       get_admin_dashboard_stats: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      get_all_admin_users: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          admin_id: string
+          admin_name: string
+          admin_email: string
+          admin_role: string
+          is_active: boolean
+          created_at: string
+        }[]
       }
       verify_admin_session: {
         Args: { p_token: string }

@@ -34,9 +34,22 @@ interface User {
   phone?: string;
   city?: string;
   country?: string;
+  state?: string;
+  location?: string;
+  gender?: string;
+  occupation?: string;
+  company?: string;
+  avatar_url?: string;
+  bio?: string;
+  address?: string;
+  postal_code?: string;
+  date_of_birth?: string;
   created_at: string;
+  updated_at?: string;
   is_email_verified?: boolean;
   is_phone_verified?: boolean;
+  marketing_consent?: boolean;
+  preferences?: any;
 }
 
 const AdminUsersAdvanced = () => {
@@ -48,9 +61,16 @@ const AdminUsersAdvanced = () => {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [usersPerPage] = useState(10);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    verifiedUsers: 0,
+    activeToday: 0,
+    retentionRate: 0
+  });
 
   useEffect(() => {
     fetchUsers();
+    fetchStats();
   }, []);
 
   useEffect(() => {
@@ -66,14 +86,46 @@ const AdminUsersAdvanced = () => {
 
       if (error) {
         toast.error('Failed to fetch users');
+        console.error('Error fetching users:', error);
         return;
       }
 
       setUsers(data || []);
     } catch (error) {
       toast.error('An error occurred while fetching users');
+      console.error('Error:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      // Get total users count
+      const { count: totalUsers } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+
+      // Get verified users count
+      const { count: verifiedUsers } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_email_verified', true);
+
+      // Get active users today (users who saved offers today)
+      const { count: activeToday } = await supabase
+        .from('saved_offers')
+        .select('user_id', { count: 'exact', head: true })
+        .gte('created_at', new Date().toISOString().split('T')[0]);
+
+      setStats({
+        totalUsers: totalUsers || 0,
+        verifiedUsers: verifiedUsers || 0,
+        activeToday: activeToday || 0,
+        retentionRate: 78.5 // This would be calculated based on more complex logic
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
     }
   };
 
@@ -85,7 +137,9 @@ const AdminUsersAdvanced = () => {
       filtered = filtered.filter(user =>
         user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.phone?.includes(searchTerm)
+        user.phone?.includes(searchTerm) ||
+        user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.last_name?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -136,16 +190,21 @@ const AdminUsersAdvanced = () => {
 
   const exportUsers = () => {
     const csv = [
-      ['ID', 'Name', 'Email', 'Phone', 'City', 'Country', 'Email Verified', 'Phone Verified', 'Created At'],
+      ['ID', 'Name', 'Email', 'Phone', 'City', 'State', 'Country', 'Gender', 'Occupation', 'Company', 'Email Verified', 'Phone Verified', 'Marketing Consent', 'Created At'],
       ...filteredUsers.map(user => [
         user.id,
         user.name || '',
         user.email || '',
         user.phone || '',
         user.city || '',
+        user.state || '',
         user.country || '',
+        user.gender || '',
+        user.occupation || '',
+        user.company || '',
         user.is_email_verified ? 'Yes' : 'No',
         user.is_phone_verified ? 'Yes' : 'No',
+        user.marketing_consent ? 'Yes' : 'No',
         new Date(user.created_at).toLocaleDateString()
       ])
     ].map(row => row.join(',')).join('\n');
@@ -154,7 +213,7 @@ const AdminUsersAdvanced = () => {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'users.csv';
+    link.download = 'users_export.csv';
     link.click();
     window.URL.revokeObjectURL(url);
   };
@@ -174,13 +233,13 @@ const AdminUsersAdvanced = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Advanced User Management</h1>
-          <p className="text-gray-600 mt-1">Comprehensive user analytics and management</p>
+          <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+          <p className="text-gray-600 mt-1">Manage all registered users and their data</p>
         </div>
         <div className="flex items-center space-x-3">
           <Button onClick={exportUsers} variant="outline">
             <Download className="h-4 w-4 mr-2" />
-            Export
+            Export CSV
           </Button>
           <Button>
             <UserPlus className="h-4 w-4 mr-2" />
@@ -189,257 +248,223 @@ const AdminUsersAdvanced = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="segments">User Segments</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="communication">Communication</TabsTrigger>
-        </TabsList>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalUsers}</div>
+            <p className="text-xs text-muted-foreground">Registered users</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Email Verified</CardTitle>
+            <Badge className="h-4 w-4" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.verifiedUsers}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.totalUsers > 0 ? ((stats.verifiedUsers / stats.totalUsers) * 100).toFixed(1) : 0}% verified
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Today</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.activeToday}</div>
+            <p className="text-xs text-muted-foreground">Users active today</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Retention Rate</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.retentionRate}%</div>
+            <p className="text-xs text-muted-foreground">7-day retention</p>
+          </CardContent>
+        </Card>
+      </div>
 
-        <TabsContent value="overview" className="space-y-6">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{users.length}</div>
-                <p className="text-xs text-muted-foreground">+12% from last month</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Verified Users</CardTitle>
-                <Badge className="h-4 w-4" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {users.filter(u => u.is_email_verified).length}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {((users.filter(u => u.is_email_verified).length / users.length) * 100).toFixed(1)}% verified
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Today</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">1,247</div>
-                <p className="text-xs text-muted-foreground">+8% from yesterday</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Retention Rate</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">78.5%</div>
-                <p className="text-xs text-muted-foreground">7-day retention</p>
-              </CardContent>
-            </Card>
+      {/* Main Content */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Users className="h-5 w-5" />
+            <span>User Database ({filteredUsers.length} users)</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search by name, email, phone..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Users</SelectItem>
+                <SelectItem value="verified">Email Verified</SelectItem>
+                <SelectItem value="unverified">Email Unverified</SelectItem>
+                <SelectItem value="phone_verified">Phone Verified</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Filters and Search */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Users className="h-5 w-5" />
-                <span>User Management</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col md:flex-row gap-4 mb-6">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="Search users by name, email, or phone..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Users</SelectItem>
-                    <SelectItem value="verified">Email Verified</SelectItem>
-                    <SelectItem value="unverified">Email Unverified</SelectItem>
-                    <SelectItem value="phone_verified">Phone Verified</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button variant="outline">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Advanced Filters
+          {/* Users Table */}
+          <div className="border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">
+                    <input
+                      type="checkbox"
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                    />
+                  </TableHead>
+                  <TableHead>User Info</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Professional</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {getCurrentPageUsers().map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <input
+                        type="checkbox"
+                        checked={selectedUsers.includes(user.id)}
+                        onChange={(e) => handleSelectUser(user.id, e.target.checked)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                          {user.name?.charAt(0) || user.email.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-medium">{user.name || 'Unnamed User'}</p>
+                          <p className="text-sm text-gray-600">{user.email}</p>
+                          <p className="text-xs text-gray-500">ID: {user.id.slice(0, 8)}...</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="text-sm">{user.phone || 'No phone'}</p>
+                        <p className="text-xs text-gray-500">{user.gender || 'Not specified'}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="text-sm">{user.city || 'Unknown'}</p>
+                        <p className="text-xs text-gray-500">{user.state || ''} {user.country || 'Unknown'}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="text-sm">{user.occupation || 'Not specified'}</p>
+                        <p className="text-xs text-gray-500">{user.company || 'No company'}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col space-y-1">
+                        <Badge 
+                          variant={user.is_email_verified ? "default" : "outline"} 
+                          className="text-xs w-fit"
+                        >
+                          {user.is_email_verified ? 'Email ✓' : 'Email ✗'}
+                        </Badge>
+                        <Badge 
+                          variant={user.is_phone_verified ? "default" : "outline"} 
+                          className="text-xs w-fit"
+                        >
+                          {user.is_phone_verified ? 'Phone ✓' : 'Phone ✗'}
+                        </Badge>
+                        <Badge 
+                          variant={user.marketing_consent ? "default" : "outline"} 
+                          className="text-xs w-fit"
+                        >
+                          {user.marketing_consent ? 'Marketing ✓' : 'Marketing ✗'}
+                        </Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <p className="text-sm">{new Date(user.created_at).toLocaleDateString()}</p>
+                      <p className="text-xs text-gray-500">{new Date(user.created_at).toLocaleTimeString()}</p>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end space-x-2">
+                        <Button variant="outline" size="sm">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Mail className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" className="text-red-600">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6">
+              <p className="text-sm text-gray-600">
+                Showing {((currentPage - 1) * usersPerPage) + 1} to {Math.min(currentPage * usersPerPage, filteredUsers.length)} of {filteredUsers.length} users
+              </p>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
                 </Button>
               </div>
-
-              {/* Users Table */}
-              <div className="border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">
-                        <input
-                          type="checkbox"
-                          onChange={(e) => handleSelectAll(e.target.checked)}
-                        />
-                      </TableHead>
-                      <TableHead>User</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Joined</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {getCurrentPageUsers().map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          <input
-                            type="checkbox"
-                            checked={selectedUsers.includes(user.id)}
-                            onChange={(e) => handleSelectUser(user.id, e.target.checked)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                              {user.name?.charAt(0) || user.email.charAt(0)}
-                            </div>
-                            <div>
-                              <p className="font-medium">{user.name || 'Unnamed User'}</p>
-                              <p className="text-sm text-gray-600">{user.email}</p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="text-sm">{user.phone || 'No phone'}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="text-sm">{user.city || 'Unknown'}</p>
-                            <p className="text-xs text-gray-500">{user.country || 'Unknown'}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col space-y-1">
-                            <Badge 
-                              variant={user.is_email_verified ? "default" : "outline"} 
-                              className="text-xs w-fit"
-                            >
-                              {user.is_email_verified ? 'Email ✓' : 'Email ✗'}
-                            </Badge>
-                            <Badge 
-                              variant={user.is_phone_verified ? "default" : "outline"} 
-                              className="text-xs w-fit"
-                            >
-                              {user.is_phone_verified ? 'Phone ✓' : 'Phone ✗'}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <p className="text-sm">{new Date(user.created_at).toLocaleDateString()}</p>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              <Mail className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="sm" className="text-red-600">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-6">
-                  <p className="text-sm text-gray-600">
-                    Showing {((currentPage - 1) * usersPerPage) + 1} to {Math.min(currentPage * usersPerPage, filteredUsers.length)} of {filteredUsers.length} users
-                  </p>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      disabled={currentPage === 1}
-                    >
-                      Previous
-                    </Button>
-                    <span className="text-sm">
-                      Page {currentPage} of {totalPages}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                      disabled={currentPage === totalPages}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="segments">
-          <Card>
-            <CardHeader>
-              <CardTitle>User Segmentation</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600">Advanced user segmentation features will be implemented here.</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="analytics">
-          <Card>
-            <CardHeader>
-              <CardTitle>User Analytics</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600">Advanced user analytics and insights will be displayed here.</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="communication">
-          <Card>
-            <CardHeader>
-              <CardTitle>Communication Tools</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600">Email campaigns, notifications, and messaging tools will be available here.</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
