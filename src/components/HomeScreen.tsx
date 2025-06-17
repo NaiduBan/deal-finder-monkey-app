@@ -509,7 +509,7 @@ const HomeScreen = () => {
           {/* Categories carousel with active state */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-3">
-              <h2 className="font-bold text-lg">For You</h2>
+              <h2 className="font-bold text-lg">Categories For You</h2>
               <Link to="/preferences/brands" className="text-spring-green-600 text-sm">
                 Set preferences
               </Link>
