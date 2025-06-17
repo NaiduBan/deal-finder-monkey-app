@@ -91,9 +91,10 @@ const navigationItems = [
 ];
 
 export function AdminSidebar() {
-  const { collapsed } = useSidebar();
+  const { state } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
+  const collapsed = state === 'collapsed';
 
   const isActive = (path: string) => currentPath === path;
   const getNavClass = (isActive: boolean) =>
@@ -102,7 +103,7 @@ export function AdminSidebar() {
       : "hover:bg-muted/50 text-muted-foreground";
 
   return (
-    <Sidebar className={collapsed ? "w-16" : "w-64"} collapsible>
+    <Sidebar className={collapsed ? "w-16" : "w-64"} collapsible="icon">
       <SidebarContent className="bg-white border-r">
         <div className="p-4 border-b">
           <div className="flex items-center space-x-3">
