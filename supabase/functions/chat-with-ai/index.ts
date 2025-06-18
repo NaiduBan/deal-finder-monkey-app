@@ -54,11 +54,12 @@ Guidelines:
 - Always be helpful whether the question is about deals or any other topic
 
 For Offer-Related Responses:
-🏪 **Store Name**
-💰 **Offer:** Brief description
-🎟️ **Code:** COUPONCODE (if available)
-📅 **Valid:** Until expiry date (if available)
-🔗 **Get Deal:** [Link] (if available)
+When you have relevant offers to show, format your response as:
+[OFFERS_DATA_START]
+${JSON.stringify(offerData)}
+[OFFERS_DATA_END]
+
+Then provide a helpful text response about the offers found.
 
 For General Questions:
 - Provide accurate, helpful information
@@ -109,7 +110,10 @@ Remember: You're an AI assistant that happens to specialize in deals, but you ca
         response: aiResponse
       });
 
-    return new Response(JSON.stringify({ response: aiResponse }), {
+    return new Response(JSON.stringify({ 
+      response: aiResponse,
+      offers: offerData.length > 0 ? offerData : null
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
@@ -141,7 +145,7 @@ async function searchRelevantOffers(supabaseClient: any, userMessage: string): P
         .from('Offers_data')
         .select('*')
         .or('featured.eq.true,featured.eq.1')
-        .limit(5);
+        .limit(6); // Limit to 6 cards for better display
       
       return error ? [] : (data || []);
     }
@@ -153,7 +157,7 @@ async function searchRelevantOffers(supabaseClient: any, userMessage: string): P
       `title.ilike.%${term}%,description.ilike.%${term}%,store.ilike.%${term}%,categories.ilike.%${term}%,long_offer.ilike.%${term}%`
     ).join(',');
     
-    query = query.or(searchConditions).limit(10);
+    query = query.or(searchConditions).limit(6); // Limit to 6 cards for better display
     
     const { data, error } = await query;
     

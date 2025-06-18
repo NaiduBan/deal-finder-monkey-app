@@ -11,9 +11,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import AIOfferCard from './AIOfferCard';
+
+interface MessageWithOffers extends Message {
+  offers?: any[];
+}
 
 const ChatbotScreen = () => {
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<MessageWithOffers[]>([
     {
       id: 'welcome',
       text: "Hello! 👋 I'm your OffersMonkey AI Assistant powered by Gemini AI. I can help you with anything - from finding amazing deals and offers to answering general questions. What would you like to know today?",
@@ -53,7 +58,7 @@ const ChatbotScreen = () => {
         if (error) throw error;
 
         if (data && data.length > 0) {
-          const historyMessages: Message[] = [];
+          const historyMessages: MessageWithOffers[] = [];
           data.forEach(chat => {
             historyMessages.push({
               id: `${chat.id}-user`,
@@ -111,7 +116,7 @@ const ChatbotScreen = () => {
     if (!input.trim() || isLoading || !session?.user) return;
     
     // Add user message
-    const userMessage: Message = {
+    const userMessage: MessageWithOffers = {
       id: `user-${Date.now()}`,
       text: input,
       isUser: true,
@@ -138,24 +143,27 @@ const ChatbotScreen = () => {
 
       if (error) throw error;
 
-      const botMessage: Message = {
+      const botMessage: MessageWithOffers = {
         id: `bot-${Date.now()}`,
         text: data.response,
         isUser: false,
-        timestamp: new Date()
+        timestamp: new Date(),
+        offers: data.offers || []
       };
       
       setMessages(prev => [...prev, botMessage]);
       
       toast({
         title: "AI Response",
-        description: "Got a personalized response from Gemini AI!",
+        description: data.offers && data.offers.length > 0 
+          ? `Found ${data.offers.length} relevant offers!`
+          : "Got a personalized response from Gemini AI!",
       });
     } catch (error) {
       console.error('Error getting AI response:', error);
       
       // Fallback response
-      const errorMessage: Message = {
+      const errorMessage: MessageWithOffers = {
         id: `bot-error-${Date.now()}`,
         text: "I'm sorry, I'm having trouble connecting right now. Please try again in a moment. In the meantime, you can browse offers in the home section! 🐒",
         isUser: false,
@@ -252,7 +260,7 @@ const ChatbotScreen = () => {
   const suggestedQuestions = [
     "What are the best deals today?",
     "Show me electronics offers",
-    "What's the weather like?",
+    "Find fashion discounts",
     "Help me with cooking tips"
   ];
 
@@ -296,50 +304,72 @@ const ChatbotScreen = () => {
           <div className="p-3 md:p-4 pb-4 max-w-4xl mx-auto">
             <div className="space-y-4 md:space-y-6">
               {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div className={`flex items-start space-x-2 md:space-x-3 max-w-[90%] sm:max-w-[85%] md:max-w-[75%] ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                    {!message.isUser && (
-                      <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-monkeyGreen to-green-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                        <Bot className="w-3 h-3 md:w-4 md:h-4 text-white" />
+                <div key={message.id} className="space-y-4">
+                  <div className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`flex items-start space-x-2 md:space-x-3 max-w-[90%] sm:max-w-[85%] md:max-w-[75%] ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                      {!message.isUser && (
+                        <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-monkeyGreen to-green-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                          <Bot className="w-3 h-3 md:w-4 md:h-4 text-white" />
+                        </div>
+                      )}
+                      <div
+                        className={`rounded-2xl px-3 py-2 md:px-4 md:py-3 min-w-0 overflow-hidden ${
+                          message.isUser
+                            ? 'bg-monkeyGreen text-white rounded-br-md'
+                            : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md shadow-sm'
+                        }`}
+                      >
+                        <div className="text-sm leading-relaxed break-words overflow-wrap-anywhere">
+                          {message.isUser ? (
+                            <p className="whitespace-pre-wrap">{message.text}</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {formatMessage(message.text)}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between mt-2 gap-2">
+                          <p className={`text-xs flex-shrink-0 ${message.isUser ? 'text-green-100' : 'text-gray-400'}`}>
+                            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                          {!message.isUser && (
+                            <div className="flex items-center space-x-1 flex-shrink-0">
+                              <Zap className="w-3 h-3 text-monkeyGreen" />
+                              <span className="text-xs text-monkeyGreen font-medium">AI</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    )}
-                    <div
-                      className={`rounded-2xl px-3 py-2 md:px-4 md:py-3 min-w-0 overflow-hidden ${
-                        message.isUser
-                          ? 'bg-monkeyGreen text-white rounded-br-md'
-                          : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md shadow-sm'
-                      }`}
-                    >
-                      <div className="text-sm leading-relaxed break-words overflow-wrap-anywhere">
-                        {message.isUser ? (
-                          <p className="whitespace-pre-wrap">{message.text}</p>
-                        ) : (
-                          <div className="space-y-2">
-                            {formatMessage(message.text)}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between mt-2 gap-2">
-                        <p className={`text-xs flex-shrink-0 ${message.isUser ? 'text-green-100' : 'text-gray-400'}`}>
-                          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </p>
-                        {!message.isUser && (
-                          <div className="flex items-center space-x-1 flex-shrink-0">
-                            <Zap className="w-3 h-3 text-monkeyGreen" />
-                            <span className="text-xs text-monkeyGreen font-medium">AI</span>
-                          </div>
-                        )}
+                      {message.isUser && (
+                        <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                          <User className="w-3 h-3 md:w-4 md:h-4 text-white" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Offer Cards Display */}
+                  {!message.isUser && message.offers && message.offers.length > 0 && (
+                    <div className="ml-6 md:ml-8">
+                      <div className={`grid gap-3 ${
+                        isMobile 
+                          ? 'grid-cols-1' 
+                          : message.offers.length === 1 
+                            ? 'grid-cols-1 max-w-xs' 
+                            : message.offers.length === 2 
+                              ? 'grid-cols-2 max-w-2xl' 
+                              : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl'
+                      }`}>
+                        {message.offers.map((offer, index) => (
+                          <AIOfferCard 
+                            key={offer.lmd_id || offer.id || index} 
+                            offer={offer} 
+                            isMobile={isMobile}
+                          />
+                        ))}
                       </div>
                     </div>
-                    {message.isUser && (
-                      <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                        <User className="w-3 h-3 md:w-4 md:h-4 text-white" />
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
               ))}
               

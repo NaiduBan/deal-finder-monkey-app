@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Bot, Mic, Search, Heart, TrendingUp, Zap, MessageCircle, Volume2, Sparkles, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { Link } from 'react-router-dom';
 import VoiceInterface from './VoiceInterface';
+import AIOfferCard from './AIOfferCard';
 
 interface Message {
   id: string;
@@ -20,6 +22,7 @@ interface Message {
   isUser: boolean;
   timestamp: Date;
   hasAudio?: boolean;
+  offers?: any[];
 }
 
 const AIShoppingAssistant = () => {
@@ -131,7 +134,8 @@ const AIShoppingAssistant = () => {
         text: data.response,
         isUser: false,
         timestamp: new Date(),
-        hasAudio: fromVoice
+        hasAudio: fromVoice,
+        offers: data.offers || []
       };
 
       setMessages(prev => [...prev, botMessage]);
@@ -143,7 +147,9 @@ const AIShoppingAssistant = () => {
 
       toast({
         title: "AI Response",
-        description: "Got a personalized response!",
+        description: data.offers && data.offers.length > 0 
+          ? `Found ${data.offers.length} relevant offers!`
+          : "Got a personalized response!",
       });
     } catch (error) {
       console.error('Error getting AI response:', error);
@@ -286,43 +292,65 @@ const AIShoppingAssistant = () => {
                 <ScrollArea className={`${isMobile ? 'h-80' : 'h-96'} p-4`}>
                   <div className="space-y-4">
                     {messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`flex ${message.isUser ? 'justify-end' : 'justify-start'} gap-3`}
-                      >
-                        {/* Avatar */}
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          message.isUser ? 'order-2 bg-gray-400' : 'order-1 bg-monkeyGreen'
-                        }`}>
-                          {message.isUser ? (
-                            <span className="text-white text-xs font-medium">
-                              {user?.name?.charAt(0) || 'U'}
-                            </span>
-                          ) : (
-                            <Bot className="w-4 h-4 text-white" />
-                          )}
-                        </div>
-
-                        {/* Message Bubble */}
-                        <div className={`max-w-xs lg:max-w-sm ${message.isUser ? 'order-1' : 'order-2'}`}>
-                          <div
-                            className={`rounded-2xl px-4 py-3 ${
-                              message.isUser
-                                ? 'bg-monkeyGreen text-white rounded-br-md'
-                                : 'bg-white border border-gray-200 text-gray-800 rounded-bl-md shadow-sm'
-                            }`}
-                          >
-                            <p className="text-sm leading-relaxed">{message.text}</p>
-                            <div className="flex items-center justify-between mt-2">
-                              <span className={`text-xs ${message.isUser ? 'text-green-100' : 'text-gray-400'}`}>
-                                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      <div key={message.id} className="space-y-4">
+                        <div className={`flex ${message.isUser ? 'justify-end' : 'justify-start'} gap-3`}>
+                          {/* Avatar */}
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            message.isUser ? 'order-2 bg-gray-400' : 'order-1 bg-monkeyGreen'
+                          }`}>
+                            {message.isUser ? (
+                              <span className="text-white text-xs font-medium">
+                                {user?.name?.charAt(0) || 'U'}
                               </span>
-                              {message.hasAudio && !message.isUser && (
-                                <Volume2 className="w-3 h-3 text-monkeyGreen" />
-                              )}
+                            ) : (
+                              <Bot className="w-4 h-4 text-white" />
+                            )}
+                          </div>
+
+                          {/* Message Bubble */}
+                          <div className={`max-w-xs lg:max-w-sm ${message.isUser ? 'order-1' : 'order-2'}`}>
+                            <div
+                              className={`rounded-2xl px-4 py-3 ${
+                                message.isUser
+                                  ? 'bg-monkeyGreen text-white rounded-br-md'
+                                  : 'bg-white border border-gray-200 text-gray-800 rounded-bl-md shadow-sm'
+                              }`}
+                            >
+                              <p className="text-sm leading-relaxed">{message.text}</p>
+                              <div className="flex items-center justify-between mt-2">
+                                <span className={`text-xs ${message.isUser ? 'text-green-100' : 'text-gray-400'}`}>
+                                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                                {message.hasAudio && !message.isUser && (
+                                  <Volume2 className="w-3 h-3 text-monkeyGreen" />
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
+
+                        {/* Offer Cards Display */}
+                        {!message.isUser && message.offers && message.offers.length > 0 && (
+                          <div className="ml-11">
+                            <div className={`grid gap-3 ${
+                              isMobile 
+                                ? 'grid-cols-1' 
+                                : message.offers.length === 1 
+                                  ? 'grid-cols-1 max-w-xs' 
+                                  : message.offers.length === 2 
+                                    ? 'grid-cols-2 max-w-2xl' 
+                                    : 'grid-cols-1 sm:grid-cols-2 max-w-4xl'
+                            }`}>
+                              {message.offers.map((offer, index) => (
+                                <AIOfferCard 
+                                  key={offer.lmd_id || offer.id || index} 
+                                  offer={offer} 
+                                  isMobile={isMobile}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
 
