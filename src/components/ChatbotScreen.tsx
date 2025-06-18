@@ -1,5 +1,6 @@
+
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, ChevronLeft, Bot, User, Sparkles, MessageCircle, Zap, Clock, ExternalLink } from 'lucide-react';
+import { Send, ChevronLeft, Bot, User, Sparkles, MessageCircle, Zap, Clock, ExternalLink, History, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
@@ -29,6 +30,8 @@ const ChatbotScreen = () => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [chatHistory, setChatHistory] = useState<MessageWithOffers[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { session } = useAuth();
   const { user } = useUser();
@@ -42,49 +45,64 @@ const ChatbotScreen = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Load chat history
-  useEffect(() => {
-    const loadChatHistory = async () => {
-      if (!session?.user) return;
+  // Load chat history when component mounts or when history is toggled
+  const loadChatHistory = async () => {
+    if (!session?.user) return;
 
-      try {
-        const { data, error } = await supabase
-          .from('chat_messages')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .order('created_at', { ascending: true })
-          .limit(10);
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: true })
+        .limit(20);
 
-        if (error) throw error;
+      if (error) throw error;
 
-        if (data && data.length > 0) {
-          const historyMessages: MessageWithOffers[] = [];
-          data.forEach(chat => {
+      if (data && data.length > 0) {
+        const historyMessages: MessageWithOffers[] = [];
+        data.forEach(chat => {
+          historyMessages.push({
+            id: `${chat.id}-user`,
+            text: chat.message,
+            isUser: true,
+            timestamp: new Date(chat.created_at)
+          });
+          if (chat.response) {
             historyMessages.push({
-              id: `${chat.id}-user`,
-              text: chat.message,
-              isUser: true,
+              id: `${chat.id}-bot`,
+              text: chat.response,
+              isUser: false,
               timestamp: new Date(chat.created_at)
             });
-            if (chat.response) {
-              historyMessages.push({
-                id: `${chat.id}-bot`,
-                text: chat.response,
-                isUser: false,
-                timestamp: new Date(chat.created_at)
-              });
-            }
-          });
-          
-          setMessages(prev => [prev[0], ...historyMessages]);
-        }
-      } catch (error) {
-        console.error('Error loading chat history:', error);
+          }
+        });
+        
+        setChatHistory(historyMessages);
       }
-    };
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+    }
+  };
 
-    loadChatHistory();
-  }, [session]);
+  const handleHistoryToggle = () => {
+    if (!showHistory) {
+      loadChatHistory();
+    }
+    setShowHistory(!showHistory);
+  };
+
+  const startFreshChat = () => {
+    setMessages([
+      {
+        id: 'welcome',
+        text: "Hello! 👋 I'm your OffersMonkey AI Assistant powered by Gemini AI. I can help you with anything - from finding amazing deals and offers to answering general questions. What would you like to know today?",
+        isUser: false,
+        timestamp: new Date()
+      }
+    ]);
+    setShowHistory(false);
+  };
 
   const getUserContext = async () => {
     if (!session?.user) return null;
@@ -262,8 +280,18 @@ const ChatbotScreen = () => {
     "What are the best deals today?",
     "Show me electronics offers",
     "Find fashion discounts",
-    "Help me with cooking tips"
+    "Help me with cooking tips",
+    "Show me grocery deals",
+    "Find mobile phone offers",
+    "What's trending in home appliances?",
+    "Show me travel deals",
+    "Find beauty and skincare offers",
+    "Show me book deals",
+    "Find fitness equipment offers",
+    "What are the latest tech deals?"
   ];
+
+  const displayMessages = showHistory ? chatHistory : messages;
 
   return (
     <div className={`flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden ${isMobile ? 'h-screen pb-16' : 'h-screen'}`}>
@@ -282,7 +310,9 @@ const ChatbotScreen = () => {
                 <div className="absolute -bottom-1 -right-1 w-3 h-3 md:w-4 md:h-4 bg-green-500 rounded-full border-2 border-white"></div>
               </div>
               <div className="min-w-0 flex-1">
-                <h1 className="text-base md:text-lg font-semibold text-gray-900 truncate">AI Assistant</h1>
+                <h1 className="text-base md:text-lg font-semibold text-gray-900 truncate">
+                  {showHistory ? 'Chat History' : 'AI Assistant'}
+                </h1>
                 <div className="flex items-center space-x-1">
                   <Sparkles className="w-3 h-3 text-monkeyGreen flex-shrink-0" />
                   <p className="text-xs text-gray-500 truncate">Powered by Gemini AI</p>
@@ -291,6 +321,26 @@ const ChatbotScreen = () => {
             </div>
           </div>
           <div className="flex items-center space-x-2 flex-shrink-0">
+            {showHistory ? (
+              <Button
+                onClick={startFreshChat}
+                size="sm"
+                className="bg-monkeyGreen hover:bg-green-700 text-white"
+              >
+                <X className="w-4 h-4 mr-1" />
+                {!isMobile && "New Chat"}
+              </Button>
+            ) : (
+              <Button
+                onClick={handleHistoryToggle}
+                variant="outline"
+                size="sm"
+                className="hover:bg-gray-50"
+              >
+                <History className="w-4 h-4 mr-1" />
+                {!isMobile && "History"}
+              </Button>
+            )}
             <div className="flex items-center space-x-1 px-2 py-1 bg-green-50 rounded-full">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
               <span className="text-xs text-green-700 font-medium hidden sm:inline">Online</span>
@@ -304,7 +354,7 @@ const ChatbotScreen = () => {
         <ScrollArea className="h-full">
           <div className="p-3 md:p-4 pb-4 max-w-4xl mx-auto">
             <div className="space-y-4 md:space-y-6">
-              {messages.map((message) => (
+              {displayMessages.map((message) => (
                 <div key={message.id} className="space-y-4">
                   {/* Only show text message if it's not a cards-only response */}
                   {!message.showOnlyCards && (
@@ -377,7 +427,7 @@ const ChatbotScreen = () => {
                 </div>
               ))}
               
-              {isTyping && (
+              {isTyping && !showHistory && (
                 <div className="flex justify-start">
                   <div className="flex items-start space-x-2 md:space-x-3 max-w-[90%] sm:max-w-[85%] md:max-w-[75%]">
                     <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-monkeyGreen to-green-600 rounded-full flex items-center justify-center flex-shrink-0">
@@ -397,8 +447,8 @@ const ChatbotScreen = () => {
                 </div>
               )}
               
-              {/* Suggested Questions */}
-              {messages.length === 1 && (
+              {/* Suggested Questions - Only show for fresh chat with welcome message */}
+              {messages.length === 1 && !showHistory && (
                 <div className="space-y-4 mt-6 md:mt-8">
                   <div className="text-center">
                     <h3 className="text-sm font-medium text-gray-900 mb-2">💡 Quick Questions</h3>
@@ -429,56 +479,58 @@ const ChatbotScreen = () => {
         </ScrollArea>
       </div>
       
-      {/* Input Area - Fixed at bottom with proper spacing for mobile nav */}
-      <div className="bg-white border-t border-gray-200 flex-shrink-0">
-        <div className="p-3 md:p-4 max-w-4xl mx-auto">
-          <form onSubmit={handleSendMessage} className="flex space-x-2 md:space-x-3">
-            <div className="flex-1 relative min-w-0">
-              <Input
-                placeholder="Ask me anything - deals, questions, or advice..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                className="pr-10 md:pr-12 border-gray-300 focus:border-monkeyGreen focus:ring-monkeyGreen bg-gray-50 rounded-xl py-2 px-3 md:py-3 md:px-4 text-sm md:text-base w-full"
-                disabled={isLoading || !session?.user}
-              />
-              {input && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <Clock className="w-3 h-3 md:w-4 md:h-4 text-gray-400" />
-                </div>
-              )}
-            </div>
-            <Button 
-              type="submit" 
-              size="icon" 
-              className="bg-monkeyGreen hover:bg-green-700 text-white rounded-xl shadow-sm transition-all duration-200 w-10 h-10 md:w-12 md:h-12 flex-shrink-0"
-              disabled={!input.trim() || isLoading || !session?.user}
-            >
-              {isLoading ? (
-                <div className="w-3 h-3 md:w-4 md:h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Send className="h-3 w-3 md:h-4 md:w-4" />
-              )}
-            </Button>
-          </form>
-          
-          {!session?.user && (
-            <div className="mt-2 md:mt-3 text-center">
-              <p className="text-xs text-gray-500">
-                Please <Link to="/login" className="text-monkeyGreen underline font-medium">sign in</Link> to use the AI assistant
-              </p>
-            </div>
-          )}
-          
-          {session?.user && (
-            <div className="mt-2 md:mt-3 text-center">
-              <p className="text-xs text-gray-400">
-                Powered by Gemini AI • Press Enter to send
-              </p>
-            </div>
-          )}
+      {/* Input Area - Fixed at bottom with proper spacing for mobile nav - Only show for fresh chat */}
+      {!showHistory && (
+        <div className="bg-white border-t border-gray-200 flex-shrink-0">
+          <div className="p-3 md:p-4 max-w-4xl mx-auto">
+            <form onSubmit={handleSendMessage} className="flex space-x-2 md:space-x-3">
+              <div className="flex-1 relative min-w-0">
+                <Input
+                  placeholder="Ask me anything - deals, questions, or advice..."
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  className="pr-10 md:pr-12 border-gray-300 focus:border-monkeyGreen focus:ring-monkeyGreen bg-gray-50 rounded-xl py-2 px-3 md:py-3 md:px-4 text-sm md:text-base w-full"
+                  disabled={isLoading || !session?.user}
+                />
+                {input && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <Clock className="w-3 h-3 md:w-4 md:h-4 text-gray-400" />
+                  </div>
+                )}
+              </div>
+              <Button 
+                type="submit" 
+                size="icon" 
+                className="bg-monkeyGreen hover:bg-green-700 text-white rounded-xl shadow-sm transition-all duration-200 w-10 h-10 md:w-12 md:h-12 flex-shrink-0"
+                disabled={!input.trim() || isLoading || !session?.user}
+              >
+                {isLoading ? (
+                  <div className="w-3 h-3 md:w-4 md:h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Send className="h-3 w-3 md:h-4 md:w-4" />
+                )}
+              </Button>
+            </form>
+            
+            {!session?.user && (
+              <div className="mt-2 md:mt-3 text-center">
+                <p className="text-xs text-gray-500">
+                  Please <Link to="/login" className="text-monkeyGreen underline font-medium">sign in</Link> to use the AI assistant
+                </p>
+              </div>
+            )}
+            
+            {session?.user && (
+              <div className="mt-2 md:mt-3 text-center">
+                <p className="text-xs text-gray-400">
+                  Powered by Gemini AI • Press Enter to send
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
