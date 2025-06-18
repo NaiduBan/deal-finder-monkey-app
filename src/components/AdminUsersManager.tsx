@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Search, Eye, Edit, Trash2, Plus, Upload, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface User {
+interface Profile {
   id: string;
   email: string;
   name: string;
@@ -37,64 +37,63 @@ interface User {
 }
 
 const AdminUsersManager = () => {
-  const [users, setUsers] = useState<User[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [filteredProfiles, setFilteredProfiles] = useState<Profile[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetchUsers();
+    fetchProfiles();
   }, []);
 
   useEffect(() => {
-    const filtered = users.filter(user =>
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.phone?.includes(searchTerm) ||
-      user.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.state?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.country?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.occupation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.gender?.toLowerCase().includes(searchTerm.toLowerCase())
+    const filtered = profiles.filter(profile =>
+      profile.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      profile.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      profile.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      profile.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      profile.phone?.includes(searchTerm) ||
+      profile.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      profile.state?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      profile.country?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      profile.occupation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      profile.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      profile.gender?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-    setFilteredUsers(filtered);
-  }, [users, searchTerm]);
+    setFilteredProfiles(filtered);
+  }, [profiles, searchTerm]);
 
-  const fetchUsers = async () => {
+  const fetchProfiles = async () => {
     try {
-      console.log('Fetching users from profiles table...');
+      console.log('Fetching profiles from database...');
       
-      // Use service role or admin context to bypass RLS
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      console.log('Users fetch result:', { data, error, count: data?.length });
+      console.log('Profiles fetch result:', { data, error, count: data?.length });
 
       if (error) {
-        console.error('Error fetching users:', error);
-        toast.error(`Failed to fetch users: ${error.message}`);
+        console.error('Error fetching profiles:', error);
+        toast.error(`Failed to fetch profiles: ${error.message}`);
         return;
       }
 
-      console.log('Successfully fetched users:', data?.length || 0);
-      setUsers(data || []);
+      console.log('Successfully fetched profiles:', data?.length || 0);
+      setProfiles(data || []);
     } catch (error) {
       console.error('Error:', error);
-      toast.error('An error occurred while fetching users');
+      toast.error('An error occurred while fetching profiles');
     } finally {
       setLoading(false);
     }
   };
 
-  const deleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+  const deleteProfile = async (profileId: string) => {
+    if (!confirm('Are you sure you want to delete this profile? This action cannot be undone.')) {
       return;
     }
 
@@ -102,19 +101,19 @@ const AdminUsersManager = () => {
       const { error } = await supabase
         .from('profiles')
         .delete()
-        .eq('id', userId);
+        .eq('id', profileId);
 
       if (error) {
-        console.error('Error deleting user:', error);
-        toast.error('Failed to delete user');
+        console.error('Error deleting profile:', error);
+        toast.error('Failed to delete profile');
         return;
       }
 
-      setUsers(users.filter(user => user.id !== userId));
-      toast.success('User deleted successfully');
+      setProfiles(profiles.filter(profile => profile.id !== profileId));
+      toast.success('Profile deleted successfully');
     } catch (error) {
       console.error('Error:', error);
-      toast.error('An error occurred while deleting the user');
+      toast.error('An error occurred while deleting the profile');
     }
   };
 
@@ -133,39 +132,39 @@ const AdminUsersManager = () => {
       const lines = text.split('\n');
       const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
       
-      const userData = [];
+      const profileData = [];
       for (let i = 1; i < lines.length; i++) {
         if (lines[i].trim()) {
           const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
-          const user: any = {};
+          const profile: any = {};
           headers.forEach((header, index) => {
             if (values[index] && values[index] !== 'N/A') {
-              user[header] = values[index];
+              profile[header] = values[index];
             }
           });
-          if (user.id || user.email) {
-            userData.push(user);
+          if (profile.id || profile.email) {
+            profileData.push(profile);
           }
         }
       }
 
-      if (userData.length === 0) {
-        toast.error('No valid user data found in CSV');
+      if (profileData.length === 0) {
+        toast.error('No valid profile data found in CSV');
         return;
       }
 
       const { data, error } = await supabase
         .from('profiles')
-        .upsert(userData, { onConflict: 'id' });
+        .upsert(profileData, { onConflict: 'id' });
 
       if (error) {
-        console.error('Error uploading users:', error);
-        toast.error('Failed to upload users');
+        console.error('Error uploading profiles:', error);
+        toast.error('Failed to upload profiles');
         return;
       }
 
-      toast.success(`Successfully uploaded ${userData.length} users`);
-      fetchUsers();
+      toast.success(`Successfully uploaded ${profileData.length} profiles`);
+      fetchProfiles();
     } catch (error) {
       console.error('Error processing CSV:', error);
       toast.error('Error processing CSV file');
@@ -189,9 +188,9 @@ const AdminUsersManager = () => {
     
     const csvContent = [
       headers.join(','),
-      ...filteredUsers.map(user => 
+      ...filteredProfiles.map(profile => 
         headers.map(header => {
-          const value = user[header as keyof User];
+          const value = profile[header as keyof Profile];
           if (value === null || value === undefined) return '';
           if (typeof value === 'object') return `"${JSON.stringify(value).replace(/"/g, '""')}"`;
           return `"${value.toString().replace(/"/g, '""')}"`;
@@ -203,7 +202,7 @@ const AdminUsersManager = () => {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'users_complete.csv';
+    link.download = 'profiles_complete.csv';
     link.click();
     window.URL.revokeObjectURL(url);
   };
@@ -212,7 +211,7 @@ const AdminUsersManager = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Loading Users...</CardTitle>
+          <CardTitle>Loading Profiles...</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-4">
@@ -231,10 +230,10 @@ const AdminUsersManager = () => {
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>Users Management - Complete Database View</CardTitle>
+              <CardTitle>User Profiles Management - Complete Database View</CardTitle>
               <p className="text-gray-600">All user profiles with complete database structure</p>
             </div>
-            <Badge variant="secondary">{users.length} Total Users</Badge>
+            <Badge variant="secondary">{profiles.length} Total Profiles</Badge>
           </div>
         </CardHeader>
         <CardContent>
@@ -242,7 +241,7 @@ const AdminUsersManager = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Search users by any field..."
+                placeholder="Search profiles by any field..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -273,7 +272,7 @@ const AdminUsersManager = () => {
             />
             <Button className="flex items-center space-x-2">
               <Plus className="h-4 w-4" />
-              <span>Add User</span>
+              <span>Add Profile</span>
             </Button>
           </div>
 
@@ -309,52 +308,52 @@ const AdminUsersManager = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium text-xs">{user.id}</TableCell>
-                    <TableCell className="font-medium">{user.email || 'N/A'}</TableCell>
-                    <TableCell>{user.name || 'N/A'}</TableCell>
-                    <TableCell>{user.first_name || 'N/A'}</TableCell>
-                    <TableCell>{user.last_name || 'N/A'}</TableCell>
-                    <TableCell>{user.phone || 'N/A'}</TableCell>
-                    <TableCell>{user.location || 'N/A'}</TableCell>
-                    <TableCell>{user.gender || 'N/A'}</TableCell>
-                    <TableCell>{user.occupation || 'N/A'}</TableCell>
-                    <TableCell>{user.company || 'N/A'}</TableCell>
-                    <TableCell className="max-w-[150px] truncate">{user.bio || 'N/A'}</TableCell>
-                    <TableCell className="max-w-[150px] truncate">{user.address || 'N/A'}</TableCell>
-                    <TableCell>{user.city || 'N/A'}</TableCell>
-                    <TableCell>{user.state || 'N/A'}</TableCell>
-                    <TableCell>{user.country || 'N/A'}</TableCell>
-                    <TableCell>{user.postal_code || 'N/A'}</TableCell>
-                    <TableCell className="max-w-[100px] truncate">{user.avatar_url || 'N/A'}</TableCell>
+                {filteredProfiles.map((profile) => (
+                  <TableRow key={profile.id}>
+                    <TableCell className="font-medium text-xs">{profile.id}</TableCell>
+                    <TableCell className="font-medium">{profile.email || 'N/A'}</TableCell>
+                    <TableCell>{profile.name || 'N/A'}</TableCell>
+                    <TableCell>{profile.first_name || 'N/A'}</TableCell>
+                    <TableCell>{profile.last_name || 'N/A'}</TableCell>
+                    <TableCell>{profile.phone || 'N/A'}</TableCell>
+                    <TableCell>{profile.location || 'N/A'}</TableCell>
+                    <TableCell>{profile.gender || 'N/A'}</TableCell>
+                    <TableCell>{profile.occupation || 'N/A'}</TableCell>
+                    <TableCell>{profile.company || 'N/A'}</TableCell>
+                    <TableCell className="max-w-[150px] truncate">{profile.bio || 'N/A'}</TableCell>
+                    <TableCell className="max-w-[150px] truncate">{profile.address || 'N/A'}</TableCell>
+                    <TableCell>{profile.city || 'N/A'}</TableCell>
+                    <TableCell>{profile.state || 'N/A'}</TableCell>
+                    <TableCell>{profile.country || 'N/A'}</TableCell>
+                    <TableCell>{profile.postal_code || 'N/A'}</TableCell>
+                    <TableCell className="max-w-[100px] truncate">{profile.avatar_url || 'N/A'}</TableCell>
                     <TableCell className="max-w-[100px] truncate">
-                      {user.preferences ? JSON.stringify(user.preferences) : 'N/A'}
+                      {profile.preferences ? JSON.stringify(profile.preferences) : 'N/A'}
                     </TableCell>
-                    <TableCell>{user.date_of_birth ? new Date(user.date_of_birth).toLocaleDateString() : 'N/A'}</TableCell>
+                    <TableCell>{profile.date_of_birth ? new Date(profile.date_of_birth).toLocaleDateString() : 'N/A'}</TableCell>
                     <TableCell>
-                      {user.is_phone_verified ? (
+                      {profile.is_phone_verified ? (
                         <Badge variant="default" className="text-xs">Yes</Badge>
                       ) : (
                         <Badge variant="outline" className="text-xs">No</Badge>
                       )}
                     </TableCell>
                     <TableCell>
-                      {user.is_email_verified ? (
+                      {profile.is_email_verified ? (
                         <Badge variant="default" className="text-xs">Yes</Badge>
                       ) : (
                         <Badge variant="outline" className="text-xs">No</Badge>
                       )}
                     </TableCell>
                     <TableCell>
-                      {user.marketing_consent ? (
+                      {profile.marketing_consent ? (
                         <Badge variant="default" className="text-xs">Yes</Badge>
                       ) : (
                         <Badge variant="outline" className="text-xs">No</Badge>
                       )}
                     </TableCell>
-                    <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell>{user.updated_at ? new Date(user.updated_at).toLocaleDateString() : 'N/A'}</TableCell>
+                    <TableCell>{new Date(profile.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell>{profile.updated_at ? new Date(profile.updated_at).toLocaleDateString() : 'N/A'}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end space-x-2">
                         <Button variant="outline" size="sm">
@@ -366,7 +365,7 @@ const AdminUsersManager = () => {
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          onClick={() => deleteUser(user.id)}
+                          onClick={() => deleteProfile(profile.id)}
                           className="text-red-600 hover:text-red-700"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -379,9 +378,9 @@ const AdminUsersManager = () => {
             </Table>
           </div>
 
-          {filteredUsers.length === 0 && (
+          {filteredProfiles.length === 0 && (
             <div className="text-center py-8 text-gray-500">
-              {searchTerm ? 'No users found matching your search.' : 'No users found. Check console for debugging info.'}
+              {searchTerm ? 'No profiles found matching your search.' : 'No profiles found. Check console for debugging info.'}
             </div>
           )}
         </CardContent>
