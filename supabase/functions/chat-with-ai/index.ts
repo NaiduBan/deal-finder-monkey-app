@@ -35,7 +35,31 @@ serve(async (req) => {
     // Search for relevant offers based on the user's message
     const offerData = await searchRelevantOffers(supabaseClient, message);
 
-    // Enhanced system prompt that can handle any type of question
+    // Check if this is an offer-related query
+    const offerKeywords = ['deal', 'offer', 'discount', 'coupon', 'sale', 'promo', 'store', 'shop', 'buy', 'price', 'cheap', 'show', 'find'];
+    const isOfferRelated = offerKeywords.some(keyword => message.toLowerCase().includes(keyword));
+
+    // If offers found and it's offer-related, return minimal response
+    if (offerData.length > 0 && isOfferRelated) {
+      // Save the conversation to database
+      await supabaseClient
+        .from('chat_messages')
+        .insert({
+          user_id: user.id,
+          message: message,
+          response: `Found ${offerData.length} offers`
+        });
+
+      return new Response(JSON.stringify({ 
+        response: `Found ${offerData.length} offers`,
+        offers: offerData,
+        showOnlyCards: true
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // For non-offer queries or when no offers found, use AI response
     const systemPrompt = `You are OffersMonkey Assistant, a versatile AI assistant that can help with any questions while specializing in deals and offers. You have access to real-time offer data and can provide comprehensive assistance.
 
 Context about the user:
@@ -112,7 +136,8 @@ Remember: You're an AI assistant that happens to specialize in deals, but you ca
 
     return new Response(JSON.stringify({ 
       response: aiResponse,
-      offers: offerData.length > 0 ? offerData : null
+      offers: offerData.length > 0 ? offerData : null,
+      showOnlyCards: false
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

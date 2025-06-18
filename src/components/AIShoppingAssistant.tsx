@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Bot, Mic, Search, Heart, TrendingUp, Zap, MessageCircle, Volume2, Sparkles, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +22,7 @@ interface Message {
   timestamp: Date;
   hasAudio?: boolean;
   offers?: any[];
+  showOnlyCards?: boolean;
 }
 
 const AIShoppingAssistant = () => {
@@ -135,7 +135,8 @@ const AIShoppingAssistant = () => {
         isUser: false,
         timestamp: new Date(),
         hasAudio: fromVoice,
-        offers: data.offers || []
+        offers: data.offers || [],
+        showOnlyCards: data.showOnlyCards || false
       };
 
       setMessages(prev => [...prev, botMessage]);
@@ -239,7 +240,6 @@ const AIShoppingAssistant = () => {
               </div>
             </div>
             
-            {/* Mode Toggle */}
             <div className="flex items-center space-x-1">
               <Button
                 variant={currentMode === 'text' ? 'default' : 'outline'}
@@ -293,45 +293,46 @@ const AIShoppingAssistant = () => {
                   <div className="space-y-4">
                     {messages.map((message) => (
                       <div key={message.id} className="space-y-4">
-                        <div className={`flex ${message.isUser ? 'justify-end' : 'justify-start'} gap-3`}>
-                          {/* Avatar */}
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                            message.isUser ? 'order-2 bg-gray-400' : 'order-1 bg-monkeyGreen'
-                          }`}>
-                            {message.isUser ? (
-                              <span className="text-white text-xs font-medium">
-                                {user?.name?.charAt(0) || 'U'}
-                              </span>
-                            ) : (
-                              <Bot className="w-4 h-4 text-white" />
-                            )}
-                          </div>
-
-                          {/* Message Bubble */}
-                          <div className={`max-w-xs lg:max-w-sm ${message.isUser ? 'order-1' : 'order-2'}`}>
-                            <div
-                              className={`rounded-2xl px-4 py-3 ${
-                                message.isUser
-                                  ? 'bg-monkeyGreen text-white rounded-br-md'
-                                  : 'bg-white border border-gray-200 text-gray-800 rounded-bl-md shadow-sm'
-                              }`}
-                            >
-                              <p className="text-sm leading-relaxed">{message.text}</p>
-                              <div className="flex items-center justify-between mt-2">
-                                <span className={`text-xs ${message.isUser ? 'text-green-100' : 'text-gray-400'}`}>
-                                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {/* Only show text message if it's not a cards-only response */}
+                        {!message.showOnlyCards && (
+                          <div className={`flex ${message.isUser ? 'justify-end' : 'justify-start'} gap-3`}>
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                              message.isUser ? 'order-2 bg-gray-400' : 'order-1 bg-monkeyGreen'
+                            }`}>
+                              {message.isUser ? (
+                                <span className="text-white text-xs font-medium">
+                                  {user?.name?.charAt(0) || 'U'}
                                 </span>
-                                {message.hasAudio && !message.isUser && (
-                                  <Volume2 className="w-3 h-3 text-monkeyGreen" />
-                                )}
+                              ) : (
+                                <Bot className="w-4 h-4 text-white" />
+                              )}
+                            </div>
+
+                            <div className={`max-w-xs lg:max-w-sm ${message.isUser ? 'order-1' : 'order-2'}`}>
+                              <div
+                                className={`rounded-2xl px-4 py-3 ${
+                                  message.isUser
+                                    ? 'bg-monkeyGreen text-white rounded-br-md'
+                                    : 'bg-white border border-gray-200 text-gray-800 rounded-bl-md shadow-sm'
+                                }`}
+                              >
+                                <p className="text-sm leading-relaxed">{message.text}</p>
+                                <div className="flex items-center justify-between mt-2">
+                                  <span className={`text-xs ${message.isUser ? 'text-green-100' : 'text-gray-400'}`}>
+                                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                  {message.hasAudio && !message.isUser && (
+                                    <Volume2 className="w-3 h-3 text-monkeyGreen" />
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* Offer Cards Display */}
                         {!message.isUser && message.offers && message.offers.length > 0 && (
-                          <div className="ml-11">
+                          <div className={message.showOnlyCards ? "" : "ml-11"}>
                             <div className={`grid gap-3 ${
                               isMobile 
                                 ? 'grid-cols-1' 

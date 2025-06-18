@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, ChevronLeft, Bot, User, Sparkles, MessageCircle, Zap, Clock, ExternalLink } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -15,6 +14,7 @@ import AIOfferCard from './AIOfferCard';
 
 interface MessageWithOffers extends Message {
   offers?: any[];
+  showOnlyCards?: boolean;
 }
 
 const ChatbotScreen = () => {
@@ -148,7 +148,8 @@ const ChatbotScreen = () => {
         text: data.response,
         isUser: false,
         timestamp: new Date(),
-        offers: data.offers || []
+        offers: data.offers || [],
+        showOnlyCards: data.showOnlyCards || false
       };
       
       setMessages(prev => [...prev, botMessage]);
@@ -305,52 +306,55 @@ const ChatbotScreen = () => {
             <div className="space-y-4 md:space-y-6">
               {messages.map((message) => (
                 <div key={message.id} className="space-y-4">
-                  <div className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`flex items-start space-x-2 md:space-x-3 max-w-[90%] sm:max-w-[85%] md:max-w-[75%] ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                      {!message.isUser && (
-                        <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-monkeyGreen to-green-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                          <Bot className="w-3 h-3 md:w-4 md:h-4 text-white" />
+                  {/* Only show text message if it's not a cards-only response */}
+                  {!message.showOnlyCards && (
+                    <div className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`flex items-start space-x-2 md:space-x-3 max-w-[90%] sm:max-w-[85%] md:max-w-[75%] ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                        {!message.isUser && (
+                          <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-monkeyGreen to-green-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                            <Bot className="w-3 h-3 md:w-4 md:h-4 text-white" />
+                          </div>
+                        )}
+                        <div
+                          className={`rounded-2xl px-3 py-2 md:px-4 md:py-3 min-w-0 overflow-hidden ${
+                            message.isUser
+                              ? 'bg-monkeyGreen text-white rounded-br-md'
+                              : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md shadow-sm'
+                          }`}
+                        >
+                          <div className="text-sm leading-relaxed break-words overflow-wrap-anywhere">
+                            {message.isUser ? (
+                              <p className="whitespace-pre-wrap">{message.text}</p>
+                            ) : (
+                              <div className="space-y-2">
+                                {formatMessage(message.text)}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between mt-2 gap-2">
+                            <p className={`text-xs flex-shrink-0 ${message.isUser ? 'text-green-100' : 'text-gray-400'}`}>
+                              {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                            {!message.isUser && (
+                              <div className="flex items-center space-x-1 flex-shrink-0">
+                                <Zap className="w-3 h-3 text-monkeyGreen" />
+                                <span className="text-xs text-monkeyGreen font-medium">AI</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
-                      <div
-                        className={`rounded-2xl px-3 py-2 md:px-4 md:py-3 min-w-0 overflow-hidden ${
-                          message.isUser
-                            ? 'bg-monkeyGreen text-white rounded-br-md'
-                            : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md shadow-sm'
-                        }`}
-                      >
-                        <div className="text-sm leading-relaxed break-words overflow-wrap-anywhere">
-                          {message.isUser ? (
-                            <p className="whitespace-pre-wrap">{message.text}</p>
-                          ) : (
-                            <div className="space-y-2">
-                              {formatMessage(message.text)}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between mt-2 gap-2">
-                          <p className={`text-xs flex-shrink-0 ${message.isUser ? 'text-green-100' : 'text-gray-400'}`}>
-                            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                          {!message.isUser && (
-                            <div className="flex items-center space-x-1 flex-shrink-0">
-                              <Zap className="w-3 h-3 text-monkeyGreen" />
-                              <span className="text-xs text-monkeyGreen font-medium">AI</span>
-                            </div>
-                          )}
-                        </div>
+                        {message.isUser && (
+                          <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                            <User className="w-3 h-3 md:w-4 md:h-4 text-white" />
+                          </div>
+                        )}
                       </div>
-                      {message.isUser && (
-                        <div className="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                          <User className="w-3 h-3 md:w-4 md:h-4 text-white" />
-                        </div>
-                      )}
                     </div>
-                  </div>
+                  )}
                   
                   {/* Offer Cards Display */}
                   {!message.isUser && message.offers && message.offers.length > 0 && (
-                    <div className="ml-6 md:ml-8">
+                    <div className={message.showOnlyCards ? "" : "ml-6 md:ml-8"}>
                       <div className={`grid gap-3 ${
                         isMobile 
                           ? 'grid-cols-1' 
