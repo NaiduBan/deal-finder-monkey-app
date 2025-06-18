@@ -1,13 +1,15 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Search, Eye, Edit, Trash2, Plus, Upload, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import UserStats from './admin/users/UserStats';
+import UserSearch from './admin/users/UserSearch';
+import UserActions from './admin/users/UserActions';
+import UserTable from './admin/users/UserTable';
+import EmptyUsersState from './admin/users/EmptyUsersState';
+import LoadingState from './admin/users/LoadingState';
 
 interface Profile {
   id: string;
@@ -42,7 +44,6 @@ const AdminUsersManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredProfiles, setFilteredProfiles] = useState<Profile[]>([]);
   const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchProfiles();
@@ -69,7 +70,6 @@ const AdminUsersManager = () => {
     try {
       console.log('Fetching profiles from database...');
       
-      // First, let's check if we have any profiles at all
       const { count, error: countError } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true });
@@ -189,14 +189,10 @@ const AdminUsersManager = () => {
       toast.error('Error processing CSV file');
     } finally {
       setUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
   };
 
   const exportToCSV = () => {
-    // Export all profiles, not just filtered ones for admin purposes
     const headers = [
       'id', 'email', 'name', 'first_name', 'last_name', 'phone', 'location', 
       'gender', 'occupation', 'company', 'bio', 'address', 'city', 'state', 
@@ -227,20 +223,7 @@ const AdminUsersManager = () => {
   };
 
   if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Loading User Profiles...</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-12 bg-gray-200 rounded"></div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <LoadingState />;
   }
 
   return (
@@ -252,157 +235,31 @@ const AdminUsersManager = () => {
               <CardTitle>User Profiles Management</CardTitle>
               <p className="text-gray-600">Manage all user profiles from the database</p>
             </div>
-            <Badge variant="secondary">{profiles.length} Total Users</Badge>
+            <UserStats totalUsers={profiles.length} />
           </div>
         </CardHeader>
         <CardContent>
           <div className="flex items-center space-x-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search users by name, email, city, occupation..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Button 
-              onClick={exportToCSV}
-              variant="outline"
-              className="flex items-center space-x-2"
-              disabled={profiles.length === 0}
-            >
-              <Download className="h-4 w-4" />
-              <span>Export CSV</span>
-            </Button>
-            <Button 
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="flex items-center space-x-2"
-            >
-              <Upload className="h-4 w-4" />
-              <span>{uploading ? 'Uploading...' : 'Upload CSV'}</span>
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv"
-              onChange={handleCSVUpload}
-              className="hidden"
+            <UserSearch 
+              searchTerm={searchTerm} 
+              onSearchChange={setSearchTerm} 
+            />
+            <UserActions
+              onExportCSV={exportToCSV}
+              onUploadCSV={handleCSVUpload}
+              uploading={uploading}
+              hasUsers={profiles.length > 0}
             />
           </div>
 
-          {profiles.length === 0 && !loading ? (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">👥</div>
-              <h3 className="text-lg font-semibold mb-2">No User Profiles Found</h3>
-              <p className="text-gray-500 mb-4">
-                There are currently no user profiles in the database. 
-                Users need to sign up to create profiles.
-              </p>
-              <Button onClick={fetchProfiles} variant="outline">
-                Refresh Data
-              </Button>
-            </div>
+          {profiles.length === 0 ? (
+            <EmptyUsersState onRefresh={fetchProfiles} />
           ) : (
             <>
-              <div className="border rounded-lg overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="min-w-[200px]">User ID</TableHead>
-                      <TableHead className="min-w-[200px]">Email</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>First Name</TableHead>
-                      <TableHead>Last Name</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead>Gender</TableHead>
-                      <TableHead>Occupation</TableHead>
-                      <TableHead>Company</TableHead>
-                      <TableHead className="min-w-[200px]">Bio</TableHead>
-                      <TableHead>Address</TableHead>
-                      <TableHead>City</TableHead>
-                      <TableHead>State</TableHead>
-                      <TableHead>Country</TableHead>
-                      <TableHead>Postal Code</TableHead>
-                      <TableHead>Avatar URL</TableHead>
-                      <TableHead>Date of Birth</TableHead>
-                      <TableHead>Phone Verified</TableHead>
-                      <TableHead>Email Verified</TableHead>
-                      <TableHead>Marketing Consent</TableHead>
-                      <TableHead>Created At</TableHead>
-                      <TableHead>Updated At</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredProfiles.map((profile) => (
-                      <TableRow key={profile.id}>
-                        <TableCell className="font-medium text-xs">{profile.id}</TableCell>
-                        <TableCell className="font-medium">{profile.email || 'N/A'}</TableCell>
-                        <TableCell>{profile.name || 'N/A'}</TableCell>
-                        <TableCell>{profile.first_name || 'N/A'}</TableCell>
-                        <TableCell>{profile.last_name || 'N/A'}</TableCell>
-                        <TableCell>{profile.phone || 'N/A'}</TableCell>
-                        <TableCell>{profile.location || 'N/A'}</TableCell>
-                        <TableCell>{profile.gender || 'N/A'}</TableCell>
-                        <TableCell>{profile.occupation || 'N/A'}</TableCell>
-                        <TableCell>{profile.company || 'N/A'}</TableCell>
-                        <TableCell className="max-w-[150px] truncate">{profile.bio || 'N/A'}</TableCell>
-                        <TableCell className="max-w-[150px] truncate">{profile.address || 'N/A'}</TableCell>
-                        <TableCell>{profile.city || 'N/A'}</TableCell>
-                        <TableCell>{profile.state || 'N/A'}</TableCell>
-                        <TableCell>{profile.country || 'N/A'}</TableCell>
-                        <TableCell>{profile.postal_code || 'N/A'}</TableCell>
-                        <TableCell className="max-w-[100px] truncate">{profile.avatar_url || 'N/A'}</TableCell>
-                        <TableCell>{profile.date_of_birth ? new Date(profile.date_of_birth).toLocaleDateString() : 'N/A'}</TableCell>
-                        <TableCell>
-                          {profile.is_phone_verified ? (
-                            <Badge variant="default" className="text-xs">Yes</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">No</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {profile.is_email_verified ? (
-                            <Badge variant="default" className="text-xs">Yes</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">No</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {profile.marketing_consent ? (
-                            <Badge variant="default" className="text-xs">Yes</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">No</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>{new Date(profile.created_at).toLocaleDateString()}</TableCell>
-                        <TableCell>{profile.updated_at ? new Date(profile.updated_at).toLocaleDateString() : 'N/A'}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => deleteProfile(profile.id)}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              <UserTable 
+                profiles={filteredProfiles} 
+                onDeleteProfile={deleteProfile} 
+              />
 
               {filteredProfiles.length === 0 && searchTerm && (
                 <div className="text-center py-8 text-gray-500">
