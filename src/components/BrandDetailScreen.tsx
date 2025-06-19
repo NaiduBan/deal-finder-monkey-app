@@ -163,7 +163,7 @@ const BrandDetailScreen = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/50 flex items-center justify-center">
+      <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/50 flex items-center justify-center ${isMobile ? '' : 'pt-20'}`}>
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
       </div>
     );
@@ -171,7 +171,7 @@ const BrandDetailScreen = () => {
 
   if (!brandDetail) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/50 flex items-center justify-center">
+      <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/50 flex items-center justify-center ${isMobile ? '' : 'pt-20'}`}>
         <div className="text-center">
           <h3 className="text-xl font-medium text-gray-900 mb-3">Brand not found</h3>
           <Link to="/brands" className="text-purple-600 hover:text-purple-700">
@@ -183,9 +183,9 @@ const BrandDetailScreen = () => {
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/50 ${isMobile ? 'pb-16' : 'pt-0'}`}>
+    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/50 ${isMobile ? 'pb-16' : 'pt-20'}`}>
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-100/80 sticky top-0 z-10">
+      <div className={`bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-100/80 sticky z-10 ${isMobile ? 'top-0' : 'top-20'}`}>
         <div className={`${isMobile ? 'px-4 py-4' : 'px-6 py-6 max-w-7xl mx-auto'}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
