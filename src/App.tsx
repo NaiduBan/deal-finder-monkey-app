@@ -35,6 +35,10 @@ import AdminPanel from "./components/AdminPanel";
 import AIShoppingAssistant from "./components/AIShoppingAssistant";
 import HyperLocalDeals from "./components/HyperLocalDeals";
 import SocialShopping from "./components/SocialShopping";
+import StoresScreen from "./components/StoresScreen";
+import StoreDetailScreen from "./components/StoreDetailScreen";
+import BrandsScreen from "./components/BrandsScreen";
+import BrandDetailScreen from "./components/BrandDetailScreen";
 
 const queryClient = new QueryClient();
 
@@ -99,6 +103,38 @@ const App = () => (
                         element={
                           <ProtectedRoute>
                             <HomeScreen />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/stores" 
+                        element={
+                          <ProtectedRoute>
+                            <StoresScreen />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/store/:storeName" 
+                        element={
+                          <ProtectedRoute>
+                            <StoreDetailScreen />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/brands" 
+                        element={
+                          <ProtectedRoute>
+                            <BrandsScreen />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/brand/:brandName" 
+                        element={
+                          <ProtectedRoute>
+                            <BrandDetailScreen />
                           </ProtectedRoute>
                         } 
                       />
