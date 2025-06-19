@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, ChevronLeft, Bot, User, Sparkles, MessageCircle, Zap, Clock, ExternalLink, History, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -288,13 +287,21 @@ const ChatbotScreen = () => {
     "Find beauty and skincare offers",
     "Show me book deals",
     "Find fitness equipment offers",
-    "What are the latest tech deals?"
+    "What are the latest tech deals?",
+    "Find budget-friendly gadgets",
+    "Show me home decor offers",
+    "Find restaurant deals near me",
+    "What are today's flash sales?",
+    "Show me clothing discounts",
+    "Find laptop deals under ₹50k",
+    "What offers are available for students?",
+    "Show me weekend special deals"
   ];
 
   const displayMessages = showHistory ? chatHistory : messages;
 
   return (
-    <div className={`flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden ${isMobile ? 'h-screen pb-16' : 'h-screen'}`}>
+    <div className={`flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 ${isMobile ? 'h-screen pb-16' : 'h-screen pt-0'}`}>
       {/* Header - Fixed and responsive */}
       <div className="bg-white border-b border-gray-200 shadow-sm flex-shrink-0 z-10">
         <div className="flex items-center justify-between p-3 md:p-4">
@@ -349,8 +356,8 @@ const ChatbotScreen = () => {
         </div>
       </div>
       
-      {/* Messages Area - Takes remaining space but leaves room for input and nav */}
-      <div className="flex-1 min-h-0 relative">
+      {/* Messages Area - Fixed height calculation for laptop view */}
+      <div className={`flex-1 min-h-0 relative ${!isMobile ? 'max-h-[calc(100vh-140px)]' : ''}`}>
         <ScrollArea className="h-full">
           <div className="p-3 md:p-4 pb-4 max-w-4xl mx-auto">
             <div className="space-y-4 md:space-y-6">
@@ -454,7 +461,7 @@ const ChatbotScreen = () => {
                     <h3 className="text-sm font-medium text-gray-900 mb-2">💡 Quick Questions</h3>
                     <p className="text-xs text-gray-500">Ask me anything - deals, general questions, or advice!</p>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
                     {suggestedQuestions.map((question, index) => (
                       <Button
                         key={index}
