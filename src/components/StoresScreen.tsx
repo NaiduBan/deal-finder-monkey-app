@@ -107,15 +107,17 @@ const StoresScreen = () => {
   };
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 ${isMobile ? 'pb-16' : 'pt-0'}`}>
+    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 ${isMobile ? 'pb-16' : 'pt-20'}`}>
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-100/80 sticky top-0 z-10">
+      <div className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-100/80 sticky top-0 z-10" style={{ top: isMobile ? '0' : '80px' }}>
         <div className={`${isMobile ? 'px-4 py-4' : 'px-6 py-6 max-w-7xl mx-auto'}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Link to="/home" className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
-                <ChevronLeft className="w-5 h-5 text-gray-600" />
-              </Link>
+              {isMobile && (
+                <Link to="/home" className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                  <ChevronLeft className="w-5 h-5 text-gray-600" />
+                </Link>
+              )}
               <div className="flex items-center space-x-4">
                 <div className="p-3 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl shadow-lg">
                   <Store className="w-6 h-6 text-white" />

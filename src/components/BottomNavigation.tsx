@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Bookmark, MessageCircle, User, SlidersHorizontal } from 'lucide-react';
+import { Home, Bookmark, MessageCircle, User, SlidersHorizontal, Store, Star } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   NavigationMenu,
@@ -79,6 +80,8 @@ const BottomNavigation = () => {
 
   const desktopNavItems = [
     { path: '/home', icon: Home, label: 'Home' },
+    { path: '/stores', icon: Store, label: 'Stores' },
+    { path: '/brands', icon: Star, label: 'Brands' },
     { path: '/saved', icon: Bookmark, label: 'Saved' },
     { path: '/chatbot', icon: MessageCircle, label: 'Assistant' },
   ];
