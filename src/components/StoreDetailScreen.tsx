@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Store, ExternalLink, Share2, Heart, Tag, Calendar, TrendingUp, MapPin, Star, Bookmark } from 'lucide-react';
+import { ChevronLeft, Store, Share2, Tag, Calendar, TrendingUp, Star, Bookmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -202,12 +202,10 @@ const StoreDetailScreen = () => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm">
-                <Share2 className="w-4 h-4 mr-2" />
-                Share
-              </Button>
-            </div>
+            <Button variant="outline" size="sm">
+              <Share2 className="w-4 h-4 mr-2" />
+              Share
+            </Button>
           </div>
         </div>
       </div>
