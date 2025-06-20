@@ -369,7 +369,7 @@ const HomeScreen = () => {
     <div className={`bg-monkeyBackground min-h-screen ${isMobile ? 'pb-16' : 'pt-20'}`}>
       {/* Mobile Header with location - only show on mobile */}
       {isMobile && (
-        <div className="bg-spring-green-600 text-white py-4 px-4 sticky top-0 z-30">
+        <div className="bg-spring-green-600 text-white py-4 px-4 fixed top-0 left-0 right-0 z-30">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-1">
               <MapPin className="w-4 h-4" />
@@ -388,7 +388,7 @@ const HomeScreen = () => {
       )}
       
       {/* Main content - desktop with max-width container */}
-      <div className={`space-y-6 ${isMobile ? 'p-4' : 'w-full'}`}>
+      <div className={`space-y-6 ${isMobile ? 'p-4 pt-20' : 'w-full'}`}>
         <div className={`${!isMobile ? 'max-w-[1440px] mx-auto px-6 py-8' : ''}`}>
           {/* Desktop welcome section */}
           {!isMobile && (

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Store, Tag, CreditCard, Check, Search, Star, Users, BarChart3, TrendingUp, Settings, Heart, ArrowRight, Sparkles, Target, Shield } from 'lucide-react';
@@ -160,9 +159,9 @@ const PreferencesScreen = () => {
   const totalPreferences = Object.values(userPreferenceCounts).reduce((sum, count) => sum + count, 0);
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 ${isMobile ? 'pb-16' : 'pt-0'}`}>
+    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 ${isMobile ? 'pb-16 pt-4' : 'pt-24'}`}>
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-100/80 sticky top-0 z-10">
+      <div className={`bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-100/80 ${isMobile ? 'fixed top-0 left-0 right-0 z-10' : 'sticky top-20 z-10'}`}>
         <div className={`${isMobile ? 'px-4 py-4' : 'px-6 py-6 max-w-7xl mx-auto'}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -205,7 +204,7 @@ const PreferencesScreen = () => {
       </div>
 
       {/* Content */}
-      <div className={`${isMobile ? 'p-4 space-y-6' : 'p-8 max-w-7xl mx-auto space-y-8'}`}>
+      <div className={`${isMobile ? 'p-4 space-y-6 mt-24' : 'p-8 max-w-7xl mx-auto space-y-8'}`}>
         {/* Stats Overview */}
         <div className={`grid ${isMobile ? 'grid-cols-2 gap-3' : 'grid-cols-4 gap-4'} mb-6`}>
           <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 border border-gray-100/80 shadow-sm">
