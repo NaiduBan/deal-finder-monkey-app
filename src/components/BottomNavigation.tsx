@@ -49,9 +49,10 @@ const BottomNavigation = () => {
   ];
 
   if (isMobile) {
+    // Mobile bottom navigation
     return (
       <>
-        <div className="fixed bottom-0 left-0 right-0 z-30 bg-spring-green-600 border-t border-spring-green-700">
+        <div className="fixed bottom-0 left-0 right-0 z-30 bg-spring-green-600 border-t border-spring-green-700 overflow-x-auto">
           <div className="flex justify-around items-center">
             {navItems.map((item) => {
               const active = isActive(item.path);
@@ -75,6 +76,7 @@ const BottomNavigation = () => {
           </div>
         </div>
         
+        {/* Floating Chatbot Icon for Mobile */}
         <Link
           to="/chatbot"
           className="fixed bottom-20 right-4 z-40 bg-gradient-to-r from-monkeyGreen to-green-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110"
@@ -98,6 +100,7 @@ const BottomNavigation = () => {
     { to: '/login', title: 'Logout', description: 'Sign out from your account.' },
   ];
 
+  // Desktop top navigation with advanced menu
   return (
     <>
       <div className="fixed top-0 left-0 right-0 z-20 bg-white border-b shadow-sm">
@@ -155,6 +158,7 @@ const BottomNavigation = () => {
         </div>
       </div>
       
+      {/* Floating Chatbot Icon for Desktop */}
       <Link
         to="/chatbot"
         className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-monkeyGreen to-green-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110"
