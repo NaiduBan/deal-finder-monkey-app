@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Bookmark, MessageCircle, User, SlidersHorizontal, Store, Star } from 'lucide-react';
+import { Home, Bookmark, User, SlidersHorizontal, Store, Star, MessageCircle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   NavigationMenu,
@@ -44,7 +44,6 @@ const BottomNavigation = () => {
   const navItems = [
     { path: '/home', icon: Home, label: 'Home' },
     { path: '/saved', icon: Bookmark, label: 'Saved' },
-    { path: '/chatbot', icon: MessageCircle, label: 'Assistant' },
     { path: '/preferences', icon: SlidersHorizontal, label: 'Preferences' },
     { path: '/profile', icon: User, label: 'Profile' }
   ];
@@ -52,29 +51,39 @@ const BottomNavigation = () => {
   if (isMobile) {
     // Mobile bottom navigation
     return (
-      <div className="fixed bottom-0 left-0 right-0 z-30 bg-spring-green-600 border-t border-spring-green-700 overflow-x-auto">
-        <div className="flex justify-around items-center">
-          {navItems.map((item) => {
-            const active = isActive(item.path);
-            const IconComponent = item.icon;
-            
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex flex-col items-center py-2 px-2 ${
-                  active ? 'text-monkeyYellow' : 'text-white/80'
-                }`}
-              >
-                <div className={`p-1 rounded-full ${active ? 'bg-white/20' : ''}`}>
-                  <IconComponent className="w-5 h-5" />
-                </div>
-                <span className="text-xs mt-1">{item.label}</span>
-              </Link>
-            );
-          })}
+      <>
+        <div className="fixed bottom-0 left-0 right-0 z-30 bg-spring-green-600 border-t border-spring-green-700 overflow-x-auto">
+          <div className="flex justify-around items-center">
+            {navItems.map((item) => {
+              const active = isActive(item.path);
+              const IconComponent = item.icon;
+              
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex flex-col items-center py-2 px-2 ${
+                    active ? 'text-monkeyYellow' : 'text-white/80'
+                  }`}
+                >
+                  <div className={`p-1 rounded-full ${active ? 'bg-white/20' : ''}`}>
+                    <IconComponent className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs mt-1">{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
-      </div>
+        
+        {/* Floating Chatbot Icon for Mobile */}
+        <Link
+          to="/chatbot"
+          className="fixed bottom-20 right-4 z-40 bg-gradient-to-r from-monkeyGreen to-green-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110"
+        >
+          <MessageCircle className="w-6 h-6" />
+        </Link>
+      </>
     );
   }
 
@@ -83,7 +92,6 @@ const BottomNavigation = () => {
     { path: '/stores', icon: Store, label: 'Stores' },
     { path: '/brands', icon: Star, label: 'Brands' },
     { path: '/saved', icon: Bookmark, label: 'Saved' },
-    { path: '/chatbot', icon: MessageCircle, label: 'Assistant' },
   ];
 
   const profileMenuItems = [
@@ -94,60 +102,70 @@ const BottomNavigation = () => {
 
   // Desktop top navigation with advanced menu
   return (
-    <div className="fixed top-0 left-0 right-0 z-20 bg-white border-b shadow-sm">
-      <div className="max-w-7xl mx-auto px-6 py-3">
-        <div className="flex items-center justify-between">
-          <Link to="/home" className="flex items-center space-x-3">
-            <div className="w-8 h-8 flex items-center justify-center">
-              <img src="https://offersmonkey.com/favicon.ico" alt="OffersMonkey Logo" className="w-full h-full rounded-full" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-spring-green-600">OffersMonkey</h1>
-              <p className="text-xs text-gray-500 leading-none">Find the best deals</p>
-            </div>
-          </Link>
+    <>
+      <div className="fixed top-0 left-0 right-0 z-20 bg-white border-b shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-3">
+          <div className="flex items-center justify-between">
+            <Link to="/home" className="flex items-center space-x-3">
+              <div className="w-8 h-8 flex items-center justify-center">
+                <img src="https://offersmonkey.com/favicon.ico" alt="OffersMonkey Logo" className="w-full h-full rounded-full" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-spring-green-600">OffersMonkey</h1>
+                <p className="text-xs text-gray-500 leading-none">Find the best deals</p>
+              </div>
+            </Link>
 
-          <NavigationMenu>
-            <NavigationMenuList>
-              {desktopNavItems.map((item) => (
-                <NavigationMenuItem key={item.path}>
-                  <Link to={item.path}>
-                    <NavigationMenuLink
-                      className={cn(
-                        navigationMenuTriggerStyle(),
-                        "flex items-center space-x-2",
-                        isActive(item.path)
-                          ? "bg-spring-green-500 text-white shadow-sm hover:bg-spring-green-600 hover:text-white"
-                          : "text-gray-600 hover:text-spring-green-600 hover:bg-spring-green-50"
-                      )}
-                    >
-                      <item.icon className="w-4 h-4" />
-                      <span className="font-medium">{item.label}</span>
-                    </NavigationMenuLink>
-                  </Link>
+            <NavigationMenu>
+              <NavigationMenuList>
+                {desktopNavItems.map((item) => (
+                  <NavigationMenuItem key={item.path}>
+                    <Link to={item.path}>
+                      <NavigationMenuLink
+                        className={cn(
+                          navigationMenuTriggerStyle(),
+                          "flex items-center space-x-2",
+                          isActive(item.path)
+                            ? "bg-spring-green-500 text-white shadow-sm hover:bg-spring-green-600 hover:text-white"
+                            : "text-gray-600 hover:text-spring-green-600 hover:bg-spring-green-50"
+                        )}
+                      >
+                        <item.icon className="w-4 h-4" />
+                        <span className="font-medium">{item.label}</span>
+                      </NavigationMenuLink>
+                    </Link>
+                  </NavigationMenuItem>
+                ))}
+
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="flex items-center space-x-2 text-sm font-medium text-gray-600 hover:text-spring-green-600 hover:bg-spring-green-50 data-[state=open]:bg-spring-green-50 rounded-md">
+                    <User className="w-4 h-4" />
+                    <span className="font-medium">Profile</span>
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <ul className="grid w-[250px] gap-3 p-4 md:w-[300px]">
+                      {profileMenuItems.map((item) => (
+                        <ListItem key={item.to} to={item.to} title={item.title}>
+                          {item.description}
+                        </ListItem>
+                      ))}
+                    </ul>
+                  </NavigationMenuContent>
                 </NavigationMenuItem>
-              ))}
-
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="flex items-center space-x-2 text-sm font-medium text-gray-600 hover:text-spring-green-600 hover:bg-spring-green-50 data-[state=open]:bg-spring-green-50 rounded-md">
-                  <User className="w-4 h-4" />
-                  <span className="font-medium">Profile</span>
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[250px] gap-3 p-4 md:w-[300px]">
-                    {profileMenuItems.map((item) => (
-                      <ListItem key={item.to} to={item.to} title={item.title}>
-                        {item.description}
-                      </ListItem>
-                    ))}
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
+              </NavigationMenuList>
+            </NavigationMenu>
+          </div>
         </div>
       </div>
-    </div>
+      
+      {/* Floating Chatbot Icon for Desktop */}
+      <Link
+        to="/chatbot"
+        className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-monkeyGreen to-green-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110"
+      >
+        <MessageCircle className="w-6 h-6" />
+      </Link>
+    </>
   );
 };
 
