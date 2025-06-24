@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, ChevronLeft, Bot, User, Sparkles, MessageCircle, Zap, Clock, ExternalLink, History, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -301,9 +302,9 @@ const ChatbotScreen = () => {
   const displayMessages = showHistory ? chatHistory : messages;
 
   return (
-    <div className={`flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 ${isMobile ? 'h-screen pb-16' : 'h-screen pt-0'}`}>
-      {/* Header - Fixed and responsive */}
-      <div className="bg-white border-b border-gray-200 shadow-sm flex-shrink-0 z-10">
+    <div className={`flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 ${isMobile ? 'h-screen pb-16 pt-4' : 'h-screen pt-20'}`}>
+      {/* Header - Fixed positioning with proper spacing */}
+      <div className={`bg-white border-b border-gray-200 shadow-sm flex-shrink-0 z-10 ${isMobile ? 'fixed top-0 left-0 right-0' : 'sticky top-20'}`}>
         <div className="flex items-center justify-between p-3 md:p-4">
           <div className="flex items-center space-x-2 md:space-x-3 min-w-0 flex-1">
             <Link to="/home" className="p-2 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0">
@@ -356,8 +357,8 @@ const ChatbotScreen = () => {
         </div>
       </div>
       
-      {/* Messages Area - Fixed height calculation for laptop view */}
-      <div className={`flex-1 min-h-0 relative ${!isMobile ? 'max-h-[calc(100vh-140px)]' : ''}`}>
+      {/* Messages Area - Proper height calculation and spacing */}
+      <div className={`flex-1 min-h-0 relative ${isMobile ? 'mt-20' : ''}`}>
         <ScrollArea className="h-full">
           <div className="p-3 md:p-4 pb-4 max-w-4xl mx-auto">
             <div className="space-y-4 md:space-y-6">
