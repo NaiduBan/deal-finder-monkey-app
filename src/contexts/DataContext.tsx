@@ -1,7 +1,6 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Offer, Category } from '@/types';
-import { fetchCategories, fetchOffers, applyPreferencesToOffers } from '@/services/supabaseService';
+import { fetchCategories, fetchOffers, applyPreferencesToOffers } from '@/services/mysqlService';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 
@@ -255,21 +254,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [offers]);
 
   const fetchData = async () => {
-    console.log('Starting to fetch fresh data from Offers_data table...');
+    console.log('🚀 Starting to fetch fresh data from MySQL offers_data table...');
     setIsLoading(true);
     setError(null);
     
     try {
       await fetchFreshData(true);
     } catch (error) {
-      console.error('Error fetching fresh data:', error);
+      console.error('❌ Error fetching fresh data from MySQL:', error);
       
       // Check if we have cached data as fallback
       const cachedOffers = getCachedData('offers');
       const cachedCategories = getCachedData('categories');
       
       if (cachedOffers && cachedCategories) {
-        console.log('Using cached data as fallback');
+        console.log('📦 Using cached data as fallback');
         setOffers(cachedOffers);
         setCategories(cachedCategories);
         
@@ -286,7 +285,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsUsingMockData(false);
       } else {
         // No data available at all
-        console.log('No data available from Offers_data table');
+        console.log('❌ No data available from MySQL offers_data table');
         setOffers([]);
         setFilteredOffers([]);
         setCategories([]);
@@ -294,9 +293,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoading(false);
         
         toast({
-          title: "No data available",
-          description: "Could not find data in the Offers_data table.",
-          variant: "default",
+          title: "Connection Error",
+          description: "Could not connect to MySQL database. Please check your connection.",
+          variant: "destructive",
         });
       }
     }
@@ -304,16 +303,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const fetchFreshData = async (updateLoadingState = false) => {
     try {
-      console.log('Fetching data from Offers_data table...');
+      console.log('📊 Fetching data from MySQL offers_data table...');
       const [offersData, categoriesData] = await Promise.all([
         fetchOffers(),
         fetchCategories()
       ]);
       
-      console.log('Fetch successful:', offersData.length, 'offers,', categoriesData.length, 'categories');
+      console.log('✅ MySQL fetch successful:', offersData.length, 'offers,', categoriesData.length, 'categories');
       
       if (offersData.length > 0) {
-        console.log('Using real data from Supabase Offers_data table');
+        console.log('🎉 Using real data from MySQL offers_data table');
         setOffers(offersData);
         saveToCache('offers', offersData);
         
@@ -332,13 +331,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         
         setIsUsingMockData(false);
+        
+        toast({
+          title: "✅ MySQL Connected",
+          description: `Successfully loaded ${offersData.length} offers from MySQL database`,
+        });
       } else {
-        console.log('No data from Supabase Offers_data table');
+        console.log('⚠️ No data from MySQL offers_data table');
         setOffers([]);
         setFilteredOffers([]);
         saveToCache('offers', []);
         saveToCache('filteredOffers', []);
         setIsUsingMockData(true);
+        
+        toast({
+          title: "No Data",
+          description: "No offers found in MySQL database",
+          variant: "default",
+        });
       }
       
       // Set categories
@@ -349,17 +359,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setCategories([]);
         saveToCache('categories', []);
       }
-      
-      if (offersData.length === 0) {
-        toast({
-          title: "No offers found",
-          description: "No data available in the Offers_data table.",
-          variant: "default",
-        });
-      }
     } catch (err) {
-      console.error('Error fetching data:', err);
-      setError(err instanceof Error ? err : new Error('Unknown error occurred'));
+      console.error('❌ Error fetching data from MySQL:', err);
+      setError(err instanceof Error ? err : new Error('MySQL connection failed'));
       
       setOffers([]);
       setFilteredOffers([]);
@@ -367,15 +369,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsUsingMockData(true);
       
       toast({
-        title: "Connection Error",
-        description: "Could not fetch data from the Offers_data table.",
+        title: "MySQL Connection Error",
+        description: "Could not fetch data from MySQL database. Please check connection.",
         variant: "destructive",
       });
     } finally {
       if (updateLoadingState) {
         setIsLoading(false);
       }
-      console.log('Data fetching complete');
+      console.log('✅ MySQL data fetching complete');
     }
   };
 
@@ -393,23 +395,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const refetchOffers = async () => {
-    console.log('Refetching offers from Offers_data table...');
+    console.log('🔄 Refetching offers from MySQL offers_data table...');
     setIsLoading(true);
     
     try {
       localStorage.removeItem('offers');
       localStorage.removeItem('filteredOffers');
-      console.log('Cache cleared for refresh');
+      console.log('🗑️ Cache cleared for refresh');
     } catch (err) {
-      console.warn('Error clearing cache:', err);
+      console.warn('⚠️ Error clearing cache:', err);
     }
     
     try {
       const offersData = await fetchOffers();
-      console.log('Refetch successful:', offersData.length, 'offers');
+      console.log('✅ MySQL refetch successful:', offersData.length, 'offers');
       
       if (offersData.length > 0) {
-        console.log('Using real data from refetch');
+        console.log('🎉 Using real data from MySQL refetch');
         setOffers(offersData);
         saveToCache('offers', offersData);
         
@@ -425,12 +427,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsUsingMockData(false);
         
         toast({
-          title: "Data refreshed",
-          description: "Successfully loaded offers from the Offers_data table.",
-          variant: "default",
+          title: "✅ Data Refreshed",
+          description: `Successfully refreshed ${offersData.length} offers from MySQL`,
         });
       } else {
-        console.log('No real data found in Offers_data table on refetch');
+        console.log('⚠️ No real data found in MySQL offers_data table on refetch');
         setOffers([]);
         setFilteredOffers([]);
         saveToCache('offers', []);
@@ -438,18 +439,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsUsingMockData(true);
         
         toast({
-          title: "No offers found",
-          description: "Could not find any offers in the Offers_data table.",
-          variant: "default",
+          title: "No Data",
+          description: "Could not find any offers in MySQL database",
         });
       }
     } catch (err) {
-      console.error('Error refetching offers:', err);
-      setError(err instanceof Error ? err : new Error('Unknown error occurred'));
+      console.error('❌ Error refetching offers from MySQL:', err);
+      setError(err instanceof Error ? err : new Error('MySQL refetch failed'));
       
       toast({
-        title: "Error refreshing",
-        description: "Could not refresh offers from the Offers_data table. Please try again later.",
+        title: "Refresh Error",
+        description: "Could not refresh offers from MySQL database. Please try again.",
         variant: "destructive",
       });
     } finally {

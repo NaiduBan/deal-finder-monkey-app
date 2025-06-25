@@ -1,27 +1,20 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Offer } from '@/types';
 import OfferCard from '@/components/OfferCard';
 import { Toaster, toast } from 'sonner';
-import { transformSupabaseOffer } from '@/utils/offer-transformer';
+import { fetchOffers } from '@/services/mysqlService';
 import { Skeleton } from '../ui/skeleton';
 
 const fetchLatestOffers = async (): Promise<Offer[]> => {
-    const { data, error } = await supabase
-      .from('Offers_data')
-      .select('*')
-      .order('lmd_id', { ascending: false })
-      .limit(4);
-
-    if (error) throw new Error(error.message);
-    
-    return data.map(transformSupabaseOffer);
+    const offers = await fetchOffers();
+    return offers.slice(0, 4); // Get latest 4 offers
 };
 
 const LiveDealsSection = () => {
     const { data: initialOffers, isLoading } = useQuery({
-        queryKey: ['latest-offers'],
+        queryKey: ['latest-mysql-offers'],
         queryFn: fetchLatestOffers,
         staleTime: 5 * 60 * 1000, // 5 minutes
     });
@@ -31,41 +24,22 @@ const LiveDealsSection = () => {
     useEffect(() => {
         if (initialOffers) {
             setLatestOffers(initialOffers);
+            console.log('📊 Loaded latest offers from MySQL:', initialOffers.length);
         }
     }, [initialOffers]);
 
-    useEffect(() => {
-        const channel = supabase
-            .channel('realtime-offers')
-            .on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'Offers_data'
-            }, (payload) => {
-                const newOffer = transformSupabaseOffer(payload.new);
-                toast.success(`New Deal: ${newOffer.title}`);
-                setLatestOffers(prevOffers => [newOffer, ...prevOffers].slice(0, 4));
-            })
-            .subscribe((status) => {
-              if (status === 'SUBSCRIBED') {
-                console.log('Real-time deal updates are live!');
-              }
-            });
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, []);
+    // Note: Real-time updates would need to be implemented separately for MySQL
+    // For now, we'll refresh every 5 minutes via React Query
 
     return (
         <div className="container mx-auto px-4 py-12 lg:py-16">
             <Toaster richColors position="top-center" />
             <div className="text-center mb-12">
                 <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4 animate-fade-in">
-                    🔥 Live Deals
+                    🔥 Live Deals from MySQL
                 </h2>
                 <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                    Freshly baked deals, coming in hot!
+                    Fresh deals from your MySQL database!
                 </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
