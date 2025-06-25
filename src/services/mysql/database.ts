@@ -21,8 +21,14 @@ export const pool = mysql.createPool(dbConfig);
 // Test connection function
 export const testConnection = async () => {
   try {
+    console.log('🔄 Testing MySQL connection...');
     const connection = await pool.getConnection();
     console.log('✅ MySQL database connected successfully');
+    
+    // Test a simple query to verify database access
+    const [rows] = await connection.execute('SELECT COUNT(*) as count FROM offers_data LIMIT 1');
+    console.log('📊 Database query test successful:', rows);
+    
     connection.release();
     return true;
   } catch (error) {
@@ -31,13 +37,34 @@ export const testConnection = async () => {
   }
 };
 
-// Generic query function
+// Generic query function with enhanced logging
 export const executeQuery = async (query: string, params: any[] = []) => {
   try {
+    console.log('🔍 Executing query:', query.substring(0, 100) + '...');
+    console.log('📝 Query parameters:', params);
+    
     const [rows] = await pool.execute(query, params);
+    console.log('✅ Query executed successfully, rows returned:', Array.isArray(rows) ? rows.length : 'N/A');
+    
     return rows;
   } catch (error) {
-    console.error('Database query error:', error);
+    console.error('❌ Database query error:', error);
+    throw error;
+  }
+};
+
+// Get database info function
+export const getDatabaseInfo = async () => {
+  try {
+    const [tables] = await pool.execute('SHOW TABLES');
+    const [columns] = await pool.execute('DESCRIBE offers_data');
+    
+    console.log('📋 Available tables:', tables);
+    console.log('🏗️ offers_data table structure:', columns);
+    
+    return { tables, columns };
+  } catch (error) {
+    console.error('❌ Error getting database info:', error);
     throw error;
   }
 };

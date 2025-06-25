@@ -1,5 +1,5 @@
 
-import { executeQuery } from './database';
+import { executeQuery, getDatabaseInfo } from './database';
 import { Offer } from '@/types';
 
 export interface MySQLOffer {
@@ -24,15 +24,31 @@ export const fetchOffersFromMySQL = async (): Promise<Offer[]> => {
   try {
     console.log('🔍 Fetching offers from MySQL database...');
     
+    // First, let's check the database structure
+    await getDatabaseInfo();
+    
     const query = `
       SELECT * FROM offers_data 
       WHERE status = 'active' OR status IS NULL
       ORDER BY id DESC 
-      LIMIT 200
+      LIMIT 10
     `;
     
     const results = await executeQuery(query) as MySQLOffer[];
     console.log(`📊 Found ${results.length} offers in MySQL database`);
+    console.log('🔍 Sample offer data:', results[0]);
+    
+    if (results.length === 0) {
+      console.log('⚠️ No offers found, trying without status filter...');
+      const allQuery = 'SELECT * FROM offers_data ORDER BY id DESC LIMIT 10';
+      const allResults = await executeQuery(allQuery) as MySQLOffer[];
+      console.log(`📊 Total offers without filter: ${allResults.length}`);
+      
+      if (allResults.length > 0) {
+        console.log('🔍 Sample offer from all results:', allResults[0]);
+        return allResults.map((item: MySQLOffer, index: number) => transformMySQLOffer(item, index));
+      }
+    }
     
     return results.map((item: MySQLOffer, index: number) => transformMySQLOffer(item, index));
   } catch (error) {
@@ -66,6 +82,8 @@ export const searchOffersInMySQL = async (searchTerm: string): Promise<Offer[]> 
 };
 
 const transformMySQLOffer = (item: MySQLOffer, index: number): Offer => {
+  console.log(`🔄 Transforming offer ${index + 1}:`, item.title);
+  
   // Calculate price and savings similar to the existing logic
   let price = 0;
   let originalPrice = 0;
