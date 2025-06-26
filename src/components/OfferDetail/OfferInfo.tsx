@@ -10,6 +10,17 @@ const stripHtmlTags = (str: string | null) => {
   return str.replace(/<[^>]*>/g, '');
 };
 
+const formatTermsLineByLine = (terms: string | null) => {
+  if (!terms) return [];
+  const cleanTerms = stripHtmlTags(terms);
+  // Split by common delimiters and filter out empty lines
+  return cleanTerms
+    .split(/[.;]\s*/)
+    .map(line => line.trim())
+    .filter(line => line.length > 0 && line !== '.')
+    .map(line => line.endsWith('.') ? line : line + '.');
+};
+
 const OfferInfo = ({ offer }: { offer: Offer }) => {
   const { copyCode } = useOfferActions(offer);
 
@@ -26,8 +37,32 @@ const OfferInfo = ({ offer }: { offer: Offer }) => {
     );
   };
 
+  const termsLines = formatTermsLineByLine(offer.termsAndConditions || offer.terms);
+
   return (
     <div className="space-y-4 p-4 md:p-0">
+      {/* Terms & Conditions - Left side, prominent */}
+      {termsLines.length > 0 && (
+        <Card className="border-l-4 border-l-red-500">
+          <CardHeader>
+            <CardTitle className="text-lg text-red-700 flex items-center">
+              <AlertCircle className="w-5 h-5 mr-2" />
+              Terms & Conditions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {termsLines.map((line, index) => (
+                <div key={index} className="flex items-start space-x-3">
+                  <span className="text-red-500 font-bold mt-1 flex-shrink-0">•</span>
+                  <p className="text-sm text-gray-700 leading-relaxed">{line}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardContent className="pt-6">
           <p className="font-semibold text-spring-green-600 mb-1">{offer.store}</p>
@@ -87,15 +122,6 @@ const OfferInfo = ({ offer }: { offer: Offer }) => {
           <InfoRow icon={Tag} label="Offer Value" value={offer.offerValue} />
         </CardContent>
       </Card>
-
-      {(offer.terms || offer.termsAndConditions) && (
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Terms & Conditions</CardTitle></CardHeader>
-          <CardContent className="prose prose-sm text-gray-600 max-w-none">
-            <p>{stripHtmlTags(offer.termsAndConditions || offer.terms)}</p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };
