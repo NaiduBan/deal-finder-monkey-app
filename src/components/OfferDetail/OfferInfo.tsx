@@ -1,6 +1,6 @@
 
 import { Offer } from '@/types';
-import { Clock, Info, Tag, Grid, MapPin, AlertCircle, Copy, ExternalLink } from 'lucide-react';
+import { Clock, Info, Tag, Grid, MapPin, AlertCircle, Copy, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useOfferActions } from '@/hooks/use-offer-actions';
@@ -25,6 +25,14 @@ const OfferInfo = ({ offer }: { offer: Offer }) => {
       </div>
     );
   };
+
+  const formatTermsLineByLine = (terms: string | null) => {
+    if (!terms) return [];
+    const cleanTerms = stripHtmlTags(terms);
+    return cleanTerms.split(/[.!?]+/).filter(line => line.trim().length > 0);
+  };
+
+  const termsLines = formatTermsLineByLine(offer.termsAndConditions || offer.terms);
 
   return (
     <div className="space-y-4 p-4 md:p-0">
@@ -69,6 +77,27 @@ const OfferInfo = ({ offer }: { offer: Offer }) => {
         </Card>
       )}
 
+      {termsLines.length > 0 && (
+        <Card className="border-l-4 border-l-red-500">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center text-red-600">
+              <FileText className="w-5 h-5 mr-2"/>
+              Terms & Conditions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {termsLines.map((line, index) => (
+                <div key={index} className="flex items-start space-x-2">
+                  <span className="text-red-500 font-bold mt-1">•</span>
+                  <p className="text-sm text-gray-700 leading-relaxed">{line.trim()}.</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {(offer.longOffer && offer.longOffer !== offer.description) && (
         <Card>
           <CardHeader><CardTitle className="text-lg">Details</CardTitle></CardHeader>
@@ -87,15 +116,6 @@ const OfferInfo = ({ offer }: { offer: Offer }) => {
           <InfoRow icon={Tag} label="Offer Value" value={offer.offerValue} />
         </CardContent>
       </Card>
-
-      {(offer.terms || offer.termsAndConditions) && (
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Terms & Conditions</CardTitle></CardHeader>
-          <CardContent className="prose prose-sm text-gray-600 max-w-none">
-            <p>{stripHtmlTags(offer.termsAndConditions || offer.terms)}</p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };
