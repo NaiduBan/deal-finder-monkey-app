@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Store, Search, TrendingUp, MapPin, Star, ExternalLink, Filter, Grid, List } from 'lucide-react';
+import { ChevronLeft, Store, Search, TrendingUp, ExternalLink, Grid, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,6 +16,7 @@ interface StoreData {
   offerCount: number;
   categories: string[];
   popularOffers: string[];
+  averageDiscount: string;
 }
 
 const StoresScreen = () => {
@@ -37,42 +38,44 @@ const StoresScreen = () => {
       setIsLoading(true);
       const { data: offers, error } = await supabase
         .from('Offers_data')
-        .select('store, categories, title');
+        .select('store, categories, title, offer_value')
+        .not('store', 'is', null);
 
       if (error) throw error;
 
       const storesMap = new Map<string, StoreData>();
 
       offers?.forEach(offer => {
-        if (offer.store) {
-          const storeName = offer.store.trim();
-          if (storeName) {
-            const existing = storesMap.get(storeName);
-            const categories = offer.categories ? offer.categories.split(',').map(c => c.trim()) : [];
-            
-            if (existing) {
-              existing.offerCount++;
-              categories.forEach(cat => {
-                if (cat && !existing.categories.includes(cat)) {
-                  existing.categories.push(cat);
+        if (offer.store && offer.store.trim() !== '') {
+          const existing = storesMap.get(offer.store);
+          
+          if (existing) {
+            existing.offerCount++;
+            if (offer.categories) {
+              const categories = offer.categories.split(',').map(c => c.trim());
+              categories.forEach(category => {
+                if (category && !existing.categories.includes(category)) {
+                  existing.categories.push(category);
                 }
               });
-              if (offer.title && existing.popularOffers.length < 3) {
-                existing.popularOffers.push(offer.title);
-              }
-            } else {
-              storesMap.set(storeName, {
-                name: storeName,
-                offerCount: 1,
-                categories: categories.filter(c => c),
-                popularOffers: offer.title ? [offer.title] : []
-              });
             }
+            if (offer.title && existing.popularOffers.length < 3) {
+              existing.popularOffers.push(offer.title);
+            }
+          } else {
+            const categories = offer.categories ? offer.categories.split(',').map(c => c.trim()).filter(Boolean) : [];
+            storesMap.set(offer.store, {
+              name: offer.store,
+              offerCount: 1,
+              categories: categories,
+              popularOffers: offer.title ? [offer.title] : [],
+              averageDiscount: offer.offer_value || 'N/A'
+            });
           }
         }
       });
 
-      const storesArray = Array.from(storesMap.values());
+      const storesArray = Array.from(storesMap.values()).filter(store => store.name.trim() !== '');
       setStores(storesArray);
     } catch (error) {
       console.error('Error fetching stores:', error);
@@ -119,13 +122,13 @@ const StoresScreen = () => {
                 </Link>
               )}
               <div className="flex items-center space-x-4">
-                <div className="p-3 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl shadow-lg">
+                <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
                   <Store className="w-6 h-6 text-white" />
                 </div>
                 <div>
                   <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900 mb-1`}>All Stores</h1>
                   <p className={`text-gray-600 ${isMobile ? 'text-sm' : 'text-base'}`}>
-                    Discover amazing deals from {stores.length} stores
+                    Explore deals from {stores.length} popular stores
                   </p>
                 </div>
               </div>
@@ -162,7 +165,7 @@ const StoresScreen = () => {
             <Input
               type="search"
               placeholder="Search stores..."
-              className={`pl-12 pr-4 ${isMobile ? 'py-3' : 'py-4'} w-full border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white ${isMobile ? 'text-base' : 'text-lg'}`}
+              className={`pl-12 pr-4 ${isMobile ? 'py-3' : 'py-4'} w-full border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white ${isMobile ? 'text-base' : 'text-lg'}`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -189,7 +192,7 @@ const StoresScreen = () => {
         {/* Stores Grid */}
         {isLoading ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-500 border-t-transparent"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
           </div>
         ) : (
           <div className={`${viewMode === 'grid' 
@@ -199,17 +202,17 @@ const StoresScreen = () => {
             {filteredAndSortedStores.map((store) => (
               <Card
                 key={store.name}
-                className="group cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 bg-white/80 backdrop-blur-sm border-emerald-200/60"
+                className="group cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 bg-white/80 backdrop-blur-sm border-blue-200/60"
                 onClick={() => handleStoreClick(store.name)}
               >
                 <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-emerald-100 rounded-xl group-hover:bg-emerald-200 transition-colors">
-                        <Store className="w-5 h-5 text-emerald-600" />
+                      <div className="p-2 bg-blue-100 rounded-xl group-hover:bg-blue-200 transition-colors">
+                        <Store className="w-5 h-5 text-blue-600" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-gray-900 text-lg group-hover:text-emerald-700 transition-colors">
+                        <h3 className="font-bold text-gray-900 text-lg group-hover:text-blue-700 transition-colors">
                           {store.name}
                         </h3>
                         <div className="flex items-center space-x-2 text-sm text-gray-600">
@@ -223,7 +226,7 @@ const StoresScreen = () => {
                         </div>
                       </div>
                     </div>
-                    <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-emerald-600 transition-colors" />
+                    <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
                   </div>
 
                   {store.categories.length > 0 && (
@@ -234,7 +237,7 @@ const StoresScreen = () => {
                           <Badge
                             key={index}
                             variant="secondary"
-                            className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200"
+                            className="text-xs bg-blue-50 text-blue-700 border-blue-200"
                           >
                             {category}
                           </Badge>
