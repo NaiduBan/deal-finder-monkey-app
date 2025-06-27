@@ -172,9 +172,9 @@ const CategoryScreen = () => {
                       <h3 className="font-bold text-gray-900 text-lg group-hover:text-purple-700 transition-colors line-clamp-2 mb-2">
                         {offer.title}
                       </h3>
-                      {offer.offer_value && (
+                      {offer.offerValue && (
                         <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200 mb-2">
-                          {offer.offer_value}
+                          {offer.offerValue}
                         </Badge>
                       )}
                     </div>
@@ -205,9 +205,9 @@ const CategoryScreen = () => {
 
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-2">
-                      {offer.type && (
+                      {offer.offerType && (
                         <Badge variant="outline" className="text-xs">
-                          {offer.type}
+                          {offer.offerType}
                         </Badge>
                       )}
                       {offer.code && (
@@ -225,10 +225,10 @@ const CategoryScreen = () => {
                       </Badge>
                     )}
                     
-                    {offer.end_date && (
+                    {offer.expiryDate && (
                       <div className="flex items-center space-x-1 text-xs text-gray-500">
                         <Calendar className="w-3 h-3" />
-                        <span>Ends {new Date(offer.end_date).toLocaleDateString()}</span>
+                        <span>Ends {new Date(offer.expiryDate).toLocaleDateString()}</span>
                       </div>
                     )}
                   </div>
