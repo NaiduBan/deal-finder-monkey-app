@@ -157,8 +157,8 @@ const BrandDetailScreen = () => {
   };
 
   const handleOfferClick = (offerId: number) => {
-    // Convert lmd_id to the format expected by OfferDetailScreen
-    navigate(`/offer/offer-${offerId}`);
+    // Use the lmd_id directly to match OfferDetailScreen expectations
+    navigate(`/offer/${offerId}`);
   };
 
   if (isLoading) {
@@ -323,13 +323,13 @@ const BrandDetailScreen = () => {
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleSaveOffer(`offer-${offer.lmd_id}`);
+                          handleSaveOffer(`${offer.lmd_id}`);
                         }}
                         className="flex-shrink-0 ml-2"
                       >
                         <Bookmark 
                           className={`w-4 h-4 ${
-                            savedOffers.includes(`offer-${offer.lmd_id}`) 
+                            savedOffers.includes(`${offer.lmd_id}`) 
                               ? 'fill-current text-purple-600' 
                               : 'text-gray-400'
                           }`} 
