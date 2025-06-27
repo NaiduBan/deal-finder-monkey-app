@@ -40,11 +40,11 @@ const OfferDetailScreen = () => {
       {isMobile && <OfferHeader />}
 
       <main className={`flex-1 ${isMobile ? '' : 'max-w-6xl mx-auto w-full px-4 py-8'}`}>
-        <div className={`${isMobile ? 'flex flex-col' : 'grid grid-cols-1 lg:grid-cols-2 gap-8'}`}>
-          <div className="lg:col-span-1">
+        <div className={`${isMobile ? 'flex flex-col' : 'grid grid-cols-1 lg:grid-cols-5 gap-8'}`}>
+          <div className="lg:col-span-3">
             <OfferImage offer={offer} prevOfferId={prevOfferId} nextOfferId={nextOfferId} />
           </div>
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-2">
             <OfferInfo offer={offer} />
             {!isMobile && <OfferBottomBar offer={offer} />}
           </div>
