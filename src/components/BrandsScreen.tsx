@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Star, Search, TrendingUp, ExternalLink, Grid, List, Package } from 'lucide-react';
+import { ChevronLeft, Star, Search, TrendingUp, ExternalLink, Filter, Grid, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,8 +16,6 @@ interface BrandData {
   offerCount: number;
   categories: string[];
   popularOffers: string[];
-  latestOffer: string;
-  discountRange: string;
 }
 
 const BrandsScreen = () => {
@@ -39,7 +37,7 @@ const BrandsScreen = () => {
       setIsLoading(true);
       const { data: offers, error } = await supabase
         .from('Offers_data')
-        .select('store, categories, title, offer_value, start_date')
+        .select('store, categories, title')
         .not('store', 'is', null);
 
       if (error) throw error;
@@ -48,8 +46,7 @@ const BrandsScreen = () => {
 
       offers?.forEach(offer => {
         if (offer.store && offer.store.trim() !== '') {
-          const storeName = offer.store.trim();
-          const existing = brandsMap.get(storeName);
+          const existing = brandsMap.get(offer.store);
           
           if (existing) {
             existing.offerCount++;
@@ -64,25 +61,19 @@ const BrandsScreen = () => {
             if (offer.title && existing.popularOffers.length < 3) {
               existing.popularOffers.push(offer.title);
             }
-            // Update latest offer if this one is newer
-            if (offer.start_date && offer.title) {
-              existing.latestOffer = offer.title;
-            }
           } else {
             const categories = offer.categories ? offer.categories.split(',').map(c => c.trim()).filter(Boolean) : [];
-            brandsMap.set(storeName, {
-              name: storeName,
+            brandsMap.set(offer.store, {
+              name: offer.store,
               offerCount: 1,
               categories: categories,
-              popularOffers: offer.title ? [offer.title] : [],
-              latestOffer: offer.title || '',
-              discountRange: offer.offer_value || 'Varies'
+              popularOffers: offer.title ? [offer.title] : []
             });
           }
         }
       });
 
-      const brandsArray = Array.from(brandsMap.values());
+      const brandsArray = Array.from(brandsMap.values()).filter(brand => brand.name.trim() !== '');
       setBrands(brandsArray);
     } catch (error) {
       console.error('Error fetching brands:', error);
@@ -133,9 +124,9 @@ const BrandsScreen = () => {
                   <Star className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900 mb-1`}>Popular Brands</h1>
+                  <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900 mb-1`}>All Brands</h1>
                   <p className={`text-gray-600 ${isMobile ? 'text-sm' : 'text-base'}`}>
-                    Discover amazing deals from {brands.length} top brands
+                    Explore deals from {brands.length} popular brands
                   </p>
                 </div>
               </div>
@@ -181,7 +172,7 @@ const BrandsScreen = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-sm text-gray-600">
               <TrendingUp className="w-4 h-4" />
-              <span>{filteredAndSortedBrands.length} brands available</span>
+              <span>{filteredAndSortedBrands.length} brands found</span>
             </div>
 
             <Select value={sortBy} onValueChange={(value: 'name' | 'offers') => setSortBy(value)}>
@@ -195,29 +186,6 @@ const BrandsScreen = () => {
             </Select>
           </div>
         </div>
-
-        {/* Featured Brands Section */}
-        {!searchTerm && !isLoading && brands.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-              <Package className="w-5 h-5 mr-2 text-purple-600" />
-              Top Performing Brands
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {brands.slice(0, 3).map((brand, index) => (
-                <div key={brand.name} className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 p-4 rounded-xl border border-purple-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{brand.name}</h3>
-                      <p className="text-sm text-gray-600">{brand.offerCount} active offers</p>
-                    </div>
-                    <div className="text-2xl font-bold text-purple-600">#{index + 1}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Brands Grid */}
         {isLoading ? (
@@ -247,10 +215,10 @@ const BrandsScreen = () => {
                         </h3>
                         <div className="flex items-center space-x-2 text-sm text-gray-600">
                           <span>{brand.offerCount} offers</span>
-                          {brand.discountRange !== 'Varies' && (
+                          {brand.categories.length > 0 && (
                             <>
                               <span>•</span>
-                              <span>Up to {brand.discountRange}</span>
+                              <span>{brand.categories.length} categories</span>
                             </>
                           )}
                         </div>
@@ -261,7 +229,7 @@ const BrandsScreen = () => {
 
                   {brand.categories.length > 0 && (
                     <div className="mb-4">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Available in:</p>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Categories:</p>
                       <div className="flex flex-wrap gap-1">
                         {brand.categories.slice(0, 3).map((category, index) => (
                           <Badge
@@ -281,20 +249,11 @@ const BrandsScreen = () => {
                     </div>
                   )}
 
-                  {brand.latestOffer && (
-                    <div className="mb-3">
-                      <p className="text-sm font-medium text-gray-700 mb-1">Latest Offer:</p>
-                      <p className="text-xs text-gray-600 truncate bg-purple-50 p-2 rounded">
-                        {brand.latestOffer}
-                      </p>
-                    </div>
-                  )}
-
-                  {brand.popularOffers.length > 1 && (
+                  {brand.popularOffers.length > 0 && (
                     <div>
-                      <p className="text-sm font-medium text-gray-700 mb-2">More Deals:</p>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Popular Offers:</p>
                       <div className="space-y-1">
-                        {brand.popularOffers.slice(1, 3).map((offer, index) => (
+                        {brand.popularOffers.slice(0, 2).map((offer, index) => (
                           <p key={index} className="text-xs text-gray-600 truncate">
                             • {offer}
                           </p>

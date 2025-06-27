@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, FolderOpen, Search, TrendingUp, ExternalLink, Grid, List, Tag } from 'lucide-react';
+import { ChevronLeft, FolderOpen, Search, TrendingUp, ExternalLink, Filter, Grid, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,8 +16,6 @@ interface CategoryData {
   offerCount: number;
   stores: string[];
   popularOffers: string[];
-  averageDiscount: string;
-  topBrands: string[];
 }
 
 const CategoriesScreen = () => {
@@ -39,7 +37,7 @@ const CategoriesScreen = () => {
       setIsLoading(true);
       const { data: offers, error } = await supabase
         .from('Offers_data')
-        .select('categories, store, title, offer_value');
+        .select('categories, store, title');
 
       if (error) throw error;
 
@@ -56,9 +54,6 @@ const CategoriesScreen = () => {
                 existing.offerCount++;
                 if (offer.store && !existing.stores.includes(offer.store)) {
                   existing.stores.push(offer.store);
-                  if (existing.topBrands.length < 5) {
-                    existing.topBrands.push(offer.store);
-                  }
                 }
                 if (offer.title && existing.popularOffers.length < 3) {
                   existing.popularOffers.push(offer.title);
@@ -68,9 +63,7 @@ const CategoriesScreen = () => {
                   name: category,
                   offerCount: 1,
                   stores: offer.store ? [offer.store] : [],
-                  popularOffers: offer.title ? [offer.title] : [],
-                  averageDiscount: offer.offer_value || 'Varies',
-                  topBrands: offer.store ? [offer.store] : []
+                  popularOffers: offer.title ? [offer.title] : []
                 });
               }
             }
@@ -113,7 +106,7 @@ const CategoriesScreen = () => {
   };
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-green-50/30 to-emerald-50/50 ${isMobile ? 'pb-16' : 'pt-20'}`}>
+    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/50 ${isMobile ? 'pb-16' : 'pt-20'}`}>
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-100/80 sticky top-0 z-10" style={{ top: isMobile ? '0' : '80px' }}>
         <div className={`${isMobile ? 'px-4 py-4' : 'px-6 py-6 max-w-7xl mx-auto'}`}>
@@ -125,13 +118,13 @@ const CategoriesScreen = () => {
                 </Link>
               )}
               <div className="flex items-center space-x-4">
-                <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl shadow-lg">
+                <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl shadow-lg">
                   <FolderOpen className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900 mb-1`}>Shop by Category</h1>
+                  <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900 mb-1`}>All Categories</h1>
                   <p className={`text-gray-600 ${isMobile ? 'text-sm' : 'text-base'}`}>
-                    Browse {categories.length} categories with amazing deals
+                    Explore deals from {categories.length} popular categories
                   </p>
                 </div>
               </div>
@@ -168,7 +161,7 @@ const CategoriesScreen = () => {
             <Input
               type="search"
               placeholder="Search categories..."
-              className={`pl-12 pr-4 ${isMobile ? 'py-3' : 'py-4'} w-full border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 bg-white ${isMobile ? 'text-base' : 'text-lg'}`}
+              className={`pl-12 pr-4 ${isMobile ? 'py-3' : 'py-4'} w-full border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 bg-white ${isMobile ? 'text-base' : 'text-lg'}`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -177,7 +170,7 @@ const CategoriesScreen = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-sm text-gray-600">
               <TrendingUp className="w-4 h-4" />
-              <span>{filteredAndSortedCategories.length} categories available</span>
+              <span>{filteredAndSortedCategories.length} categories found</span>
             </div>
 
             <Select value={sortBy} onValueChange={(value: 'name' | 'offers') => setSortBy(value)}>
@@ -192,35 +185,10 @@ const CategoriesScreen = () => {
           </div>
         </div>
 
-        {/* Popular Categories Section */}
-        {!searchTerm && !isLoading && categories.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-              <Tag className="w-5 h-5 mr-2 text-green-600" />
-              Most Popular Categories
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {categories.slice(0, 4).map((category, index) => (
-                <div 
-                  key={category.name} 
-                  className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 p-4 rounded-xl border border-green-200 cursor-pointer hover:shadow-md transition-all"
-                  onClick={() => handleCategoryClick(category.name)}
-                >
-                  <div className="text-center">
-                    <h3 className="font-semibold text-gray-900 mb-1">{category.name}</h3>
-                    <p className="text-sm text-gray-600">{category.offerCount} offers</p>
-                    <p className="text-xs text-green-600 mt-1">{category.stores.length} stores</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Categories Grid */}
         {isLoading ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
           </div>
         ) : (
           <div className={`${viewMode === 'grid' 
@@ -230,17 +198,17 @@ const CategoriesScreen = () => {
             {filteredAndSortedCategories.map((category) => (
               <Card
                 key={category.name}
-                className="group cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 bg-white/80 backdrop-blur-sm border-green-200/60"
+                className="group cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 bg-white/80 backdrop-blur-sm border-purple-200/60"
                 onClick={() => handleCategoryClick(category.name)}
               >
                 <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-green-100 rounded-xl group-hover:bg-green-200 transition-colors">
-                        <FolderOpen className="w-5 h-5 text-green-600" />
+                      <div className="p-2 bg-purple-100 rounded-xl group-hover:bg-purple-200 transition-colors">
+                        <FolderOpen className="w-5 h-5 text-purple-600" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-gray-900 text-lg group-hover:text-green-700 transition-colors">
+                        <h3 className="font-bold text-gray-900 text-lg group-hover:text-purple-700 transition-colors">
                           {category.name}
                         </h3>
                         <div className="flex items-center space-x-2 text-sm text-gray-600">
@@ -254,25 +222,25 @@ const CategoriesScreen = () => {
                         </div>
                       </div>
                     </div>
-                    <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-green-600 transition-colors" />
+                    <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-purple-600 transition-colors" />
                   </div>
 
-                  {category.topBrands.length > 0 && (
+                  {category.stores.length > 0 && (
                     <div className="mb-4">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Top Brands:</p>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Available at:</p>
                       <div className="flex flex-wrap gap-1">
-                        {category.topBrands.slice(0, 3).map((brand, index) => (
+                        {category.stores.slice(0, 3).map((store, index) => (
                           <Badge
                             key={index}
                             variant="secondary"
-                            className="text-xs bg-green-50 text-green-700 border-green-200"
+                            className="text-xs bg-purple-50 text-purple-700 border-purple-200"
                           >
-                            {brand}
+                            {store}
                           </Badge>
                         ))}
-                        {category.topBrands.length > 3 && (
+                        {category.stores.length > 3 && (
                           <Badge variant="secondary" className="text-xs bg-gray-50 text-gray-600">
-                            +{category.topBrands.length - 3} more
+                            +{category.stores.length - 3} more
                           </Badge>
                         )}
                       </div>
@@ -280,23 +248,15 @@ const CategoriesScreen = () => {
                   )}
 
                   {category.popularOffers.length > 0 && (
-                    <div className="mb-3">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Featured Deals:</p>
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Popular Offers:</p>
                       <div className="space-y-1">
                         {category.popularOffers.slice(0, 2).map((offer, index) => (
-                          <p key={index} className="text-xs text-gray-600 truncate bg-green-50 p-2 rounded">
+                          <p key={index} className="text-xs text-gray-600 truncate">
                             • {offer}
                           </p>
                         ))}
                       </div>
-                    </div>
-                  )}
-
-                  {category.averageDiscount !== 'Varies' && (
-                    <div className="text-center">
-                      <span className="text-sm font-medium text-green-600 bg-green-50 px-3 py-1 rounded-full">
-                        Up to {category.averageDiscount} off
-                      </span>
                     </div>
                   )}
                 </CardContent>
