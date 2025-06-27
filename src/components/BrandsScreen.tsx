@@ -37,14 +37,15 @@ const BrandsScreen = () => {
       setIsLoading(true);
       const { data: offers, error } = await supabase
         .from('Offers_data')
-        .select('store, categories, title');
+        .select('store, categories, title')
+        .not('store', 'is', null);
 
       if (error) throw error;
 
       const brandsMap = new Map<string, BrandData>();
 
       offers?.forEach(offer => {
-        if (offer.store) {
+        if (offer.store && offer.store.trim() !== '') {
           const existing = brandsMap.get(offer.store);
           
           if (existing) {
@@ -72,7 +73,7 @@ const BrandsScreen = () => {
         }
       });
 
-      const brandsArray = Array.from(brandsMap.values());
+      const brandsArray = Array.from(brandsMap.values()).filter(brand => brand.name.trim() !== '');
       setBrands(brandsArray);
     } catch (error) {
       console.error('Error fetching brands:', error);

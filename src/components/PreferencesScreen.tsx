@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Store, Tag, CreditCard, Check, Search, Star, Users, BarChart3, TrendingUp, Settings, Heart, ArrowRight, Sparkles, Target, Shield, FolderOpen } from 'lucide-react';
@@ -124,6 +125,19 @@ const PreferencesScreen = () => {
       stats: 'Most popular choice'
     },
     {
+      id: 'brands',
+      title: 'Favorite Brands',
+      subtitle: 'Brands you trust and love',
+      icon: Star,
+      gradient: 'from-blue-400 via-indigo-500 to-purple-600',
+      bgGradient: 'from-blue-50 to-indigo-50',
+      borderColor: 'border-blue-200/60',
+      description: 'Choose your favorite brands to get targeted offers and exclusive brand deals',
+      route: '/preferences/brands',
+      emoji: '⭐',
+      stats: 'Brand exclusive'
+    },
+    {
       id: 'categories',
       title: 'Preferred Categories',
       subtitle: 'Categories that interest you most',
@@ -221,7 +235,7 @@ const PreferencesScreen = () => {
           <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 border border-gray-100/80 shadow-sm">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-green-100 rounded-xl">
-                <TrendingUp className="w-5 h-5 text-green-600" />
+                <Store className="w-5 h-5 text-green-600" />
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-900">{userPreferenceCounts.stores}</p>
@@ -232,11 +246,11 @@ const PreferencesScreen = () => {
           <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 border border-gray-100/80 shadow-sm">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-purple-100 rounded-xl">
-                <FolderOpen className="w-5 h-5 text-purple-600" />
+                <Star className="w-5 h-5 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-900">{userPreferenceCounts.categories}</p>
-                <p className="text-xs text-gray-500">Categories</p>
+                <p className="text-sm font-medium text-gray-900">{userPreferenceCounts.brands}</p>
+                <p className="text-xs text-gray-500">Brands</p>
               </div>
             </div>
           </div>
@@ -266,7 +280,7 @@ const PreferencesScreen = () => {
         </div>
 
         {/* Preference Type Cards */}
-        <div className={`${isMobile ? 'space-y-4' : 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6'}`}>
+        <div className={`${isMobile ? 'space-y-4' : 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-6'}`}>
           {isLoading ? (
             <div className="flex justify-center py-12 col-span-full">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
@@ -355,16 +369,27 @@ const PreferencesScreen = () => {
               <p className="text-sm text-blue-700">Manage your preferences efficiently</p>
             </div>
           </div>
-          <div className={`${isMobile ? 'grid grid-cols-1 gap-3' : 'grid grid-cols-1 md:grid-cols-3 gap-4'}`}>
+          <div className={`${isMobile ? 'grid grid-cols-1 gap-3' : 'grid grid-cols-1 md:grid-cols-4 gap-4'}`}>
             <Button 
               variant="outline" 
-              className={`${isMobile ? 'h-14' : 'h-16'} bg-white/80 hover:bg-white border-blue-200/60 text-blue-700 hover:text-blue-800 ${isMobile ? 'text-base' : 'text-lg'} rounded-2xl shadow-sm hover:shadow-md transition-all group`}
+              className={`${isMobile ? 'h-14' : 'h-16'} bg-white/80 hover:bg-white border-emerald-200/60 text-emerald-700 hover:text-emerald-800 ${isMobile ? 'text-base' : 'text-lg'} rounded-2xl shadow-sm hover:shadow-md transition-all group`}
               onClick={() => navigate('/preferences/stores')}
             >
               <Store className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} mr-3 group-hover:scale-110 transition-transform`} />
               <div className="text-left">
-                <div className="font-semibold">Manage Stores</div>
+                <div className="font-semibold">Stores</div>
                 <div className="text-xs opacity-70">{userPreferenceCounts.stores} selected</div>
+              </div>
+            </Button>
+            <Button 
+              variant="outline" 
+              className={`${isMobile ? 'h-14' : 'h-16'} bg-white/80 hover:bg-white border-blue-200/60 text-blue-700 hover:text-blue-800 ${isMobile ? 'text-base' : 'text-lg'} rounded-2xl shadow-sm hover:shadow-md transition-all group`}
+              onClick={() => navigate('/preferences/brands')}
+            >
+              <Star className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} mr-3 group-hover:scale-110 transition-transform`} />
+              <div className="text-left">
+                <div className="font-semibold">Brands</div>
+                <div className="text-xs opacity-70">{userPreferenceCounts.brands} selected</div>
               </div>
             </Button>
             <Button 
@@ -374,7 +399,7 @@ const PreferencesScreen = () => {
             >
               <FolderOpen className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} mr-3 group-hover:scale-110 transition-transform`} />
               <div className="text-left">
-                <div className="font-semibold">Manage Categories</div>
+                <div className="font-semibold">Categories</div>
                 <div className="text-xs opacity-70">{userPreferenceCounts.categories} selected</div>
               </div>
             </Button>
@@ -385,7 +410,7 @@ const PreferencesScreen = () => {
             >
               <CreditCard className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} mr-3 group-hover:scale-110 transition-transform`} />
               <div className="text-left">
-                <div className="font-semibold">Manage Banks</div>
+                <div className="font-semibold">Banks</div>
                 <div className="text-xs opacity-70">{userPreferenceCounts.banks} selected</div>
               </div>
             </Button>

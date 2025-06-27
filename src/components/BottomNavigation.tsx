@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Bookmark, User, SlidersHorizontal, Store, Star, MessageCircle } from 'lucide-react';
+import { Home, Bookmark, User, SlidersHorizontal, Store, Star, MessageCircle, FolderOpen } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   NavigationMenu,
@@ -91,6 +91,7 @@ const BottomNavigation = () => {
     { path: '/home', icon: Home, label: 'Home' },
     { path: '/stores', icon: Store, label: 'Stores' },
     { path: '/brands', icon: Star, label: 'Brands' },
+    { path: '/categories', icon: FolderOpen, label: 'Categories' },
     { path: '/saved', icon: Bookmark, label: 'Saved' },
   ];
 
