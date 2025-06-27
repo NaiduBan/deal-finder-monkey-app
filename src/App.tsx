@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import {
   BrowserRouter as Router,
@@ -5,17 +6,15 @@ import {
   Routes,
   useLocation,
 } from 'react-router-dom';
-import { useToast } from "@/components/ui/use-toast"
-import { Toast } from "@/components/ui/toast"
+import { useToast } from "@/hooks/use-toast"
+import { Toaster } from "@/components/ui/toaster"
 
 // Import components
-import Index from './components/Index';
 import LoginScreen from './components/LoginScreen';
 import HomeScreen from './components/HomeScreen';
 import SavedOffersScreen from './components/SavedOffersScreen';
 import PreferencesScreen from './components/PreferencesScreen';
 import ProfileScreen from './components/ProfileScreen';
-import EditProfile from './components/EditProfile';
 import SettingsScreen from './components/SettingsScreen';
 import NotificationsScreen from './components/NotificationsScreen';
 import PointsHistoryScreen from './components/PointsHistoryScreen';
@@ -46,19 +45,17 @@ function ScrollToTop() {
 }
 
 function App() {
-  const { toast } = useToast()
-
   return (
     <Router>
       <ScrollToTop />
       <div className="relative min-h-screen">
         <Routes>
           {/* Public routes */}
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<LoginScreen />} />
           <Route path="/login" element={<LoginScreen />} />
           
           {/* Protected routes */}
-          <Route element={<ProtectedRoute />}>
+          <Route element={<ProtectedRoute><></></ProtectedRoute>}>
             <Route path="/home" element={<HomeScreen />} />
             <Route path="/saved" element={<SavedOffersScreen />} />
             <Route path="/stores" element={<StoresScreen />} />
@@ -66,7 +63,6 @@ function App() {
             <Route path="/categories" element={<CategoriesScreen />} />
             <Route path="/preferences" element={<PreferencesScreen />} />
             <Route path="/profile" element={<ProfileScreen />} />
-            <Route path="/edit-profile" element={<EditProfile />} />
             <Route path="/settings" element={<SettingsScreen />} />
             <Route path="/notifications" element={<NotificationsScreen />} />
             <Route path="/points-history" element={<PointsHistoryScreen />} />
@@ -79,10 +75,10 @@ function App() {
           </Route>
           
           {/* Admin routes */}
-          <Route element={<AdminRoute />}>
+          <Route element={<AdminRoute><></></AdminRoute>}>
             <Route path="/admin" element={<AdminPanel />} />
-            <Route path="/admin/login" element={<AdminLogin />} />
           </Route>
+          <Route path="/admin/login" element={<AdminLogin />} />
           
           {/* Catch all route */}
           <Route path="*" element={<NotFoundScreen />} />
@@ -91,7 +87,7 @@ function App() {
         {/* Bottom navigation */}
         <BottomNavigation />
       </div>
-      <Toast {...toast} />
+      <Toaster />
     </Router>
   );
 }
