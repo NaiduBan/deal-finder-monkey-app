@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Store, Tag, CreditCard, Check, Search, Star, Users, BarChart3, TrendingUp, Settings, Heart, ArrowRight, Sparkles, Target, Shield } from 'lucide-react';
+import { ChevronLeft, Store, Tag, CreditCard, Check, Search, Star, Users, BarChart3, TrendingUp, Settings, Heart, ArrowRight, Sparkles, Target, Shield, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -124,16 +124,16 @@ const PreferencesScreen = () => {
       stats: 'Most popular choice'
     },
     {
-      id: 'brands',
-      title: 'Preferred Brands',
-      subtitle: 'Brands you trust and love',
-      icon: Star,
+      id: 'categories',
+      title: 'Preferred Categories',
+      subtitle: 'Categories that interest you most',
+      icon: FolderOpen,
       gradient: 'from-purple-400 via-pink-500 to-rose-600',
       bgGradient: 'from-purple-50 to-pink-50',
       borderColor: 'border-purple-200/60',
-      description: 'Choose your favorite brands to discover relevant offers and new products',
-      route: '/preferences/brands',
-      emoji: '⭐',
+      description: 'Choose your favorite categories to discover relevant offers and new products',
+      route: '/preferences/categories',
+      emoji: '📂',
       stats: 'Premium selection'
     },
     {
@@ -232,11 +232,11 @@ const PreferencesScreen = () => {
           <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 border border-gray-100/80 shadow-sm">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-purple-100 rounded-xl">
-                <Star className="w-5 h-5 text-purple-600" />
+                <FolderOpen className="w-5 h-5 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-900">{userPreferenceCounts.brands}</p>
-                <p className="text-xs text-gray-500">Brands</p>
+                <p className="text-sm font-medium text-gray-900">{userPreferenceCounts.categories}</p>
+                <p className="text-xs text-gray-500">Categories</p>
               </div>
             </div>
           </div>
@@ -370,12 +370,12 @@ const PreferencesScreen = () => {
             <Button 
               variant="outline" 
               className={`${isMobile ? 'h-14' : 'h-16'} bg-white/80 hover:bg-white border-purple-200/60 text-purple-700 hover:text-purple-800 ${isMobile ? 'text-base' : 'text-lg'} rounded-2xl shadow-sm hover:shadow-md transition-all group`}
-              onClick={() => navigate('/preferences/brands')}
+              onClick={() => navigate('/preferences/categories')}
             >
-              <Star className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} mr-3 group-hover:scale-110 transition-transform`} />
+              <FolderOpen className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} mr-3 group-hover:scale-110 transition-transform`} />
               <div className="text-left">
-                <div className="font-semibold">Manage Brands</div>
-                <div className="text-xs opacity-70">{userPreferenceCounts.brands} selected</div>
+                <div className="font-semibold">Manage Categories</div>
+                <div className="text-xs opacity-70">{userPreferenceCounts.categories} selected</div>
               </div>
             </Button>
             <Button 

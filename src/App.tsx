@@ -39,6 +39,7 @@ import StoresScreen from "./components/StoresScreen";
 import StoreDetailScreen from "./components/StoreDetailScreen";
 import BrandsScreen from "./components/BrandsScreen";
 import BrandDetailScreen from "./components/BrandDetailScreen";
+import CategoriesScreen from "./components/CategoriesScreen";
 
 const queryClient = new QueryClient();
 
@@ -135,6 +136,14 @@ const App = () => (
                         element={
                           <ProtectedRoute>
                             <BrandDetailScreen />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/categories" 
+                        element={
+                          <ProtectedRoute>
+                            <CategoriesScreen />
                           </ProtectedRoute>
                         } 
                       />

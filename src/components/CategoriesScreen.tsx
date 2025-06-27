@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Star, Search, TrendingUp, ExternalLink, Filter, Grid, List } from 'lucide-react';
+import { ChevronLeft, FolderOpen, Search, TrendingUp, ExternalLink, Filter, Grid, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,74 +11,73 @@ import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-interface BrandData {
+interface CategoryData {
   name: string;
   offerCount: number;
-  categories: string[];
+  stores: string[];
   popularOffers: string[];
 }
 
-const BrandsScreen = () => {
+const CategoriesScreen = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState('');
-  const [brands, setBrands] = useState<BrandData[]>([]);
+  const [categories, setCategories] = useState<CategoryData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'name' | 'offers'>('offers');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
-    fetchBrands();
+    fetchCategories();
   }, []);
 
-  const fetchBrands = async () => {
+  const fetchCategories = async () => {
     try {
       setIsLoading(true);
       const { data: offers, error } = await supabase
         .from('Offers_data')
-        .select('store, categories, title');
+        .select('categories, store, title');
 
       if (error) throw error;
 
-      const brandsMap = new Map<string, BrandData>();
+      const categoriesMap = new Map<string, CategoryData>();
 
       offers?.forEach(offer => {
-        if (offer.store) {
-          const existing = brandsMap.get(offer.store);
-          
-          if (existing) {
-            existing.offerCount++;
-            if (offer.categories) {
-              const categories = offer.categories.split(',').map(c => c.trim());
-              categories.forEach(category => {
-                if (category && !existing.categories.includes(category)) {
-                  existing.categories.push(category);
+        if (offer.categories) {
+          const categories = offer.categories.split(',').map(c => c.trim());
+          categories.forEach(category => {
+            if (category) {
+              const existing = categoriesMap.get(category);
+              
+              if (existing) {
+                existing.offerCount++;
+                if (offer.store && !existing.stores.includes(offer.store)) {
+                  existing.stores.push(offer.store);
                 }
-              });
+                if (offer.title && existing.popularOffers.length < 3) {
+                  existing.popularOffers.push(offer.title);
+                }
+              } else {
+                categoriesMap.set(category, {
+                  name: category,
+                  offerCount: 1,
+                  stores: offer.store ? [offer.store] : [],
+                  popularOffers: offer.title ? [offer.title] : []
+                });
+              }
             }
-            if (offer.title && existing.popularOffers.length < 3) {
-              existing.popularOffers.push(offer.title);
-            }
-          } else {
-            const categories = offer.categories ? offer.categories.split(',').map(c => c.trim()).filter(Boolean) : [];
-            brandsMap.set(offer.store, {
-              name: offer.store,
-              offerCount: 1,
-              categories: categories,
-              popularOffers: offer.title ? [offer.title] : []
-            });
-          }
+          });
         }
       });
 
-      const brandsArray = Array.from(brandsMap.values());
-      setBrands(brandsArray);
+      const categoriesArray = Array.from(categoriesMap.values());
+      setCategories(categoriesArray);
     } catch (error) {
-      console.error('Error fetching brands:', error);
+      console.error('Error fetching categories:', error);
       toast({
         title: "Error",
-        description: "Failed to load brands",
+        description: "Failed to load categories",
         variant: "destructive"
       });
     } finally {
@@ -86,9 +85,9 @@ const BrandsScreen = () => {
     }
   };
 
-  const filteredAndSortedBrands = useMemo(() => {
-    let filtered = brands.filter(brand =>
-      brand.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAndSortedCategories = useMemo(() => {
+    let filtered = categories.filter(category =>
+      category.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     filtered.sort((a, b) => {
@@ -100,10 +99,10 @@ const BrandsScreen = () => {
     });
 
     return filtered;
-  }, [brands, searchTerm, sortBy]);
+  }, [categories, searchTerm, sortBy]);
 
-  const handleBrandClick = (brandName: string) => {
-    navigate(`/brand/${encodeURIComponent(brandName)}`);
+  const handleCategoryClick = (categoryName: string) => {
+    navigate(`/category/${encodeURIComponent(categoryName)}`);
   };
 
   return (
@@ -120,12 +119,12 @@ const BrandsScreen = () => {
               )}
               <div className="flex items-center space-x-4">
                 <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl shadow-lg">
-                  <Star className="w-6 h-6 text-white" />
+                  <FolderOpen className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900 mb-1`}>All Brands</h1>
+                  <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900 mb-1`}>All Categories</h1>
                   <p className={`text-gray-600 ${isMobile ? 'text-sm' : 'text-base'}`}>
-                    Explore deals from {brands.length} popular brands
+                    Explore deals from {categories.length} popular categories
                   </p>
                 </div>
               </div>
@@ -161,7 +160,7 @@ const BrandsScreen = () => {
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <Input
               type="search"
-              placeholder="Search brands..."
+              placeholder="Search categories..."
               className={`pl-12 pr-4 ${isMobile ? 'py-3' : 'py-4'} w-full border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 bg-white ${isMobile ? 'text-base' : 'text-lg'}`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -171,7 +170,7 @@ const BrandsScreen = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-sm text-gray-600">
               <TrendingUp className="w-4 h-4" />
-              <span>{filteredAndSortedBrands.length} brands found</span>
+              <span>{filteredAndSortedCategories.length} categories found</span>
             </div>
 
             <Select value={sortBy} onValueChange={(value: 'name' | 'offers') => setSortBy(value)}>
@@ -180,13 +179,13 @@ const BrandsScreen = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="offers">Most Offers</SelectItem>
-                <SelectItem value="name">Brand Name</SelectItem>
+                <SelectItem value="name">Category Name</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        {/* Brands Grid */}
+        {/* Categories Grid */}
         {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
@@ -196,28 +195,28 @@ const BrandsScreen = () => {
             ? `grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}` 
             : 'space-y-4'
           }`}>
-            {filteredAndSortedBrands.map((brand) => (
+            {filteredAndSortedCategories.map((category) => (
               <Card
-                key={brand.name}
+                key={category.name}
                 className="group cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 bg-white/80 backdrop-blur-sm border-purple-200/60"
-                onClick={() => handleBrandClick(brand.name)}
+                onClick={() => handleCategoryClick(category.name)}
               >
                 <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       <div className="p-2 bg-purple-100 rounded-xl group-hover:bg-purple-200 transition-colors">
-                        <Star className="w-5 h-5 text-purple-600" />
+                        <FolderOpen className="w-5 h-5 text-purple-600" />
                       </div>
                       <div>
                         <h3 className="font-bold text-gray-900 text-lg group-hover:text-purple-700 transition-colors">
-                          {brand.name}
+                          {category.name}
                         </h3>
                         <div className="flex items-center space-x-2 text-sm text-gray-600">
-                          <span>{brand.offerCount} offers</span>
-                          {brand.categories.length > 0 && (
+                          <span>{category.offerCount} offers</span>
+                          {category.stores.length > 0 && (
                             <>
                               <span>•</span>
-                              <span>{brand.categories.length} categories</span>
+                              <span>{category.stores.length} stores</span>
                             </>
                           )}
                         </div>
@@ -226,33 +225,33 @@ const BrandsScreen = () => {
                     <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-purple-600 transition-colors" />
                   </div>
 
-                  {brand.categories.length > 0 && (
+                  {category.stores.length > 0 && (
                     <div className="mb-4">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Categories:</p>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Available at:</p>
                       <div className="flex flex-wrap gap-1">
-                        {brand.categories.slice(0, 3).map((category, index) => (
+                        {category.stores.slice(0, 3).map((store, index) => (
                           <Badge
                             key={index}
                             variant="secondary"
                             className="text-xs bg-purple-50 text-purple-700 border-purple-200"
                           >
-                            {category}
+                            {store}
                           </Badge>
                         ))}
-                        {brand.categories.length > 3 && (
+                        {category.stores.length > 3 && (
                           <Badge variant="secondary" className="text-xs bg-gray-50 text-gray-600">
-                            +{brand.categories.length - 3} more
+                            +{category.stores.length - 3} more
                           </Badge>
                         )}
                       </div>
                     </div>
                   )}
 
-                  {brand.popularOffers.length > 0 && (
+                  {category.popularOffers.length > 0 && (
                     <div>
                       <p className="text-sm font-medium text-gray-700 mb-2">Popular Offers:</p>
                       <div className="space-y-1">
-                        {brand.popularOffers.slice(0, 2).map((offer, index) => (
+                        {category.popularOffers.slice(0, 2).map((offer, index) => (
                           <p key={index} className="text-xs text-gray-600 truncate">
                             • {offer}
                           </p>
@@ -267,14 +266,14 @@ const BrandsScreen = () => {
         )}
 
         {/* Empty State */}
-        {!isLoading && filteredAndSortedBrands.length === 0 && (
+        {!isLoading && filteredAndSortedCategories.length === 0 && (
           <div className="bg-white/70 backdrop-blur-sm p-12 rounded-3xl text-center shadow-sm border border-gray-100/80 max-w-2xl mx-auto">
             <div className="p-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
-              <Star className="w-10 h-10 text-gray-600" />
+              <FolderOpen className="w-10 h-10 text-gray-600" />
             </div>
-            <h3 className="text-xl font-medium text-gray-900 mb-3">No brands found</h3>
+            <h3 className="text-xl font-medium text-gray-900 mb-3">No categories found</h3>
             <p className="text-gray-500 text-lg">
-              {searchTerm ? `No brands found matching "${searchTerm}"` : 'No brands available at the moment'}
+              {searchTerm ? `No categories found matching "${searchTerm}"` : 'No categories available at the moment'}
             </p>
           </div>
         )}
@@ -283,4 +282,4 @@ const BrandsScreen = () => {
   );
 };
 
-export default BrandsScreen;
+export default CategoriesScreen;
