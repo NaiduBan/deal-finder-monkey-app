@@ -17,6 +17,7 @@ interface BrandDetail {
     lmd_id: number;
     title: string;
     description: string;
+    image_url: string;
     offer_value: string;
     type: string;
     code: string;
@@ -44,12 +45,19 @@ const BrandDetailScreen = () => {
     }
   }, [brandName, session]);
 
+  const isOfferActive = (endDate: string | null) => {
+    if (!endDate) return true;
+    const today = new Date();
+    const offerEndDate = new Date(endDate);
+    return offerEndDate >= today;
+  };
+
   const fetchBrandDetail = async (name: string) => {
     try {
       setIsLoading(true);
       const { data: offers, error } = await supabase
         .from('Offers_data')
-        .select('lmd_id, title, description, offer_value, type, code, end_date, store, categories')
+        .select('lmd_id, title, description, image_url, offer_value, type, code, end_date, store, categories')
         .ilike('categories', `%${name}%`);
 
       if (error) throw error;
@@ -57,7 +65,7 @@ const BrandDetailScreen = () => {
       if (offers && offers.length > 0) {
         const stores = new Set<string>();
         const filteredOffers = offers.filter(offer => {
-          if (offer.categories) {
+          if (offer.categories && isOfferActive(offer.end_date)) {
             const categories = offer.categories.split(',').map(c => c.trim());
             const hasCategory = categories.some(cat => 
               cat.toLowerCase() === name.toLowerCase()
@@ -157,7 +165,6 @@ const BrandDetailScreen = () => {
   };
 
   const handleOfferClick = (offerId: number) => {
-    // Use the lmd_id directly to match OfferDetailScreen expectations
     navigate(`/offer/${offerId}`);
   };
 
@@ -201,7 +208,7 @@ const BrandDetailScreen = () => {
                     {brandDetail.name}
                   </h1>
                   <p className={`text-gray-600 ${isMobile ? 'text-sm' : 'text-base'}`}>
-                    {brandDetail.totalOffers} offers available
+                    {brandDetail.totalOffers} active offers
                   </p>
                 </div>
               </div>
@@ -229,7 +236,7 @@ const BrandDetailScreen = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900">{brandDetail.totalOffers}</p>
-                  <p className="text-sm text-gray-600">Total Offers</p>
+                  <p className="text-sm text-gray-600">Active Offers</p>
                 </div>
               </div>
             </CardContent>
@@ -290,7 +297,7 @@ const BrandDetailScreen = () => {
           </Card>
         )}
 
-        {/* Offers */}
+        {/* Offers Grid */}
         <Card className="bg-white/80 backdrop-blur-sm border-gray-200/60">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -299,33 +306,29 @@ const BrandDetailScreen = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+            <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
               {brandDetail.offers.map((offer) => (
                 <Card
                   key={offer.lmd_id}
-                  className="group cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] border-gray-200/60"
+                  className="group cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 border-gray-200/60 overflow-hidden"
                   onClick={() => handleOfferClick(offer.lmd_id)}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 group-hover:text-purple-700 transition-colors line-clamp-2 mb-2">
-                          {offer.title}
-                        </h3>
-                        {offer.offer_value && (
-                          <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200 mb-2">
-                            {offer.offer_value}
-                          </Badge>
-                        )}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                  {/* Image */}
+                  <div className="relative aspect-video bg-gray-100">
+                    <img
+                      src={offer.image_url || "/placeholder.svg"}
+                      alt={offer.title || "Offer"}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    
+                    {/* Save Button */}
+                    {session?.user && (
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleSaveOffer(`${offer.lmd_id}`);
                         }}
-                        className="flex-shrink-0 ml-2"
+                        className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-colors"
                       >
                         <Bookmark 
                           className={`w-4 h-4 ${
@@ -334,43 +337,58 @@ const BrandDetailScreen = () => {
                               : 'text-gray-400'
                           }`} 
                         />
-                      </Button>
-                    </div>
-
-                    {offer.description && (
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                        {offer.description}
-                      </p>
+                      </button>
                     )}
 
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        {offer.type && (
-                          <Badge variant="outline" className="text-xs">
-                            {offer.type}
-                          </Badge>
-                        )}
-                        {offer.code && (
-                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                            Code: {offer.code}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      {offer.store && (
-                        <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
-                          {offer.store}
+                    {/* Badges */}
+                    <div className="absolute bottom-3 left-3 flex items-center gap-2">
+                      {offer.offer_value && (
+                        <Badge className="bg-purple-600 text-white shadow-lg">
+                          {offer.offer_value}
                         </Badge>
                       )}
-                      
-                      {offer.end_date && (
-                        <div className="flex items-center space-x-1 text-xs text-gray-500">
-                          <Calendar className="w-3 h-3" />
-                          <span>Ends {new Date(offer.end_date).toLocaleDateString()}</span>
-                        </div>
+                      {offer.code && (
+                        <Badge className="bg-blue-600 text-white shadow-lg">
+                          <Tag className="w-3 h-3 mr-1" />
+                          CODE
+                        </Badge>
                       )}
+                    </div>
+                  </div>
+
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      <h3 className="font-bold text-gray-900 group-hover:text-purple-700 transition-colors line-clamp-2">
+                        {offer.title}
+                      </h3>
+
+                      {offer.description && (
+                        <p className="text-sm text-gray-600 line-clamp-2">
+                          {offer.description}
+                        </p>
+                      )}
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          {offer.store && (
+                            <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
+                              {offer.store}
+                            </Badge>
+                          )}
+                          {offer.type && (
+                            <Badge variant="outline" className="text-xs">
+                              {offer.type}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {offer.end_date && (
+                          <div className="flex items-center space-x-1 text-xs text-gray-500">
+                            <Calendar className="w-3 h-3" />
+                            <span>Ends {new Date(offer.end_date).toLocaleDateString()}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
