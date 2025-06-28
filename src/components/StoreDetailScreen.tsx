@@ -44,6 +44,13 @@ const StoreDetailScreen = () => {
     }
   }, [storeName, session]);
 
+  const isOfferActive = (endDate: string | null) => {
+    if (!endDate) return true; // If no end date, consider it active
+    const today = new Date();
+    const offerEndDate = new Date(endDate);
+    return offerEndDate >= today;
+  };
+
   const fetchStoreDetail = async (name: string) => {
     try {
       setIsLoading(true);
@@ -55,8 +62,11 @@ const StoreDetailScreen = () => {
       if (error) throw error;
 
       if (offers && offers.length > 0) {
+        // Filter only active offers
+        const activeOffers = offers.filter(offer => isOfferActive(offer.end_date));
+        
         const categories = new Set<string>();
-        offers.forEach(offer => {
+        activeOffers.forEach(offer => {
           if (offer.categories) {
             offer.categories.split(',').forEach(cat => {
               const trimmed = cat.trim();
@@ -67,9 +77,9 @@ const StoreDetailScreen = () => {
 
         setStoreDetail({
           name,
-          totalOffers: offers.length,
+          totalOffers: activeOffers.length,
           categories: Array.from(categories),
-          offers: offers
+          offers: activeOffers
         });
       }
     } catch (error) {
@@ -196,7 +206,7 @@ const StoreDetailScreen = () => {
                     {storeDetail.name}
                   </h1>
                   <p className={`text-gray-600 ${isMobile ? 'text-sm' : 'text-base'}`}>
-                    {storeDetail.totalOffers} offers available
+                    {storeDetail.totalOffers} active offers available
                   </p>
                 </div>
               </div>
@@ -224,7 +234,7 @@ const StoreDetailScreen = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900">{storeDetail.totalOffers}</p>
-                  <p className="text-sm text-gray-600">Total Offers</p>
+                  <p className="text-sm text-gray-600">Active Offers</p>
                 </div>
               </div>
             </CardContent>
@@ -289,79 +299,85 @@ const StoreDetailScreen = () => {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Store className="w-5 h-5 text-emerald-600" />
-              <span>All Offers</span>
+              <span>Active Offers</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
-              {storeDetail.offers.map((offer) => (
-                <Card
-                  key={offer.lmd_id}
-                  className="group cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] border-gray-200/60"
-                  onClick={() => handleOfferClick(offer.lmd_id)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 group-hover:text-emerald-700 transition-colors line-clamp-2 mb-2">
-                          {offer.title}
-                        </h3>
-                        {offer.offer_value && (
-                          <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200 mb-2">
-                            {offer.offer_value}
-                          </Badge>
-                        )}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSaveOffer(`${offer.lmd_id}`);
-                        }}
-                        className="flex-shrink-0 ml-2"
-                      >
-                        <Bookmark 
-                          className={`w-4 h-4 ${
-                            savedOffers.includes(`${offer.lmd_id}`) 
-                              ? 'fill-current text-emerald-600' 
-                              : 'text-gray-400'
-                          }`} 
-                        />
-                      </Button>
-                    </div>
-
-                    {offer.description && (
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                        {offer.description}
-                      </p>
-                    )}
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        {offer.type && (
-                          <Badge variant="outline" className="text-xs">
-                            {offer.type}
-                          </Badge>
-                        )}
-                        {offer.code && (
-                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                            Code: {offer.code}
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      {offer.end_date && (
-                        <div className="flex items-center space-x-1 text-xs text-gray-500">
-                          <Calendar className="w-3 h-3" />
-                          <span>Ends {new Date(offer.end_date).toLocaleDateString()}</span>
+            {storeDetail.offers.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No active offers available at the moment.</p>
+              </div>
+            ) : (
+              <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+                {storeDetail.offers.map((offer) => (
+                  <Card
+                    key={offer.lmd_id}
+                    className="group cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] border-gray-200/60"
+                    onClick={() => handleOfferClick(offer.lmd_id)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-gray-900 group-hover:text-emerald-700 transition-colors line-clamp-2 mb-2">
+                            {offer.title}
+                          </h3>
+                          {offer.offer_value && (
+                            <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200 mb-2">
+                              {offer.offer_value}
+                            </Badge>
+                          )}
                         </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSaveOffer(`${offer.lmd_id}`);
+                          }}
+                          className="flex-shrink-0 ml-2"
+                        >
+                          <Bookmark 
+                            className={`w-4 h-4 ${
+                              savedOffers.includes(`${offer.lmd_id}`) 
+                                ? 'fill-current text-emerald-600' 
+                                : 'text-gray-400'
+                            }`} 
+                          />
+                        </Button>
+                      </div>
+
+                      {offer.description && (
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                          {offer.description}
+                        </p>
                       )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          {offer.type && (
+                            <Badge variant="outline" className="text-xs">
+                              {offer.type}
+                            </Badge>
+                          )}
+                          {offer.code && (
+                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                              Code: {offer.code}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {offer.end_date && (
+                          <div className="flex items-center space-x-1 text-xs text-gray-500">
+                            <Calendar className="w-3 h-3" />
+                            <span>Ends {new Date(offer.end_date).toLocaleDateString()}</span>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

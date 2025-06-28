@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Star, Search, TrendingUp, ExternalLink, Filter, Grid, List } from 'lucide-react';
@@ -32,12 +31,19 @@ const BrandsScreen = () => {
     fetchBrands();
   }, []);
 
+  const isOfferActive = (endDate: string | null) => {
+    if (!endDate) return true; // If no end date, consider it active
+    const today = new Date();
+    const offerEndDate = new Date(endDate);
+    return offerEndDate >= today;
+  };
+
   const fetchBrands = async () => {
     try {
       setIsLoading(true);
       const { data: offers, error } = await supabase
         .from('Offers_data')
-        .select('store, categories, title')
+        .select('store, categories, title, end_date')
         .not('store', 'is', null);
 
       if (error) throw error;
@@ -45,7 +51,8 @@ const BrandsScreen = () => {
       const brandsMap = new Map<string, BrandData>();
 
       offers?.forEach(offer => {
-        if (offer.store && offer.store.trim() !== '') {
+        // Only include active offers
+        if (offer.store && offer.store.trim() !== '' && isOfferActive(offer.end_date)) {
           const existing = brandsMap.get(offer.store);
           
           if (existing) {
@@ -214,7 +221,7 @@ const BrandsScreen = () => {
                           {brand.name}
                         </h3>
                         <div className="flex items-center space-x-2 text-sm text-gray-600">
-                          <span>{brand.offerCount} offers</span>
+                          <span>{brand.offerCount} active offers</span>
                           {brand.categories.length > 0 && (
                             <>
                               <span>•</span>
@@ -251,7 +258,7 @@ const BrandsScreen = () => {
 
                   {brand.popularOffers.length > 0 && (
                     <div>
-                      <p className="text-sm font-medium text-gray-700 mb-2">Popular Offers:</p>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Latest Active Offers:</p>
                       <div className="space-y-1">
                         {brand.popularOffers.slice(0, 2).map((offer, index) => (
                           <p key={index} className="text-xs text-gray-600 truncate">
@@ -273,9 +280,9 @@ const BrandsScreen = () => {
             <div className="p-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
               <Star className="w-10 h-10 text-gray-600" />
             </div>
-            <h3 className="text-xl font-medium text-gray-900 mb-3">No brands found</h3>
+            <h3 className="text-xl font-medium text-gray-900 mb-3">No active brands found</h3>
             <p className="text-gray-500 text-lg">
-              {searchTerm ? `No brands found matching "${searchTerm}"` : 'No brands available at the moment'}
+              {searchTerm ? `No brands found matching "${searchTerm}" with active offers` : 'No brands with active offers available at the moment'}
             </p>
           </div>
         )}

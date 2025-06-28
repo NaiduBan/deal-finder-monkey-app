@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, FolderOpen, Search, TrendingUp, ExternalLink, Filter, Grid, List } from 'lucide-react';
@@ -32,19 +31,27 @@ const CategoriesScreen = () => {
     fetchCategories();
   }, []);
 
+  const isOfferActive = (endDate: string | null) => {
+    if (!endDate) return true; // If no end date, consider it active
+    const today = new Date();
+    const offerEndDate = new Date(endDate);
+    return offerEndDate >= today;
+  };
+
   const fetchCategories = async () => {
     try {
       setIsLoading(true);
       const { data: offers, error } = await supabase
         .from('Offers_data')
-        .select('categories, store, title');
+        .select('categories, store, title, end_date');
 
       if (error) throw error;
 
       const categoriesMap = new Map<string, CategoryData>();
 
       offers?.forEach(offer => {
-        if (offer.categories) {
+        // Only include active offers
+        if (offer.categories && isOfferActive(offer.end_date)) {
           const categories = offer.categories.split(',').map(c => c.trim());
           categories.forEach(category => {
             if (category) {
@@ -212,7 +219,7 @@ const CategoriesScreen = () => {
                           {category.name}
                         </h3>
                         <div className="flex items-center space-x-2 text-sm text-gray-600">
-                          <span>{category.offerCount} offers</span>
+                          <span>{category.offerCount} active offers</span>
                           {category.stores.length > 0 && (
                             <>
                               <span>•</span>
@@ -249,7 +256,7 @@ const CategoriesScreen = () => {
 
                   {category.popularOffers.length > 0 && (
                     <div>
-                      <p className="text-sm font-medium text-gray-700 mb-2">Popular Offers:</p>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Latest Active Offers:</p>
                       <div className="space-y-1">
                         {category.popularOffers.slice(0, 2).map((offer, index) => (
                           <p key={index} className="text-xs text-gray-600 truncate">
@@ -271,9 +278,9 @@ const CategoriesScreen = () => {
             <div className="p-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
               <FolderOpen className="w-10 h-10 text-gray-600" />
             </div>
-            <h3 className="text-xl font-medium text-gray-900 mb-3">No categories found</h3>
+            <h3 className="text-xl font-medium text-gray-900 mb-3">No active categories found</h3>
             <p className="text-gray-500 text-lg">
-              {searchTerm ? `No categories found matching "${searchTerm}"` : 'No categories available at the moment'}
+              {searchTerm ? `No categories found matching "${searchTerm}" with active offers` : 'No categories with active offers available at the moment'}
             </p>
           </div>
         )}
