@@ -16,11 +16,20 @@ const OfferDetailScreen = () => {
   const { offers } = useData();
   const isMobile = useIsMobile();
   
-  // Find offer by lmdId instead of the transformed id
-  const offerIndex = offers.findIndex(offer => 
-    offer.lmdId.toString() === offerId || offer.id === offerId
-  );
+  console.log('OfferDetailScreen - offerId:', offerId);
+  console.log('OfferDetailScreen - total offers:', offers.length);
+  
+  // Find offer by lmdId first, then by transformed id as fallback
+  let offerIndex = offers.findIndex(offer => offer.lmdId.toString() === offerId);
+  
+  // If not found by lmdId, try by id
+  if (offerIndex === -1) {
+    offerIndex = offers.findIndex(offer => offer.id === offerId);
+  }
+  
   const offer = offerIndex !== -1 ? offers[offerIndex] : null;
+  
+  console.log('OfferDetailScreen - found offer:', offer ? `${offer.title} (lmdId: ${offer.lmdId}, id: ${offer.id})` : 'not found');
   
   if (!offer) {
     return (

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Store, ExternalLink, Share2, Tag, Calendar, TrendingUp, MapPin, Bookmark } from 'lucide-react';
@@ -55,13 +56,19 @@ const StoreDetailScreen = () => {
   const fetchStoreDetail = async (name: string) => {
     try {
       setIsLoading(true);
+      console.log('Fetching offers for store:', name);
+      
       const { data: offers, error } = await supabase
         .from('Offers_data')
         .select('lmd_id, title, description, image_url, offer_value, type, code, end_date, categories')
-        .ilike('store', name)
-        .not('end_date', 'is', null);
+        .ilike('store', `%${name}%`);
 
-      if (error) throw error;
+      console.log('Store offers query result:', { offers, error });
+
+      if (error) {
+        console.error('Error fetching offers:', error);
+        throw error;
+      }
 
       if (offers && offers.length > 0) {
         const categories = new Set<string>();
@@ -81,6 +88,14 @@ const StoreDetailScreen = () => {
           totalOffers: activeOffers.length,
           categories: Array.from(categories),
           offers: activeOffers
+        });
+      } else {
+        console.log('No offers found for store:', name);
+        setStoreDetail({
+          name,
+          totalOffers: 0,
+          categories: [],
+          offers: []
         });
       }
     } catch (error) {
@@ -163,6 +178,7 @@ const StoreDetailScreen = () => {
   };
 
   const handleOfferClick = (offerId: number) => {
+    console.log('Navigating to offer:', offerId);
     navigate(`/offer/${offerId}`);
   };
 
@@ -304,87 +320,98 @@ const StoreDetailScreen = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
-              {storeDetail.offers.map((offer) => (
-                <Card
-                  key={offer.lmd_id}
-                  className="group cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 border-gray-200/60 overflow-hidden"
-                  onClick={() => handleOfferClick(offer.lmd_id)}
-                >
-                  {/* Image */}
-                  <div className="relative aspect-video bg-gray-100">
-                    <img
-                      src={offer.image_url || "/placeholder.svg"}
-                      alt={offer.title || "Offer"}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    
-                    {/* Save Button */}
-                    {session?.user && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSaveOffer(`${offer.lmd_id}`);
+            {storeDetail.offers.length === 0 ? (
+              <div className="text-center py-12">
+                <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No offers available</h3>
+                <p className="text-gray-500">There are no active offers for this store at the moment.</p>
+              </div>
+            ) : (
+              <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+                {storeDetail.offers.map((offer) => (
+                  <Card
+                    key={offer.lmd_id}
+                    className="group cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 border-gray-200/60 overflow-hidden"
+                    onClick={() => handleOfferClick(offer.lmd_id)}
+                  >
+                    {/* Image */}
+                    <div className="relative aspect-video bg-gray-100">
+                      <img
+                        src={offer.image_url || "/placeholder.svg"}
+                        alt={offer.title || "Offer"}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          e.currentTarget.src = "/placeholder.svg";
                         }}
-                        className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-colors"
-                      >
-                        <Bookmark 
-                          className={`w-4 h-4 ${
-                            savedOffers.includes(`${offer.lmd_id}`) 
-                              ? 'fill-current text-emerald-600' 
-                              : 'text-gray-400'
-                          }`} 
-                        />
-                      </button>
-                    )}
-
-                    {/* Badges */}
-                    <div className="absolute bottom-3 left-3 flex items-center gap-2">
-                      {offer.offer_value && (
-                        <Badge className="bg-emerald-600 text-white shadow-lg">
-                          {offer.offer_value}
-                        </Badge>
-                      )}
-                      {offer.code && (
-                        <Badge className="bg-blue-600 text-white shadow-lg">
-                          <Tag className="w-3 h-3 mr-1" />
-                          CODE
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  <CardContent className="p-4">
-                    <div className="space-y-3">
-                      <h3 className="font-bold text-gray-900 group-hover:text-emerald-700 transition-colors line-clamp-2">
-                        {offer.title}
-                      </h3>
-
-                      {offer.description && (
-                        <p className="text-sm text-gray-600 line-clamp-2">
-                          {offer.description}
-                        </p>
+                      />
+                      
+                      {/* Save Button */}
+                      {session?.user && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSaveOffer(`${offer.lmd_id}`);
+                          }}
+                          className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-colors"
+                        >
+                          <Bookmark 
+                            className={`w-4 h-4 ${
+                              savedOffers.includes(`${offer.lmd_id}`) 
+                                ? 'fill-current text-emerald-600' 
+                                : 'text-gray-400'
+                            }`} 
+                          />
+                        </button>
                       )}
 
-                      <div className="flex items-center justify-between">
-                        {offer.type && (
-                          <Badge variant="outline" className="text-xs">
-                            {offer.type}
+                      {/* Badges */}
+                      <div className="absolute bottom-3 left-3 flex items-center gap-2">
+                        {offer.offer_value && (
+                          <Badge className="bg-emerald-600 text-white shadow-lg">
+                            {offer.offer_value}
                           </Badge>
                         )}
-                        
-                        {offer.end_date && (
-                          <div className="flex items-center space-x-1 text-xs text-gray-500">
-                            <Calendar className="w-3 h-3" />
-                            <span>Ends {new Date(offer.end_date).toLocaleDateString()}</span>
-                          </div>
+                        {offer.code && (
+                          <Badge className="bg-blue-600 text-white shadow-lg">
+                            <Tag className="w-3 h-3 mr-1" />
+                            CODE
+                          </Badge>
                         )}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        <h3 className="font-bold text-gray-900 group-hover:text-emerald-700 transition-colors line-clamp-2">
+                          {offer.title}
+                        </h3>
+
+                        {offer.description && (
+                          <p className="text-sm text-gray-600 line-clamp-2">
+                            {offer.description}
+                          </p>
+                        )}
+
+                        <div className="flex items-center justify-between">
+                          {offer.type && (
+                            <Badge variant="outline" className="text-xs">
+                              {offer.type}
+                            </Badge>
+                          )}
+                          
+                          {offer.end_date && (
+                            <div className="flex items-center space-x-1 text-xs text-gray-500">
+                              <Calendar className="w-3 h-3" />
+                              <span>Ends {new Date(offer.end_date).toLocaleDateString()}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
