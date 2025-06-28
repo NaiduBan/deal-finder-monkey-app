@@ -16,7 +16,10 @@ const OfferDetailScreen = () => {
   const { offers } = useData();
   const isMobile = useIsMobile();
   
-  const offerIndex = offers.findIndex(offer => offer.id === offerId);
+  // Find offer by lmdId instead of the transformed id
+  const offerIndex = offers.findIndex(offer => 
+    offer.lmdId.toString() === offerId || offer.id === offerId
+  );
   const offer = offerIndex !== -1 ? offers[offerIndex] : null;
   
   if (!offer) {
@@ -32,8 +35,12 @@ const OfferDetailScreen = () => {
     );
   }
   
-  const nextOfferId = offerIndex < offers.length - 1 ? offers[offerIndex + 1].id : null;
-  const prevOfferId = offerIndex > 0 ? offers[offerIndex - 1].id : null;
+  // Find next and previous offers by lmdId
+  const nextOfferIndex = offerIndex < offers.length - 1 ? offerIndex + 1 : -1;
+  const prevOfferIndex = offerIndex > 0 ? offerIndex - 1 : -1;
+  
+  const nextOfferId = nextOfferIndex !== -1 ? offers[nextOfferIndex].lmdId.toString() : null;
+  const prevOfferId = prevOfferIndex !== -1 ? offers[prevOfferIndex].lmdId.toString() : null;
 
   return (
     <div className={`bg-gray-100 min-h-screen ${isMobile ? 'pb-32' : 'pt-20'}`}>
