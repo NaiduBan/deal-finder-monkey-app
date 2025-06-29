@@ -56,24 +56,39 @@ const StoreDetailScreen = () => {
   const fetchStoreDetail = async (name: string) => {
     try {
       setIsLoading(true);
-      console.log('Fetching offers for store:', name);
+      console.log('Fetching fresh offers for store:', name);
       
+      // Clear any existing data first
+      setStoreDetail(null);
+      
+      // Fetch fresh data from Offers_data table
       const { data: offers, error } = await supabase
         .from('Offers_data')
-        .select('lmd_id, title, description, image_url, offer_value, type, code, end_date, categories')
-        .ilike('store', `%${name}%`);
+        .select('lmd_id, title, description, image_url, offer_value, type, code, end_date, categories, store')
+        .ilike('store', `%${name}%`)
+        .not('lmd_id', 'is', null)
+        .order('lmd_id', { ascending: false });
 
-      console.log('Store offers query result:', { offers, error });
+      console.log('Fresh store offers query result:', { offers: offers?.length || 0, error });
 
       if (error) {
-        console.error('Error fetching offers:', error);
+        console.error('Error fetching fresh offers:', error);
         throw error;
       }
 
       if (offers && offers.length > 0) {
         const categories = new Set<string>();
-        const activeOffers = offers.filter(offer => isOfferActive(offer.end_date));
         
+        // Filter only active offers
+        const activeOffers = offers.filter(offer => {
+          const isActive = isOfferActive(offer.end_date);
+          console.log(`Offer ${offer.lmd_id}: ${offer.title} - Active: ${isActive}`);
+          return isActive;
+        });
+        
+        console.log(`Filtered ${activeOffers.length} active offers from ${offers.length} total offers`);
+        
+        // Extract categories from active offers
         activeOffers.forEach(offer => {
           if (offer.categories) {
             offer.categories.split(',').forEach(cat => {
@@ -90,7 +105,7 @@ const StoreDetailScreen = () => {
           offers: activeOffers
         });
       } else {
-        console.log('No offers found for store:', name);
+        console.log('No fresh offers found for store:', name);
         setStoreDetail({
           name,
           totalOffers: 0,
@@ -99,11 +114,17 @@ const StoreDetailScreen = () => {
         });
       }
     } catch (error) {
-      console.error('Error fetching store detail:', error);
+      console.error('Error fetching fresh store detail:', error);
       toast({
         title: "Error",
-        description: "Failed to load store details",
+        description: "Failed to load fresh store details",
         variant: "destructive"
+      });
+      setStoreDetail({
+        name: name,
+        totalOffers: 0,
+        categories: [],
+        offers: []
       });
     } finally {
       setIsLoading(false);
@@ -323,7 +344,7 @@ const StoreDetailScreen = () => {
             {storeDetail.offers.length === 0 ? (
               <div className="text-center py-12">
                 <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No offers available</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No active offers available</h3>
                 <p className="text-gray-500">There are no active offers for this store at the moment.</p>
               </div>
             ) : (
