@@ -1,36 +1,51 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, FolderOpen, Search, TrendingUp, ExternalLink, Filter, Grid, List } from 'lucide-react';
+import { ChevronLeft, FolderOpen, Search, TrendingUp, ExternalLink, Tag, Calendar, Store, Bookmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-interface CategoryData {
+interface OfferData {
+  lmd_id: number;
+  title: string;
+  description: string;
+  image_url: string;
+  offer_value: string;
+  type: string;
+  code: string;
+  end_date: string;
+  store: string;
+  categories: string;
+}
+
+interface CategoryGroup {
   name: string;
+  offers: OfferData[];
   offerCount: number;
-  stores: string[];
-  popularOffers: string[];
 }
 
 const CategoriesScreen = () => {
   const { toast } = useToast();
+  const { session } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState('');
-  const [categories, setCategories] = useState<CategoryData[]>([]);
+  const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<'name' | 'offers'>('offers');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [savedOffers, setSavedOffers] = useState<string[]>([]);
 
   useEffect(() => {
-    fetchCategories();
-  }, []);
+    fetchCategoriesWithOffers();
+    if (session?.user) {
+      loadSavedOffers();
+    }
+  }, [session]);
 
   const isOfferActive = (endDate: string | null) => {
     if (!endDate) return true;
@@ -39,14 +54,14 @@ const CategoriesScreen = () => {
     return offerEndDate >= today;
   };
 
-  const fetchCategories = async () => {
+  const fetchCategoriesWithOffers = async () => {
     try {
       setIsLoading(true);
-      console.log('Fetching categories from Offers_data table...');
+      console.log('Fetching offers grouped by categories...');
       
       const { data: offers, error } = await supabase
         .from('Offers_data')
-        .select('categories, store, title, end_date')
+        .select('lmd_id, title, description, image_url, offer_value, type, code, end_date, store, categories')
         .not('categories', 'is', null);
 
       if (error) {
@@ -56,38 +71,32 @@ const CategoriesScreen = () => {
 
       console.log('Raw offers data:', offers?.length || 0, 'records');
 
-      const categoriesMap = new Map<string, CategoryData>();
+      const categoriesMap = new Map<string, OfferData[]>();
 
       offers?.forEach(offer => {
         if (offer.categories && offer.categories.trim() !== '' && isOfferActive(offer.end_date)) {
           const categoryList = offer.categories.split(',').map(c => c.trim()).filter(Boolean);
           
           categoryList.forEach(categoryName => {
-            const existing = categoriesMap.get(categoryName);
-            
-            if (existing) {
-              existing.offerCount++;
-              if (offer.store && !existing.stores.includes(offer.store)) {
-                existing.stores.push(offer.store);
-              }
-              if (offer.title && existing.popularOffers.length < 3) {
-                existing.popularOffers.push(offer.title);
-              }
-            } else {
-              categoriesMap.set(categoryName, {
-                name: categoryName,
-                offerCount: 1,
-                stores: offer.store ? [offer.store] : [],
-                popularOffers: offer.title ? [offer.title] : []
-              });
+            if (!categoriesMap.has(categoryName)) {
+              categoriesMap.set(categoryName, []);
             }
+            categoriesMap.get(categoryName)?.push(offer);
           });
         }
       });
 
-      const categoriesArray = Array.from(categoriesMap.values());
-      console.log('Processed categories:', categoriesArray.length);
-      setCategories(categoriesArray);
+      const categoryGroupsArray = Array.from(categoriesMap.entries()).map(([name, offers]) => ({
+        name,
+        offers,
+        offerCount: offers.length
+      }));
+
+      // Sort by offer count (most offers first)
+      categoryGroupsArray.sort((a, b) => b.offerCount - a.offerCount);
+
+      console.log('Processed category groups:', categoryGroupsArray.length);
+      setCategoryGroups(categoryGroupsArray);
     } catch (error) {
       console.error('Error fetching categories:', error);
       toast({
@@ -95,31 +104,103 @@ const CategoriesScreen = () => {
         description: "Failed to load categories from database",
         variant: "destructive"
       });
-      setCategories([]);
+      setCategoryGroups([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const filteredAndSortedCategories = useMemo(() => {
-    let filtered = categories.filter(category =>
-      category.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+  const loadSavedOffers = async () => {
+    if (!session?.user) return;
 
-    filtered.sort((a, b) => {
-      if (sortBy === 'name') {
-        return a.name.localeCompare(b.name);
-      } else {
-        return b.offerCount - a.offerCount;
-      }
-    });
+    try {
+      const { data, error } = await supabase
+        .from('saved_offers')
+        .select('offer_id')
+        .eq('user_id', session.user.id);
 
-    return filtered;
-  }, [categories, searchTerm, sortBy]);
-
-  const handleCategoryClick = (categoryName: string) => {
-    navigate(`/category/${encodeURIComponent(categoryName)}`);
+      if (error) throw error;
+      setSavedOffers(data?.map(item => item.offer_id) || []);
+    } catch (error) {
+      console.error('Error loading saved offers:', error);
+    }
   };
+
+  const handleSaveOffer = async (offerId: string) => {
+    if (!session?.user) {
+      toast({
+        title: "Login required",
+        description: "Please login to save offers",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const isSaved = savedOffers.includes(offerId);
+
+      if (isSaved) {
+        const { error } = await supabase
+          .from('saved_offers')
+          .delete()
+          .eq('user_id', session.user.id)
+          .eq('offer_id', offerId);
+
+        if (error) throw error;
+        setSavedOffers(prev => prev.filter(id => id !== offerId));
+        toast({
+          title: "Offer removed",
+          description: "Offer removed from saved list",
+        });
+      } else {
+        const { error } = await supabase
+          .from('saved_offers')
+          .insert({
+            user_id: session.user.id,
+            offer_id: offerId
+          });
+
+        if (error) throw error;
+        setSavedOffers(prev => [...prev, offerId]);
+        toast({
+          title: "Offer saved",
+          description: "Offer added to your saved list",
+        });
+      }
+    } catch (error) {
+      console.error('Error saving offer:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save offer",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleOfferClick = (offerId: number) => {
+    navigate(`/offer/${offerId}`);
+  };
+
+  const filteredCategoryGroups = useMemo(() => {
+    if (!searchTerm) return categoryGroups;
+    
+    return categoryGroups.filter(group =>
+      group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      group.offers.some(offer => 
+        offer.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        offer.store?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    ).map(group => ({
+      ...group,
+      offers: group.offers.filter(offer =>
+        group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        offer.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        offer.store?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    })).filter(group => group.offers.length > 0);
+  }, [categoryGroups, searchTerm]);
+
+  const totalOffers = categoryGroups.reduce((sum, group) => sum + group.offerCount, 0);
 
   return (
     <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/50 ${isMobile ? 'pb-16' : 'pt-20'}`}>
@@ -140,149 +221,152 @@ const CategoriesScreen = () => {
                 <div>
                   <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900 mb-1`}>All Categories</h1>
                   <p className={`text-gray-600 ${isMobile ? 'text-sm' : 'text-base'}`}>
-                    Explore deals from {categories.length} popular categories
+                    Explore {totalOffers} deals from {categoryGroups.length} categories
                   </p>
                 </div>
               </div>
             </div>
-
-            {!isMobile && (
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                >
-                  <Grid className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                >
-                  <List className="w-4 h-4" />
-                </Button>
-              </div>
-            )}
           </div>
         </div>
       </div>
 
       {/* Content */}
       <div className={`${isMobile ? 'p-4 space-y-6' : 'p-8 max-w-7xl mx-auto space-y-8'}`}>
-        {/* Search and Filters */}
-        <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <Input
-              type="search"
-              placeholder="Search categories..."
-              className={`pl-12 pr-4 ${isMobile ? 'py-3' : 'py-4'} w-full border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 bg-white ${isMobile ? 'text-base' : 'text-lg'}`}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <TrendingUp className="w-4 h-4" />
-              <span>{filteredAndSortedCategories.length} categories found</span>
-            </div>
-
-            <Select value={sortBy} onValueChange={(value: 'name' | 'offers') => setSortBy(value)}>
-              <SelectTrigger className="w-[200px] bg-white rounded-xl">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="offers">Most Offers</SelectItem>
-                <SelectItem value="name">Category Name</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Input
+            type="search"
+            placeholder="Search categories and offers..."
+            className={`pl-12 pr-4 ${isMobile ? 'py-3' : 'py-4'} w-full border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 bg-white ${isMobile ? 'text-base' : 'text-lg'}`}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
 
-        {/* Categories Grid */}
+        {/* Loading State */}
         {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
           </div>
         ) : (
-          <div className={`${viewMode === 'grid' 
-            ? `grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}` 
-            : 'space-y-4'
-          }`}>
-            {filteredAndSortedCategories.map((category) => (
-              <Card
-                key={category.name}
-                className="group cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 bg-white/80 backdrop-blur-sm border-purple-200/60"
-                onClick={() => handleCategoryClick(category.name)}
-              >
-                <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-purple-100 rounded-xl group-hover:bg-purple-200 transition-colors">
-                        <FolderOpen className="w-5 h-5 text-purple-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-gray-900 text-lg group-hover:text-purple-700 transition-colors">
-                          {category.name}
-                        </h3>
-                        <div className="flex items-center space-x-2 text-sm text-gray-600">
-                          <span>{category.offerCount} active offers</span>
-                          {category.stores.length > 0 && (
-                            <>
-                              <span>•</span>
-                              <span>{category.stores.length} stores</span>
-                            </>
+          <div className="space-y-8">
+            {/* Category Groups */}
+            {filteredCategoryGroups.map((group) => (
+              <div key={group.name} className="space-y-4">
+                {/* Category Header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <h2 className="text-2xl font-bold text-gray-900">{group.name}</h2>
+                    <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+                      {group.offerCount} offers
+                    </Badge>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/category/${encodeURIComponent(group.name)}`)}
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    View All
+                  </Button>
+                </div>
+
+                {/* Offers Grid */}
+                <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
+                  {group.offers.slice(0, isMobile ? 4 : 8).map((offer) => (
+                    <Card
+                      key={offer.lmd_id}
+                      className="group cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 border-gray-200/60 overflow-hidden"
+                      onClick={() => handleOfferClick(offer.lmd_id)}
+                    >
+                      {/* Image */}
+                      <div className="relative aspect-video bg-gray-100">
+                        <img
+                          src={offer.image_url || "/placeholder.svg"}
+                          alt={offer.title || "Offer"}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            e.currentTarget.src = "/placeholder.svg";
+                          }}
+                        />
+                        
+                        {/* Save Button */}
+                        {session?.user && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSaveOffer(`${offer.lmd_id}`);
+                            }}
+                            className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-colors"
+                          >
+                            <Bookmark 
+                              className={`w-4 h-4 ${
+                                savedOffers.includes(`${offer.lmd_id}`) 
+                                  ? 'fill-current text-purple-600' 
+                                  : 'text-gray-400'
+                              }`} 
+                            />
+                          </button>
+                        )}
+
+                        {/* Badges */}
+                        <div className="absolute bottom-3 left-3 flex items-center gap-2">
+                          {offer.offer_value && (
+                            <Badge className="bg-purple-600 text-white shadow-lg">
+                              {offer.offer_value}
+                            </Badge>
+                          )}
+                          {offer.code && (
+                            <Badge className="bg-blue-600 text-white shadow-lg">
+                              <Tag className="w-3 h-3 mr-1" />
+                              CODE
+                            </Badge>
                           )}
                         </div>
                       </div>
-                    </div>
-                    <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-purple-600 transition-colors" />
-                  </div>
 
-                  {category.stores.length > 0 && (
-                    <div className="mb-4">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Available at:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {category.stores.slice(0, 3).map((store, index) => (
-                          <Badge
-                            key={index}
-                            variant="secondary"
-                            className="text-xs bg-purple-50 text-purple-700 border-purple-200"
-                          >
-                            {store}
-                          </Badge>
-                        ))}
-                        {category.stores.length > 3 && (
-                          <Badge variant="secondary" className="text-xs bg-gray-50 text-gray-600">
-                            +{category.stores.length - 3} more
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          <h3 className="font-bold text-gray-900 group-hover:text-purple-700 transition-colors line-clamp-2">
+                            {offer.title}
+                          </h3>
 
-                  {category.popularOffers.length > 0 && (
-                    <div>
-                      <p className="text-sm font-medium text-gray-700 mb-2">Popular Offers:</p>
-                      <div className="space-y-1">
-                        {category.popularOffers.slice(0, 2).map((offer, index) => (
-                          <p key={index} className="text-xs text-gray-600 truncate">
-                            • {offer}
-                          </p>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                          {offer.description && (
+                            <p className="text-sm text-gray-600 line-clamp-2">
+                              {offer.description}
+                            </p>
+                          )}
+
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              {offer.store && (
+                                <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
+                                  <Store className="w-3 h-3 mr-1" />
+                                  {offer.store}
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            {offer.end_date && (
+                              <div className="flex items-center space-x-1 text-xs text-gray-500">
+                                <Calendar className="w-3 h-3" />
+                                <span>Ends {new Date(offer.end_date).toLocaleDateString()}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         )}
 
         {/* Empty State */}
-        {!isLoading && filteredAndSortedCategories.length === 0 && (
+        {!isLoading && filteredCategoryGroups.length === 0 && (
           <div className="bg-white/70 backdrop-blur-sm p-12 rounded-3xl text-center shadow-sm border border-gray-100/80 max-w-2xl mx-auto">
             <div className="p-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
               <FolderOpen className="w-10 h-10 text-gray-600" />
