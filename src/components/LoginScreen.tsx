@@ -35,6 +35,11 @@ const LoginScreen = () => {
   const [locationDetected, setLocationDetected] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
 
+  // Forgot password state
+  const [resetEmail, setResetEmail] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+
   // Check if user is already logged in
   useEffect(() => {
     if (session && !authLoading) {
@@ -110,6 +115,54 @@ const LoginScreen = () => {
         title: "Location detected",
         description: "We've detected your location as India",
       });
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!resetEmail || !resetEmail.includes('@')) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setResetLoading(true);
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) {
+        toast({
+          title: "Reset failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      toast({
+        title: "Reset email sent",
+        description: "Please check your email for password reset instructions",
+      });
+      
+      setShowForgotPassword(false);
+      setResetEmail('');
+      
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "An error occurred during password reset",
+        variant: "destructive",
+      });
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -322,181 +375,235 @@ const LoginScreen = () => {
           </CardHeader>
           
           <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
+            {showForgotPassword ? (
+              <div className="space-y-4">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Reset Password</h3>
+                  <p className="text-sm text-gray-600">Enter your email address and we'll send you a reset link</p>
+                </div>
+                
+                <form onSubmit={handleForgotPassword} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-gray-700">Email Address</Label>
+                    <Label htmlFor="reset-email" className="text-gray-700">Email Address</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                       <Input
-                        id="email"
+                        id="reset-email"
                         type="email"
                         placeholder="Enter your email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
                         className="pl-10 h-12"
                         required
                       />
                     </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="text-gray-700">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Enter your password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10 pr-10 h-12"
-                        required
-                      />
+                  <Button 
+                    type="submit" 
+                    className="w-full h-12 bg-spring-green-600 hover:bg-spring-green-700"
+                    disabled={resetLoading}
+                  >
+                    {resetLoading ? 'Sending...' : 'Send Reset Link'}
+                  </Button>
+                  
+                  <Button 
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => setShowForgotPassword(false)}
+                  >
+                    Back to Login
+                  </Button>
+                </form>
+              </div>
+            ) : (
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-6">
+                  <TabsTrigger value="login">Login</TabsTrigger>
+                  <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="login">
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="text-gray-700">Email Address</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="Enter your email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="pl-10 h-12"
+                          required
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="password" className="text-gray-700">Password</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter your password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="pl-10 pr-10 h-12"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        >
+                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-end">
                       <button
                         type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        onClick={() => setShowForgotPassword(true)}
+                        className="text-sm text-spring-green-600 hover:text-spring-green-700 underline"
                       >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        Forgot Password?
                       </button>
                     </div>
-                  </div>
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full h-12 bg-spring-green-600 hover:bg-spring-green-700"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? 'Signing in...' : 'Sign In'}
-                  </Button>
-                </form>
-              </TabsContent>
-              
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="text-gray-700">Full Name</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <Input
-                        id="name"
-                        type="text"
-                        placeholder="Enter your full name"
-                        value={signUpData.name}
-                        onChange={(e) => setSignUpData(prev => ({ ...prev, name: e.target.value }))}
-                        className="pl-10 h-12"
-                        required
-                      />
+                    
+                    <Button 
+                      type="submit" 
+                      className="w-full h-12 bg-spring-green-600 hover:bg-spring-green-700"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? 'Signing in...' : 'Sign In'}
+                    </Button>
+                  </form>
+                </TabsContent>
+                
+                <TabsContent value="signup">
+                  <form onSubmit={handleSignUp} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name" className="text-gray-700">Full Name</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <Input
+                          id="name"
+                          type="text"
+                          placeholder="Enter your full name"
+                          value={signUpData.name}
+                          onChange={(e) => setSignUpData(prev => ({ ...prev, name: e.target.value }))}
+                          className="pl-10 h-12"
+                          required
+                        />
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email" className="text-gray-700">Email Address</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="Enter your email"
-                        value={signUpData.email}
-                        onChange={(e) => setSignUpData(prev => ({ ...prev, email: e.target.value }))}
-                        className="pl-10 h-12"
-                        required
-                      />
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-email" className="text-gray-700">Email Address</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <Input
+                          id="signup-email"
+                          type="email"
+                          placeholder="Enter your email"
+                          value={signUpData.email}
+                          onChange={(e) => setSignUpData(prev => ({ ...prev, email: e.target.value }))}
+                          className="pl-10 h-12"
+                          required
+                        />
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-gray-700">Phone Number (Optional)</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <Input
-                        id="phone"
-                        type="tel"
-                        placeholder="Enter your phone number"
-                        value={signUpData.phone}
-                        onChange={(e) => setSignUpData(prev => ({ ...prev, phone: e.target.value }))}
-                        className="pl-10 h-12"
-                      />
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="phone" className="text-gray-700">Phone Number (Optional)</Label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <Input
+                          id="phone"
+                          type="tel"
+                          placeholder="Enter your phone number"
+                          value={signUpData.phone}
+                          onChange={(e) => setSignUpData(prev => ({ ...prev, phone: e.target.value }))}
+                          className="pl-10 h-12"
+                        />
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password" className="text-gray-700">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        placeholder="Create a password"
-                        value={signUpData.password}
-                        onChange={(e) => setSignUpData(prev => ({ ...prev, password: e.target.value }))}
-                        className="pl-10 h-12"
-                        required
-                      />
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-password" className="text-gray-700">Password</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <Input
+                          id="signup-password"
+                          type="password"
+                          placeholder="Create a password"
+                          value={signUpData.password}
+                          onChange={(e) => setSignUpData(prev => ({ ...prev, password: e.target.value }))}
+                          className="pl-10 h-12"
+                          required
+                        />
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm-password" className="text-gray-700">Confirm Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <Input
-                        id="confirm-password"
-                        type="password"
-                        placeholder="Confirm your password"
-                        value={signUpData.confirmPassword}
-                        onChange={(e) => setSignUpData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                        className="pl-10 h-12"
-                        required
-                      />
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-password" className="text-gray-700">Confirm Password</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <Input
+                          id="confirm-password"
+                          type="password"
+                          placeholder="Confirm your password"
+                          value={signUpData.confirmPassword}
+                          onChange={(e) => setSignUpData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                          className="pl-10 h-12"
+                          required
+                        />
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="location" className="text-gray-700">Location</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="location"
-                        placeholder="Your location"
-                        value={signUpData.location}
-                        onChange={(e) => setSignUpData(prev => ({ ...prev, location: e.target.value }))}
-                        className="h-12 flex-1"
-                        readOnly={locationDetected}
-                        required
-                      />
-                      <Button 
-                        type="button"
-                        onClick={detectLocation}
-                        className="bg-spring-green-600 hover:bg-spring-green-700"
-                        disabled={isLoading || locationDetected}
-                      >
-                        {locationDetected ? (
-                          <Check className="w-5 h-5" />
-                        ) : (
-                          <MapPin className="w-5 h-5" />
-                        )}
-                      </Button>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="location" className="text-gray-700">Location</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="location"
+                          placeholder="Your location"
+                          value={signUpData.location}
+                          onChange={(e) => setSignUpData(prev => ({ ...prev, location: e.target.value }))}
+                          className="h-12 flex-1"
+                          readOnly={locationDetected}
+                          required
+                        />
+                        <Button 
+                          type="button"
+                          onClick={detectLocation}
+                          className="bg-spring-green-600 hover:bg-spring-green-700"
+                          disabled={isLoading || locationDetected}
+                        >
+                          {locationDetected ? (
+                            <Check className="w-5 h-5" />
+                          ) : (
+                            <MapPin className="w-5 h-5" />
+                          )}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full h-12 bg-spring-green-600 hover:bg-spring-green-700"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? 'Creating account...' : 'Create Account'}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
+                    
+                    <Button 
+                      type="submit" 
+                      className="w-full h-12 bg-spring-green-600 hover:bg-spring-green-700"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? 'Creating account...' : 'Create Account'}
+                    </Button>
+                  </form>
+                </TabsContent>
+              </Tabs>
+            )}
           </CardContent>
         </Card>
       </div>
