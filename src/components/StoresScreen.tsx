@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Store, Search, TrendingUp, MapPin, Star, ExternalLink, Filter, Grid, List } from 'lucide-react';
@@ -32,7 +33,7 @@ const StoresScreen = () => {
   }, []);
 
   const isOfferActive = (endDate: string | null) => {
-    if (!endDate) return true; // If no end date, consider it active
+    if (!endDate) return true;
     const today = new Date();
     const offerEndDate = new Date(endDate);
     return offerEndDate >= today;
@@ -41,54 +42,60 @@ const StoresScreen = () => {
   const fetchStores = async () => {
     try {
       setIsLoading(true);
+      console.log('Fetching stores from Offers_data table...');
+      
       const { data: offers, error } = await supabase
         .from('Offers_data')
         .select('store, categories, title, end_date')
         .not('store', 'is', null);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching offers:', error);
+        throw error;
+      }
+
+      console.log('Raw offers data:', offers?.length || 0, 'records');
 
       const storesMap = new Map<string, StoreData>();
 
       offers?.forEach(offer => {
-        // Only include active offers
-        if (offer.store && isOfferActive(offer.end_date)) {
+        if (offer.store && offer.store.trim() !== '' && isOfferActive(offer.end_date)) {
           const storeName = offer.store.trim();
-          if (storeName) {
-            const existing = storesMap.get(storeName);
-            const categories = offer.categories ? offer.categories.split(',').map(c => c.trim()) : [];
-            
-            if (existing) {
-              existing.offerCount++;
-              categories.forEach(cat => {
-                if (cat && !existing.categories.includes(cat)) {
-                  existing.categories.push(cat);
-                }
-              });
-              if (offer.title && existing.popularOffers.length < 3) {
-                existing.popularOffers.push(offer.title);
+          const existing = storesMap.get(storeName);
+          const categories = offer.categories ? offer.categories.split(',').map(c => c.trim()).filter(Boolean) : [];
+          
+          if (existing) {
+            existing.offerCount++;
+            categories.forEach(cat => {
+              if (!existing.categories.includes(cat)) {
+                existing.categories.push(cat);
               }
-            } else {
-              storesMap.set(storeName, {
-                name: storeName,
-                offerCount: 1,
-                categories: categories.filter(c => c),
-                popularOffers: offer.title ? [offer.title] : []
-              });
+            });
+            if (offer.title && existing.popularOffers.length < 3) {
+              existing.popularOffers.push(offer.title);
             }
+          } else {
+            storesMap.set(storeName, {
+              name: storeName,
+              offerCount: 1,
+              categories: categories,
+              popularOffers: offer.title ? [offer.title] : []
+            });
           }
         }
       });
 
       const storesArray = Array.from(storesMap.values());
+      console.log('Processed stores:', storesArray.length);
       setStores(storesArray);
     } catch (error) {
       console.error('Error fetching stores:', error);
       toast({
         title: "Error",
-        description: "Failed to load stores",
+        description: "Failed to load stores from database",
         variant: "destructive"
       });
+      setStores([]);
     } finally {
       setIsLoading(false);
     }
@@ -258,7 +265,7 @@ const StoresScreen = () => {
 
                   {store.popularOffers.length > 0 && (
                     <div>
-                      <p className="text-sm font-medium text-gray-700 mb-2">Latest Active Offers:</p>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Popular Offers:</p>
                       <div className="space-y-1">
                         {store.popularOffers.slice(0, 2).map((offer, index) => (
                           <p key={index} className="text-xs text-gray-600 truncate">
@@ -280,7 +287,7 @@ const StoresScreen = () => {
             <div className="p-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
               <Store className="w-10 h-10 text-gray-600" />
             </div>
-            <h3 className="text-xl font-medium text-gray-900 mb-3">No active stores found</h3>
+            <h3 className="text-xl font-medium text-gray-900 mb-3">No stores found</h3>
             <p className="text-gray-500 text-lg">
               {searchTerm ? `No stores found matching "${searchTerm}" with active offers` : 'No stores with active offers available at the moment'}
             </p>

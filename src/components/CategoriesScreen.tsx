@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, FolderOpen, Search, TrendingUp, ExternalLink, Filter, Grid, List } from 'lucide-react';
@@ -32,7 +33,7 @@ const CategoriesScreen = () => {
   }, []);
 
   const isOfferActive = (endDate: string | null) => {
-    if (!endDate) return true; // If no end date, consider it active
+    if (!endDate) return true;
     const today = new Date();
     const offerEndDate = new Date(endDate);
     return offerEndDate >= today;
@@ -41,52 +42,60 @@ const CategoriesScreen = () => {
   const fetchCategories = async () => {
     try {
       setIsLoading(true);
+      console.log('Fetching categories from Offers_data table...');
+      
       const { data: offers, error } = await supabase
         .from('Offers_data')
-        .select('categories, store, title, end_date');
+        .select('categories, store, title, end_date')
+        .not('categories', 'is', null);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching offers:', error);
+        throw error;
+      }
+
+      console.log('Raw offers data:', offers?.length || 0, 'records');
 
       const categoriesMap = new Map<string, CategoryData>();
 
       offers?.forEach(offer => {
-        // Only include active offers
-        if (offer.categories && isOfferActive(offer.end_date)) {
-          const categories = offer.categories.split(',').map(c => c.trim());
-          categories.forEach(category => {
-            if (category) {
-              const existing = categoriesMap.get(category);
-              
-              if (existing) {
-                existing.offerCount++;
-                if (offer.store && !existing.stores.includes(offer.store)) {
-                  existing.stores.push(offer.store);
-                }
-                if (offer.title && existing.popularOffers.length < 3) {
-                  existing.popularOffers.push(offer.title);
-                }
-              } else {
-                categoriesMap.set(category, {
-                  name: category,
-                  offerCount: 1,
-                  stores: offer.store ? [offer.store] : [],
-                  popularOffers: offer.title ? [offer.title] : []
-                });
+        if (offer.categories && offer.categories.trim() !== '' && isOfferActive(offer.end_date)) {
+          const categoryList = offer.categories.split(',').map(c => c.trim()).filter(Boolean);
+          
+          categoryList.forEach(categoryName => {
+            const existing = categoriesMap.get(categoryName);
+            
+            if (existing) {
+              existing.offerCount++;
+              if (offer.store && !existing.stores.includes(offer.store)) {
+                existing.stores.push(offer.store);
               }
+              if (offer.title && existing.popularOffers.length < 3) {
+                existing.popularOffers.push(offer.title);
+              }
+            } else {
+              categoriesMap.set(categoryName, {
+                name: categoryName,
+                offerCount: 1,
+                stores: offer.store ? [offer.store] : [],
+                popularOffers: offer.title ? [offer.title] : []
+              });
             }
           });
         }
       });
 
       const categoriesArray = Array.from(categoriesMap.values());
+      console.log('Processed categories:', categoriesArray.length);
       setCategories(categoriesArray);
     } catch (error) {
       console.error('Error fetching categories:', error);
       toast({
         title: "Error",
-        description: "Failed to load categories",
+        description: "Failed to load categories from database",
         variant: "destructive"
       });
+      setCategories([]);
     } finally {
       setIsLoading(false);
     }
@@ -256,7 +265,7 @@ const CategoriesScreen = () => {
 
                   {category.popularOffers.length > 0 && (
                     <div>
-                      <p className="text-sm font-medium text-gray-700 mb-2">Latest Active Offers:</p>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Popular Offers:</p>
                       <div className="space-y-1">
                         {category.popularOffers.slice(0, 2).map((offer, index) => (
                           <p key={index} className="text-xs text-gray-600 truncate">
@@ -278,7 +287,7 @@ const CategoriesScreen = () => {
             <div className="p-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
               <FolderOpen className="w-10 h-10 text-gray-600" />
             </div>
-            <h3 className="text-xl font-medium text-gray-900 mb-3">No active categories found</h3>
+            <h3 className="text-xl font-medium text-gray-900 mb-3">No categories found</h3>
             <p className="text-gray-500 text-lg">
               {searchTerm ? `No categories found matching "${searchTerm}" with active offers` : 'No categories with active offers available at the moment'}
             </p>

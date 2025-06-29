@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Star, Search, TrendingUp, ExternalLink, Filter, Grid, List } from 'lucide-react';
@@ -32,7 +33,7 @@ const BrandsScreen = () => {
   }, []);
 
   const isOfferActive = (endDate: string | null) => {
-    if (!endDate) return true; // If no end date, consider it active
+    if (!endDate) return true;
     const today = new Date();
     const offerEndDate = new Date(endDate);
     return offerEndDate >= today;
@@ -41,37 +42,41 @@ const BrandsScreen = () => {
   const fetchBrands = async () => {
     try {
       setIsLoading(true);
+      console.log('Fetching brands from Offers_data table...');
+      
       const { data: offers, error } = await supabase
         .from('Offers_data')
         .select('store, categories, title, end_date')
         .not('store', 'is', null);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching offers:', error);
+        throw error;
+      }
+
+      console.log('Raw offers data:', offers?.length || 0, 'records');
 
       const brandsMap = new Map<string, BrandData>();
 
       offers?.forEach(offer => {
-        // Only include active offers
         if (offer.store && offer.store.trim() !== '' && isOfferActive(offer.end_date)) {
-          const existing = brandsMap.get(offer.store);
+          const brandName = offer.store.trim();
+          const existing = brandsMap.get(brandName);
+          const categories = offer.categories ? offer.categories.split(',').map(c => c.trim()).filter(Boolean) : [];
           
           if (existing) {
             existing.offerCount++;
-            if (offer.categories) {
-              const categories = offer.categories.split(',').map(c => c.trim());
-              categories.forEach(category => {
-                if (category && !existing.categories.includes(category)) {
-                  existing.categories.push(category);
-                }
-              });
-            }
+            categories.forEach(cat => {
+              if (!existing.categories.includes(cat)) {
+                existing.categories.push(cat);
+              }
+            });
             if (offer.title && existing.popularOffers.length < 3) {
               existing.popularOffers.push(offer.title);
             }
           } else {
-            const categories = offer.categories ? offer.categories.split(',').map(c => c.trim()).filter(Boolean) : [];
-            brandsMap.set(offer.store, {
-              name: offer.store,
+            brandsMap.set(brandName, {
+              name: brandName,
               offerCount: 1,
               categories: categories,
               popularOffers: offer.title ? [offer.title] : []
@@ -80,15 +85,17 @@ const BrandsScreen = () => {
         }
       });
 
-      const brandsArray = Array.from(brandsMap.values()).filter(brand => brand.name.trim() !== '');
+      const brandsArray = Array.from(brandsMap.values());
+      console.log('Processed brands:', brandsArray.length);
       setBrands(brandsArray);
     } catch (error) {
       console.error('Error fetching brands:', error);
       toast({
         title: "Error",
-        description: "Failed to load brands",
+        description: "Failed to load brands from database",
         variant: "destructive"
       });
+      setBrands([]);
     } finally {
       setIsLoading(false);
     }
@@ -258,7 +265,7 @@ const BrandsScreen = () => {
 
                   {brand.popularOffers.length > 0 && (
                     <div>
-                      <p className="text-sm font-medium text-gray-700 mb-2">Latest Active Offers:</p>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Popular Offers:</p>
                       <div className="space-y-1">
                         {brand.popularOffers.slice(0, 2).map((offer, index) => (
                           <p key={index} className="text-xs text-gray-600 truncate">
@@ -280,7 +287,7 @@ const BrandsScreen = () => {
             <div className="p-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
               <Star className="w-10 h-10 text-gray-600" />
             </div>
-            <h3 className="text-xl font-medium text-gray-900 mb-3">No active brands found</h3>
+            <h3 className="text-xl font-medium text-gray-900 mb-3">No brands found</h3>
             <p className="text-gray-500 text-lg">
               {searchTerm ? `No brands found matching "${searchTerm}" with active offers` : 'No brands with active offers available at the moment'}
             </p>
