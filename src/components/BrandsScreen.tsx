@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Star, Search, TrendingUp, ExternalLink, Filter, Grid, List } from 'lucide-react';
@@ -35,19 +34,23 @@ const BrandsScreen = () => {
   const isOfferActive = (endDate: string | null) => {
     if (!endDate) return true;
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const offerEndDate = new Date(endDate);
+    offerEndDate.setHours(0, 0, 0, 0);
     return offerEndDate >= today;
   };
 
   const fetchBrands = async () => {
     try {
       setIsLoading(true);
-      console.log('Fetching brands from Offers_data table...');
+      console.log('Fetching fresh brands data from Offers_data table...');
       
       const { data: offers, error } = await supabase
         .from('Offers_data')
-        .select('store, categories, title, end_date')
-        .not('store', 'is', null);
+        .select('store, categories, title, end_date, status')
+        .not('store', 'is', null)
+        .neq('store', '')
+        .in('status', ['active', 'Active', 'ACTIVE']);
 
       if (error) {
         console.error('Error fetching offers:', error);
@@ -62,7 +65,11 @@ const BrandsScreen = () => {
         if (offer.store && offer.store.trim() !== '' && isOfferActive(offer.end_date)) {
           const brandName = offer.store.trim();
           const existing = brandsMap.get(brandName);
-          const categories = offer.categories ? offer.categories.split(',').map(c => c.trim()).filter(Boolean) : [];
+          const categories = offer.categories ? 
+            offer.categories.split(',')
+              .map(c => c.trim())
+              .filter(Boolean)
+              .filter(cat => cat.length > 0) : [];
           
           if (existing) {
             existing.offerCount++;
@@ -71,7 +78,7 @@ const BrandsScreen = () => {
                 existing.categories.push(cat);
               }
             });
-            if (offer.title && existing.popularOffers.length < 3) {
+            if (offer.title && existing.popularOffers.length < 3 && !existing.popularOffers.includes(offer.title)) {
               existing.popularOffers.push(offer.title);
             }
           } else {
@@ -85,8 +92,8 @@ const BrandsScreen = () => {
         }
       });
 
-      const brandsArray = Array.from(brandsMap.values());
-      console.log('Processed brands:', brandsArray.length);
+      const brandsArray = Array.from(brandsMap.values()).filter(brand => brand.offerCount > 0);
+      console.log('Processed brands with active offers:', brandsArray.length);
       setBrands(brandsArray);
     } catch (error) {
       console.error('Error fetching brands:', error);
@@ -101,6 +108,7 @@ const BrandsScreen = () => {
     }
   };
 
+  
   const filteredAndSortedBrands = useMemo(() => {
     let filtered = brands.filter(brand =>
       brand.name.toLowerCase().includes(searchTerm.toLowerCase())

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, FolderOpen, Search, TrendingUp, ExternalLink, Tag, Calendar, Store, Bookmark } from 'lucide-react';
@@ -50,19 +49,23 @@ const CategoriesScreen = () => {
   const isOfferActive = (endDate: string | null) => {
     if (!endDate) return true;
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const offerEndDate = new Date(endDate);
+    offerEndDate.setHours(0, 0, 0, 0);
     return offerEndDate >= today;
   };
 
   const fetchCategoriesWithOffers = async () => {
     try {
       setIsLoading(true);
-      console.log('Fetching offers grouped by categories...');
+      console.log('Fetching fresh offers grouped by categories...');
       
       const { data: offers, error } = await supabase
         .from('Offers_data')
-        .select('lmd_id, title, description, image_url, offer_value, type, code, end_date, store, categories')
-        .not('categories', 'is', null);
+        .select('lmd_id, title, description, image_url, offer_value, type, code, end_date, store, categories, status')
+        .not('categories', 'is', null)
+        .neq('categories', '')
+        .in('status', ['active', 'Active', 'ACTIVE']);
 
       if (error) {
         console.error('Error fetching offers:', error);
@@ -75,7 +78,10 @@ const CategoriesScreen = () => {
 
       offers?.forEach(offer => {
         if (offer.categories && offer.categories.trim() !== '' && isOfferActive(offer.end_date)) {
-          const categoryList = offer.categories.split(',').map(c => c.trim()).filter(Boolean);
+          const categoryList = offer.categories.split(',')
+            .map(c => c.trim())
+            .filter(Boolean)
+            .filter(cat => cat.length > 0);
           
           categoryList.forEach(categoryName => {
             if (!categoriesMap.has(categoryName)) {
@@ -95,7 +101,7 @@ const CategoriesScreen = () => {
       // Sort by offer count (most offers first)
       categoryGroupsArray.sort((a, b) => b.offerCount - a.offerCount);
 
-      console.log('Processed category groups:', categoryGroupsArray.length);
+      console.log('Processed category groups with active offers:', categoryGroupsArray.length);
       setCategoryGroups(categoryGroupsArray);
     } catch (error) {
       console.error('Error fetching categories:', error);
