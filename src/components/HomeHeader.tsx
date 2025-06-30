@@ -31,18 +31,18 @@ const HomeHeader = () => {
   }
 
   return (
-    <div className="flex items-center justify-between mb-6">
+    <div className="flex items-center justify-between mb-8">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Welcome back!</h1>
-        <div className="flex items-center space-x-2 mt-2">
-          <MapPin className="w-4 h-4 text-gray-500" />
-          <span className="text-gray-600">{user.location}</span>
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Welcome back!</h1>
+        <div className="flex items-center space-x-2">
+          <MapPin className="w-5 h-5 text-gray-500" />
+          <span className="text-gray-600 text-lg">{user.location}</span>
         </div>
       </div>
-      <Link to="/notifications" className="flex items-center bg-spring-green-600 text-white px-4 py-2 rounded-lg hover:bg-spring-green-700 transition-colors">
+      <Link to="/notifications" className="flex items-center bg-spring-green-600 text-white px-6 py-3 rounded-lg hover:bg-spring-green-700 transition-colors shadow-lg">
         <Bell className="w-5 h-5 mr-2" />
-        <span>Notifications</span>
-        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-monkeyYellow text-xs text-black ml-2">
+        <span className="font-medium">Notifications</span>
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-monkeyYellow text-sm font-bold text-black ml-3">
           3
         </span>
       </Link>
