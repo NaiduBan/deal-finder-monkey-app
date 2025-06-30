@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Bell, Search, AlertCircle, Bot, Users } from 'lucide-react';
@@ -307,6 +306,28 @@ const HomeScreen = () => {
       if (!categoryMatch) return false;
     }
     
+    if (debouncedSearchTerm) {
+      const searchTermLower = debouncedSearchTerm.toLowerCase();
+      const matchesSearch = 
+        (offer.title && offer.title.toLowerCase().includes(searchTermLower)) ||
+        (offer.store && offer.store.toLowerCase().includes(searchTermLower)) ||
+        (offer.description && offer.description.toLowerCase().includes(searchTermLower)) ||
+        (offer.category && offer.category.toLowerCase().includes(searchTermLower));
+      
+      if (!matchesSearch) return false;
+    }
+    
+    return true;
+  });
+
+  // Filter Amazon offers specifically
+  const amazonOffers = localFilteredOffers.filter(offer => {
+    // Check if the offer is from Amazon by looking at the store name
+    const isAmazonOffer = offer.store && offer.store.toLowerCase().includes('amazon');
+    
+    if (!isAmazonOffer) return false;
+    
+    // Apply search filter if present
     if (debouncedSearchTerm) {
       const searchTermLower = debouncedSearchTerm.toLowerCase();
       const matchesSearch = 
@@ -754,30 +775,85 @@ const HomeScreen = () => {
               </TabsContent>
               
               <TabsContent value="amazon" className="space-y-4">
-                <div className={`grid gap-4 ${
-                  isMobile 
-                    ? 'grid-cols-2' 
-                    : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
-                }`}>
-                  {displayedOffers.filter(offer => offer.isAmazon).map((offer) => (
-                    <Link key={offer.id} to={`/offer/${offer.id}`}>
-                      <OfferCard offer={offer} isMobile={isMobile} />
-                    </Link>
-                  ))}
-                </div>
-                
-                {displayedOffers.filter(offer => offer.isAmazon).length === 0 && (
-                  <div className="bg-white p-6 rounded-lg text-center shadow-sm">
-                    <p className="text-gray-500">No Amazon offers found</p>
-                    {offers.length > 0 && (
-                      <Link 
-                        to="/preferences/stores" 
-                        className="mt-4 text-spring-green-600 block underline"
-                      >
-                        Adjust store preferences
-                      </Link>
-                    )}
+                {isDataLoading || isLoading ? (
+                  <div className="flex justify-center items-center py-10">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-spring-green-600"></div>
                   </div>
+                ) : (
+                  <>
+                    {error && (
+                      <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                        <p className="text-red-600">Error loading offers: {error.message}</p>
+                      </div>
+                    )}
+                    
+                    {!error && amazonOffers.length > 0 ? (
+                      <>
+                        <div className="mb-4 text-sm text-gray-600">
+                          Showing {amazonOffers.length} Amazon offers
+                        </div>
+                        <div className={`grid gap-4 ${
+                          isMobile 
+                            ? 'grid-cols-2' 
+                            : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                        }`}>
+                          {amazonOffers.map((offer) => (
+                            <Link key={offer.id} to={`/offer/${offer.id}`}>
+                              <OfferCard offer={offer} isMobile={isMobile} />
+                            </Link>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      !error && (
+                        <div className="bg-white p-6 rounded-lg text-center shadow-sm">
+                          <p className="text-gray-500">No Amazon offers found</p>
+                          <p className="text-sm text-gray-400 mt-2">
+                            {offers.length === 0 
+                              ? "No offers available in the database" 
+                              : debouncedSearchTerm 
+                                ? `No Amazon offers match "${debouncedSearchTerm}"`
+                                : "Check back later for Amazon deals"
+                            }
+                          </p>
+                          <div className="mt-4 flex flex-col gap-2">
+                            <button
+                              onClick={refetchOffers}
+                              className="bg-spring-green-600 text-white px-4 py-2 rounded-lg w-full"
+                            >
+                              Refresh Data
+                            </button>
+                            
+                            {offers.length > 0 && (
+                              <Link 
+                                to="/preferences/stores" 
+                                className="border border-spring-green-600 text-spring-green-600 px-4 py-2 rounded-lg text-center"
+                              >
+                                Adjust Store Preferences
+                              </Link>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </>
+                )}
+                
+                {!isDataLoading && !error && amazonOffers.length > 0 && (
+                  <button 
+                    onClick={loadMoreOffers}
+                    className="w-full py-3 text-center text-spring-green-600 border border-spring-green-600 rounded-lg mt-4 flex items-center justify-center"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 rounded-full border-2 border-spring-green-600 border-t-transparent animate-spin"></div>
+                        <span>Loading more...</span>
+                      </div>
+                    ) : (
+                      <span>Load more Amazon offers</span>
+                    )}
+                  </button>
                 )}
               </TabsContent>
             </Tabs>
