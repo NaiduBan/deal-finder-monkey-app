@@ -1,7 +1,6 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Bookmark, User, SlidersHorizontal, Store, Star, MessageCircle, FolderOpen } from 'lucide-react';
+import { Home, Bookmark, User, SlidersHorizontal, Store, Star, MessageCircle, FolderOpen, Menu } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   NavigationMenu,
@@ -13,6 +12,7 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
+import MobileSidebar from './MobileSidebar';
 
 const ListItem = ({ to, title, children }: { to: string, title: string, children: React.ReactNode }) => {
   return (
@@ -35,6 +35,7 @@ const ListItem = ({ to, title, children }: { to: string, title: string, children
 const BottomNavigation = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   const isActive = (path: string) => {
     return location.pathname === path || 
@@ -54,6 +55,17 @@ const BottomNavigation = () => {
       <>
         <div className="fixed bottom-0 left-0 right-0 z-30 bg-spring-green-600 border-t border-spring-green-700 overflow-x-auto">
           <div className="flex justify-around items-center">
+            {/* Menu button */}
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="flex flex-col items-center py-2 px-2 text-white/80 hover:text-monkeyYellow transition-colors"
+            >
+              <div className="p-1 rounded-full">
+                <Menu className="w-5 h-5" />
+              </div>
+              <span className="text-xs mt-1">Menu</span>
+            </button>
+
             {navItems.map((item) => {
               const active = isActive(item.path);
               const IconComponent = item.icon;
@@ -83,6 +95,12 @@ const BottomNavigation = () => {
         >
           <MessageCircle className="w-6 h-6" />
         </Link>
+
+        {/* Mobile Sidebar */}
+        <MobileSidebar 
+          isOpen={isSidebarOpen} 
+          onClose={() => setIsSidebarOpen(false)} 
+        />
       </>
     );
   }
