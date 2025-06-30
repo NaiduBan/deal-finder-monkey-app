@@ -31,12 +31,12 @@ const HomeHeader = () => {
   }
 
   return (
-    <div className="flex items-center justify-between mb-8">
+    <div className="flex items-center justify-between mb-8 py-6">
       <div>
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Welcome back!</h1>
+        <h1 className="text-5xl font-bold text-gray-900 mb-3 leading-tight">Welcome back!</h1>
         <div className="flex items-center space-x-2">
           <MapPin className="w-5 h-5 text-gray-500" />
-          <span className="text-gray-600 text-lg">{user.location}</span>
+          <span className="text-gray-600 text-xl font-medium">{user.location}</span>
         </div>
       </div>
       <Link to="/notifications" className="flex items-center bg-spring-green-600 text-white px-6 py-3 rounded-lg hover:bg-spring-green-700 transition-colors shadow-lg">
