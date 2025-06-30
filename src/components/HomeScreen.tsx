@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, MapPin, ShoppingBag, Bolt, Sparkles, ChevronRight, Star, Store } from 'lucide-react';
@@ -7,12 +8,14 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/contexts/UserContext';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay, Pagination } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
 
 interface Offer {
   id: string;
@@ -119,7 +122,7 @@ const HomeScreen = () => {
       toast({
         title: "Search",
         description: "Please enter a search term.",
-        variant: "warning"
+        variant: "destructive"
       });
     }
   };
@@ -170,25 +173,23 @@ const HomeScreen = () => {
         </div>
 
         {/* Banner Carousel */}
-        <Swiper
-          spaceBetween={30}
-          centeredSlides={true}
-          autoplay={{
-            delay: 2500,
-            disableOnInteraction: false,
-          }}
-          pagination={{
-            clickable: true,
-          }}
-          modules={[Autoplay, Pagination]}
-          className="rounded-xl overflow-hidden shadow-lg"
-        >
-          {bannerImages.map((image, index) => (
-            <SwiperSlide key={index}>
-              <img src={image} alt={`Banner ${index + 1}`} className="w-full object-cover" />
-            </SwiperSlide>
-          ))}
-        </Swiper>
+        <Carousel className="w-full">
+          <CarouselContent>
+            {bannerImages.map((image, index) => (
+              <CarouselItem key={index}>
+                <div className="p-1">
+                  <Card>
+                    <CardContent className="flex aspect-video items-center justify-center p-0">
+                      <img src={image} alt={`Banner ${index + 1}`} className="w-full h-full object-cover rounded-lg" />
+                    </CardContent>
+                  </Card>
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious />
+          <CarouselNext />
+        </Carousel>
 
         {/* Quick Access Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
