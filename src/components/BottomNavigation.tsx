@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Bookmark, User, SlidersHorizontal, Store, Star, MessageCircle, FolderOpen } from 'lucide-react';
@@ -12,7 +13,6 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
-import MobileSidebar from './MobileSidebar';
 
 const ListItem = ({ to, title, children }: { to: string, title: string, children: React.ReactNode }) => {
   return (
@@ -49,25 +49,9 @@ const BottomNavigation = () => {
   ];
 
   if (isMobile) {
-    // Mobile navigation with sidebar
+    // Mobile bottom navigation
     return (
       <>
-        {/* Mobile Header with Sidebar Toggle */}
-        <div className="fixed top-0 left-0 right-0 z-30 bg-gradient-to-r from-spring-green-600 to-emerald-600 shadow-sm">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center space-x-3">
-              <MobileSidebar />
-              <div className="flex items-center space-x-2">
-                <div className="w-6 h-6 flex items-center justify-center">
-                  <img src="https://offersmonkey.com/favicon.ico" alt="OffersMonkey Logo" className="w-full h-full rounded-full" />
-                </div>
-                <h1 className="text-lg font-bold text-white">OffersMonkey</h1>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Navigation */}
         <div className="fixed bottom-0 left-0 right-0 z-30 bg-spring-green-600 border-t border-spring-green-700 overflow-x-auto">
           <div className="flex justify-around items-center">
             {navItems.map((item) => {
