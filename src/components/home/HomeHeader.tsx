@@ -59,8 +59,8 @@ const HomeHeader = ({ offersCount, cuelinkOffersCount }: HomeHeaderProps) => {
           <div className="w-16 h-16 bg-monkeyYellow rounded-2xl flex items-center justify-center shadow-lg">
             <Sparkles className="w-8 h-8 text-white" />
           </div>
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Welcome back!</h1>
+          <div className="pt-2">
+            <h1 className="text-3xl font-bold mb-3">Welcome back!</h1>
             <div className="flex items-center space-x-2">
               <MapPin className="w-5 h-5 text-monkeyYellow" />
               <span className="text-lg text-white/90 font-medium">{user.location}</span>
