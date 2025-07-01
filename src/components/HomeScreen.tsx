@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +10,7 @@ import SearchAndFilters from './home/SearchAndFilters';
 import OfferCard from './OfferCard';
 import CuelinkOfferCard from './CuelinkOfferCard';
 import CuelinkPagination from './CuelinkPagination';
+import PWAInstallPrompt from './PWAInstallPrompt';
 
 const HomeScreen = () => {
   const isMobile = useIsMobile();
@@ -123,7 +123,7 @@ const HomeScreen = () => {
   );
 
   return (
-    <div className={`bg-gradient-to-br from-spring-green-50 via-white to-spring-green-100 min-h-screen ${isMobile ? 'pb-16' : 'pt-20'}`}>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white pb-20">
       <HomeHeader 
         offersCount={offers.length} 
         cuelinkOffersCount={cuelinkOffers.length} 
@@ -409,6 +409,9 @@ const HomeScreen = () => {
           </div>
         </div>
       </div>
+      
+      {/* PWA Install Prompt */}
+      <PWAInstallPrompt />
     </div>
   );
 };
