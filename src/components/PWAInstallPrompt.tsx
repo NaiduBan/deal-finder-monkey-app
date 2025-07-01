@@ -5,10 +5,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { usePWA } from '@/hooks/usePWA';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useToast } from '@/hooks/use-toast';
 
 const PWAInstallPrompt = () => {
   const { isInstallable, installApp } = usePWA();
-  const { isSupported: isNotificationSupported, isSubscribed } = usePushNotifications();
+  const { isSupported: isNotificationSupported, isSubscribed, subscribe } = usePushNotifications();
+  const { toast } = useToast();
   const [dismissed, setDismissed] = React.useState(false);
 
   // Show if installable OR if notifications can be enabled
@@ -19,6 +21,23 @@ const PWAInstallPrompt = () => {
   }
 
   const isMainlyForNotifications = !isInstallable && isNotificationSupported && !isSubscribed;
+
+  const handleEnableNotifications = async () => {
+    const success = await subscribe();
+    if (success) {
+      toast({
+        title: "Notifications Enabled! 🎉",
+        description: "You'll now receive alerts for flash deals and personalized offers",
+      });
+      setDismissed(true); // Hide the prompt after successful subscription
+    } else {
+      toast({
+        title: "Permission Required",
+        description: "Please allow notifications in your browser to receive deal alerts",
+        variant: "destructive"
+      });
+    }
+  };
 
   return (
     <Card className="bg-gradient-to-r from-spring-green-500 to-spring-green-600 text-white border-0 shadow-lg">
@@ -56,10 +75,7 @@ const PWAInstallPrompt = () => {
             )}
             {isNotificationSupported && !isSubscribed && (
               <Button
-                onClick={() => {
-                  // Navigate to settings or show notification setup
-                  window.location.href = '/settings';
-                }}
+                onClick={handleEnableNotifications}
                 size="sm"
                 variant={isInstallable ? "ghost" : "default"}
                 className={isInstallable 
