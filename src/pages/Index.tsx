@@ -10,7 +10,6 @@ import FinalCtaSection from '@/components/landing/FinalCtaSection';
 import Footer from '@/components/landing/Footer';
 import LiveDealsSection from '@/components/landing/LiveDealsSection';
 
-
 const Index = () => {
   const isMobile = useIsMobile();
 
@@ -32,7 +31,7 @@ const Index = () => {
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-spring-green-50 to-spring-green-100 overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-spring-green-50 via-white to-spring-green-100 overflow-x-hidden">
       <HeroSection />
       <StatsSection />
       <LiveDealsSection />

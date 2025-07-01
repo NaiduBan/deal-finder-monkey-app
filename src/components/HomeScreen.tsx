@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Bell, Search, AlertCircle, Bot, Users } from 'lucide-react';
+import { MapPin, Bell, Search, AlertCircle, Bot, Users, TrendingUp, Zap, Star, Crown, Gift } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useUser } from '@/contexts/UserContext';
 import { useData } from '@/contexts/DataContext';
 import OfferCard from './OfferCard';
@@ -387,19 +388,19 @@ const HomeScreen = () => {
   };
 
   return (
-    <div className={`bg-monkeyBackground min-h-screen ${isMobile ? 'pb-16' : 'pt-20'}`}>
+    <div className={`bg-gradient-to-br from-spring-green-50 via-white to-spring-green-100 min-h-screen ${isMobile ? 'pb-16' : 'pt-20'}`}>
       {/* Mobile Header with location - only show on mobile */}
       {isMobile && (
-        <div className="bg-spring-green-600 text-white py-4 px-4 fixed top-0 left-0 right-0 z-30">
+        <div className="bg-gradient-to-r from-spring-green-600 to-spring-green-700 text-white py-4 px-4 fixed top-0 left-0 right-0 z-30 shadow-lg">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-2">
               <MapPin className="w-4 h-4" />
-              <span className="text-sm">{user.location}</span>
+              <span className="text-sm font-medium">{user.location}</span>
             </div>
             <div className="flex items-center space-x-3">
-              <Link to="/notifications" className="flex items-center">
+              <Link to="/notifications" className="flex items-center relative">
                 <Bell className="w-5 h-5 text-white" />
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-monkeyYellow text-[10px] text-black absolute translate-x-3 -translate-y-2">
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-monkeyYellow text-[10px] text-black absolute -translate-y-2 translate-x-3 font-bold">
                   3
                 </span>
               </Link>
@@ -408,43 +409,131 @@ const HomeScreen = () => {
         </div>
       )}
       
-      {/* Main content - desktop with max-width container */}
+      {/* Main content */}
       <div className={`space-y-6 ${isMobile ? 'p-4 pt-20' : 'w-full'}`}>
         <div className={`${!isMobile ? 'max-w-[1440px] mx-auto px-6 py-8' : ''}`}>
           {/* Desktop welcome section */}
           {!isMobile && (
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Welcome back!</h1>
-                <div className="flex items-center space-x-2 mt-2">
-                  <MapPin className="w-4 h-4 text-gray-500" />
-                  <span className="text-gray-600">{user.location}</span>
+            <div className="relative overflow-hidden bg-gradient-to-r from-spring-green-600 via-spring-green-700 to-green-600 rounded-2xl p-8 mb-8 text-white shadow-xl">
+              <div className="absolute inset-0 bg-black/10"></div>
+              <div className="relative z-10 flex items-center justify-between">
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                      <Crown className="w-6 h-6 text-monkeyYellow" />
+                    </div>
+                    <div>
+                      <h1 className="text-4xl font-bold">Welcome back, Saver!</h1>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <MapPin className="w-4 h-4 text-white/80" />
+                        <span className="text-white/90">{user.location}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-lg text-white/90">
+                    🎉 Discover amazing deals and save money on your favorite brands!
+                  </p>
+                </div>
+                <div className="hidden lg:flex items-center space-x-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-monkeyYellow">{offers.length}+</div>
+                    <div className="text-sm text-white/80">Live Deals</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-monkeyYellow">{cuelinkOffers.length}+</div>
+                    <div className="text-sm text-white/80">Flash Deals</div>
+                  </div>
+                  <Link to="/notifications" className="flex items-center bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-lg hover:bg-white/30 transition-colors">
+                    <Bell className="w-5 h-5 mr-2" />
+                    <span>Notifications</span>
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-monkeyYellow text-xs text-black ml-2 font-bold">
+                      3
+                    </span>
+                  </Link>
                 </div>
               </div>
-              <Link to="/notifications" className="flex items-center bg-spring-green-600 text-white px-4 py-2 rounded-lg hover:bg-spring-green-700 transition-colors">
-                <Bell className="w-5 h-5 mr-2" />
-                <span>Notifications</span>
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-monkeyYellow text-xs text-black ml-2">
-                  3
-                </span>
-              </Link>
             </div>
           )}
           
-          {/* New Features Section */}
+          {/* Quick Stats Cards */}
+          <div className={`grid gap-4 mb-6 ${isMobile ? 'grid-cols-2' : 'grid-cols-4'}`}>
+            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-blue-900">{displayedOffers.length}</div>
+                    <div className="text-sm text-blue-600">Today's Deals</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
+                    <Zap className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-purple-900">{cuelinkOffers.length}</div>
+                    <div className="text-sm text-purple-600">Flash Deals</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                    <Star className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-green-900">{dynamicCategories.length}</div>
+                    <div className="text-sm text-green-600">Categories</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center">
+                    <Gift className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-yellow-900">₹10K+</div>
+                    <div className="text-sm text-yellow-600">Avg. Savings</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Smart Features Section */}
           <div className="mb-6">
-            <h2 className="font-bold text-lg mb-3">Smart Shopping Features</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-xl text-gray-900">🚀 Smart Shopping Features</h2>
+              <Badge variant="secondary" className="bg-spring-green-100 text-spring-green-700">
+                New Features
+              </Badge>
+            </div>
             <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-3'}`}>
               <Link to="/ai-assistant" className="block">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <Bot className="w-6 h-6 text-blue-600" />
+                <Card className="hover:shadow-xl transition-all duration-300 cursor-pointer bg-gradient-to-br from-blue-50 to-indigo-100 border-blue-200 hover:scale-105">
+                  <CardContent className="p-6">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                        <Bot className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-blue-900">AI Assistant</h3>
+                        <h3 className="font-bold text-blue-900 text-lg">AI Assistant</h3>
                         <p className="text-sm text-blue-600">Voice search & smart recommendations</p>
+                        <Badge className="mt-2 bg-blue-500 text-white text-xs">Try Now</Badge>
                       </div>
                     </div>
                   </CardContent>
@@ -452,15 +541,16 @@ const HomeScreen = () => {
               </Link>
 
               <Link to="/local-deals" className="block">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                        <MapPin className="w-6 h-6 text-green-600" />
+                <Card className="hover:shadow-xl transition-all duration-300 cursor-pointer bg-gradient-to-br from-green-50 to-emerald-100 border-green-200 hover:scale-105">
+                  <CardContent className="p-6">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg">
+                        <MapPin className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-green-900">Local Deals</h3>
+                        <h3 className="font-bold text-green-900 text-lg">Local Deals</h3>
                         <p className="text-sm text-green-600">Nearby stores & restaurants</p>
+                        <Badge className="mt-2 bg-green-500 text-white text-xs">Explore</Badge>
                       </div>
                     </div>
                   </CardContent>
@@ -468,15 +558,16 @@ const HomeScreen = () => {
               </Link>
 
               <Link to="/social-shopping" className="block">
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                        <Users className="w-6 h-6 text-purple-600" />
+                <Card className="hover:shadow-xl transition-all duration-300 cursor-pointer bg-gradient-to-br from-purple-50 to-pink-100 border-purple-200 hover:scale-105">
+                  <CardContent className="p-6">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center shadow-lg">
+                        <Users className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-purple-900">Social Shopping</h3>
+                        <h3 className="font-bold text-purple-900 text-lg">Social Shopping</h3>
                         <p className="text-sm text-purple-600">Group buys & community deals</p>
+                        <Badge className="mt-2 bg-purple-500 text-white text-xs">Join Now</Badge>
                       </div>
                     </div>
                   </CardContent>
@@ -495,68 +586,79 @@ const HomeScreen = () => {
             </Alert>
           )}
           
-          {/* Personalization badge */}
+          {/* Personalization banner */}
           {hasLoadedPreferences && (
             userPreferences.brands.length > 0 || 
             userPreferences.stores.length > 0 || 
             userPreferences.banks.length > 0
           ) && (
-            <div className="bg-spring-green-50 p-3 rounded-lg flex justify-between items-center mb-6">
-              <div>
-                <h3 className="font-medium text-spring-green-700">Personalized for You</h3>
-                <p className="text-xs text-gray-600">Offers are filtered based on your preferences</p>
+            <div className="bg-gradient-to-r from-spring-green-50 to-green-50 p-4 rounded-xl border border-spring-green-200 mb-6 shadow-sm">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-spring-green-100 rounded-full flex items-center justify-center">
+                    <Crown className="w-5 h-5 text-spring-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-spring-green-800 text-lg">✨ Personalized for You</h3>
+                    <p className="text-sm text-spring-green-600">Offers curated based on your preferences</p>
+                  </div>
+                </div>
+                <Link 
+                  to="/preferences/brands" 
+                  className="bg-spring-green-600 hover:bg-spring-green-700 text-white text-sm px-4 py-2 rounded-full transition-colors font-medium"
+                >
+                  Customize
+                </Link>
               </div>
-              <Link 
-                to="/preferences/brands" 
-                className="bg-spring-green-600 text-white text-sm px-3 py-1 rounded-full"
-              >
-                Edit
-              </Link>
             </div>
           )}
           
           {/* Search Bar */}
           <div className="relative mb-6">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <Input
               type="search"
-              placeholder="Search for offers, stores, categories..."
-              className="pl-10 pr-4 py-2 w-full border-gray-200"
+              placeholder="🔍 Search for offers, stores, categories..."
+              className="pl-12 pr-4 py-3 w-full border-gray-200 rounded-xl text-lg shadow-sm focus:shadow-md transition-shadow"
               value={searchQuery}
-              onChange={handleSearch}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           
-          {/* Categories carousel with active state */}
+          {/* Categories carousel */}
           <div className="mb-6">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="font-bold text-lg">Categories For You</h2>
-              <Link to="/preferences/brands" className="text-spring-green-600 text-sm">
-                Set preferences
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-bold text-xl text-gray-900">🎯 Popular Categories</h2>
+              <Link to="/preferences/brands" className="text-spring-green-600 text-sm font-medium hover:text-spring-green-700">
+                Customize preferences →
               </Link>
             </div>
             
             {isDataLoading ? (
-              <div className="flex justify-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-spring-green-600"></div>
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-spring-green-600"></div>
               </div>
             ) : (
-              <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-hide">
+              <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide">
                 {dynamicCategories.length > 0 ? (
                   dynamicCategories.map((category) => (
                     <div 
                       key={category.id} 
-                      onClick={() => handleCategoryClick(category.id)}
-                      className={`cursor-pointer transition-transform duration-200 ${selectedCategory === category.id ? 'scale-110' : 'hover:scale-105'}`}
+                      onClick={() => setSelectedCategory(selectedCategory === category.id ? null : category.id)}
+                      className={`cursor-pointer transition-all duration-300 ${
+                        selectedCategory === category.id 
+                          ? 'scale-110 ring-2 ring-spring-green-500 ring-offset-2' 
+                          : 'hover:scale-105'
+                      }`}
                     >
                       <CategoryItem category={category} />
                       {selectedCategory === category.id && (
-                        <div className="h-1 w-full bg-spring-green-600 rounded-full mt-1"></div>
+                        <div className="h-1 w-full bg-spring-green-600 rounded-full mt-2 animate-pulse"></div>
                       )}
                     </div>
                   ))
                 ) : (
-                  <div className="text-gray-500 py-2">No categories with sufficient offers available</div>
+                  <div className="text-gray-500 py-4 text-center w-full">No categories with sufficient offers available</div>
                 )}
               </div>
             )}
@@ -566,25 +668,25 @@ const HomeScreen = () => {
           {(selectedCategory || debouncedSearchTerm) && (
             <div className="flex flex-wrap gap-2 mb-6">
               {selectedCategory && (
-                <div className="bg-spring-green-50 text-spring-green-700 px-3 py-1 rounded-full text-sm flex items-center">
-                  {dynamicCategories.find(c => c.id === selectedCategory)?.name}
+                <div className="bg-spring-green-100 text-spring-green-800 px-4 py-2 rounded-full text-sm flex items-center font-medium">
+                  🏷️ {dynamicCategories.find(c => c.id === selectedCategory)?.name}
                   <button 
                     onClick={() => setSelectedCategory(null)}
-                    className="ml-1 text-spring-green-700"
+                    className="ml-2 text-spring-green-700 hover:text-spring-green-900 font-bold"
                   >
                     ✕
                   </button>
                 </div>
               )}
               {debouncedSearchTerm && (
-                <div className="bg-spring-green-50 text-spring-green-700 px-3 py-1 rounded-full text-sm flex items-center">
-                  "{debouncedSearchTerm}"
+                <div className="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm flex items-center font-medium">
+                  🔍 "{debouncedSearchTerm}"
                   <button 
                     onClick={() => {
                       setSearchQuery('');
                       setDebouncedSearchTerm('');
                     }}
-                    className="ml-1 text-spring-green-700"
+                    className="ml-2 text-blue-700 hover:text-blue-900 font-bold"
                   >
                     ✕
                   </button>
@@ -597,24 +699,24 @@ const HomeScreen = () => {
                     setSearchQuery('');
                     setDebouncedSearchTerm('');
                   }}
-                  className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-600"
+                  className="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-full text-sm text-gray-700 transition-colors"
                 >
-                  Clear all
+                  Clear all filters
                 </button>
               )}
             </div>
           )}
           
-          {/* Offers section */}
+          {/* Enhanced Offers section with better tabs */}
           <div>
-            <Tabs defaultValue="all">
-              <div className="flex justify-between items-center mb-3">
-                <h2 className="font-bold text-lg">Today's Offers</h2>
-                <TabsList>
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="nearby">Nearby</TabsTrigger>
-                  <TabsTrigger value="flash">Flash Deals</TabsTrigger>
-                  <TabsTrigger value="amazon">Amazon</TabsTrigger>
+            <Tabs defaultValue="all" className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="font-bold text-xl text-gray-900">🔥 Today's Hottest Deals</h2>
+                <TabsList className="grid w-full max-w-md grid-cols-4 bg-gray-100 p-1 rounded-xl">
+                  <TabsTrigger value="all" className="text-sm font-medium">All Deals</TabsTrigger>
+                  <TabsTrigger value="nearby" className="text-sm font-medium">Nearby</TabsTrigger>
+                  <TabsTrigger value="flash" className="text-sm font-medium">Flash</TabsTrigger>
+                  <TabsTrigger value="amazon" className="text-sm font-medium">Amazon</TabsTrigger>
                 </TabsList>
               </div>
               
