@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { pushNotificationService } from './pushNotificationService';
 
@@ -163,7 +162,8 @@ export async function createSystemNotification(
       // Send to all users - get all user IDs first
       const { data: profiles, error } = await supabase
         .from('profiles')
-        .select('id');
+        .select('id')
+        .not('id', 'is', null);
 
       if (error) {
         console.error('Error fetching profiles for system notification:', error);
@@ -175,35 +175,45 @@ export async function createSystemNotification(
         return true;
       }
 
-      // Create notifications for all users
-      const notifications = profiles.map(profile => ({
-        user_id: profile.id,
-        title,
-        message,
-        type: 'system' as const,
-        offer_id: null
-      }));
+      // Create notifications for all users in batches
+      const batchSize = 100;
+      let successCount = 0;
 
-      const { error: insertError } = await supabase
-        .from('notifications')
-        .insert(notifications);
+      for (let i = 0; i < profiles.length; i += batchSize) {
+        const batch = profiles.slice(i, i + batchSize);
+        const notifications = batch.map(profile => ({
+          user_id: profile.id,
+          title,
+          message,
+          type: 'system' as const,
+          offer_id: null
+        }));
 
-      if (insertError) {
-        console.error('Error creating system notifications:', insertError);
-        return false;
+        const { error: insertError } = await supabase
+          .from('notifications')
+          .insert(notifications);
+
+        if (!insertError) {
+          successCount += batch.length;
+        } else {
+          console.error('Error creating batch of system notifications:', insertError);
+        }
       }
 
-      // Send push notifications to current user only (to avoid spam)
-      pushNotificationService.showLocalNotification({
-        title,
-        message,
-        icon: 'https://offersmonkey.com/favicon.ico',
-        url: '/home',
-        type: 'general'
-      });
+      // Send push notification to current user only (to avoid spam)
+      const isSubscribed = await pushNotificationService.isSubscribed();
+      if (isSubscribed) {
+        pushNotificationService.showLocalNotification({
+          title,
+          message,
+          icon: 'https://offersmonkey.com/favicon.ico',
+          url: '/home',
+          type: 'general'
+        });
+      }
 
-      console.log(`Created system notification for ${profiles.length} users`);
-      return true;
+      console.log(`Created system notification for ${successCount} out of ${profiles.length} users`);
+      return successCount > 0;
     }
   } catch (error) {
     console.error('Exception creating system notification:', error);

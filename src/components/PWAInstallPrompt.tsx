@@ -9,17 +9,17 @@ import { useToast } from '@/hooks/use-toast';
 
 const PWAInstallPrompt = () => {
   const { isInstallable, installApp } = usePWA();
-  const { isSupported: isNotificationSupported, isSubscribed, subscribe } = usePushNotifications();
+  const { isSupported: isNotificationSupported, isSubscribed, subscribe, permission } = usePushNotifications();
   const { toast } = useToast();
   const [dismissed, setDismissed] = React.useState(false);
-
-  // Show if installable OR if notifications can be enabled
-  const shouldShow = (isInstallable || (isNotificationSupported && !isSubscribed)) && !dismissed;
 
   // Don't show if notifications are already subscribed and app is not installable
   if (isSubscribed && !isInstallable) {
     return null;
   }
+
+  // Show if installable OR if notifications can be enabled
+  const shouldShow = (isInstallable || (isNotificationSupported && !isSubscribed)) && !dismissed;
 
   if (!shouldShow) {
     return null;
@@ -28,6 +28,16 @@ const PWAInstallPrompt = () => {
   const isMainlyForNotifications = !isInstallable && isNotificationSupported && !isSubscribed;
 
   const handleEnableNotifications = async () => {
+    // Check if permission is already denied
+    if (permission === 'denied') {
+      toast({
+        title: "Notifications Blocked",
+        description: "Please enable notifications in your browser settings and refresh the page",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const success = await subscribe();
     if (success) {
       toast({
@@ -35,10 +45,6 @@ const PWAInstallPrompt = () => {
         description: "You'll now receive alerts for flash deals and personalized offers",
       });
       setDismissed(true);
-      // Force a small delay to ensure state updates
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
     } else {
       toast({
         title: "Permission Required",
