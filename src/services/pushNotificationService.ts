@@ -140,7 +140,6 @@ class PushNotificationService {
         icon: payload.icon || 'https://offersmonkey.com/favicon.ico',
         badge: 'https://offersmonkey.com/favicon.ico',
         tag: `offersmonkey-${payload.type || 'general'}`,
-        renotify: true,
         data: {
           url: payload.url
         }
