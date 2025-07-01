@@ -16,11 +16,11 @@ const HomeHeader = ({ offersCount, cuelinkOffersCount }: HomeHeaderProps) => {
 
   if (isMobile) {
     return (
-      <div className="bg-gradient-to-r from-spring-green-600 to-spring-green-700 text-white py-2 px-4 fixed top-0 left-0 right-0 z-30 shadow-lg">
+      <div className="bg-gradient-to-r from-spring-green-600 to-spring-green-700 text-white py-2 px-3 fixed top-0 left-0 right-0 z-30 shadow-lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-              <Sparkles className="w-3 h-3 text-monkeyYellow" />
+            <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+              <Sparkles className="w-2.5 h-2.5 text-monkeyYellow" />
             </div>
             <div>
               <h1 className="text-xs font-bold">Welcome back!</h1>
@@ -48,18 +48,18 @@ const HomeHeader = ({ offersCount, cuelinkOffersCount }: HomeHeaderProps) => {
   }
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-r from-spring-green-600 to-spring-green-700 rounded-xl p-3 mb-4 text-white shadow-lg">
+    <div className="relative overflow-hidden bg-gradient-to-r from-spring-green-600 to-spring-green-700 rounded-xl px-4 py-2.5 mb-4 text-white shadow-lg max-w-4xl">
       {/* Subtle background pattern */}
       <div className="absolute inset-0 bg-white/5 rounded-xl"></div>
-      <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-8 translate-x-8"></div>
+      <div className="absolute top-0 right-0 w-12 h-12 bg-white/10 rounded-full -translate-y-6 translate-x-6"></div>
       
       <div className="relative z-10 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-monkeyYellow rounded-lg flex items-center justify-center shadow-md">
-            <Sparkles className="w-4 h-4 text-white" />
+        <div className="flex items-center space-x-2.5">
+          <div className="w-7 h-7 bg-monkeyYellow rounded-lg flex items-center justify-center shadow-md">
+            <Sparkles className="w-3.5 h-3.5 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold">Welcome back!</h1>
+            <h1 className="text-base font-bold">Welcome back!</h1>
             <div className="flex items-center space-x-1 mt-0.5">
               <MapPin className="w-3 h-3 text-monkeyYellow" />
               <span className="text-xs text-white/90 font-medium">{user.location}</span>
@@ -67,13 +67,13 @@ const HomeHeader = ({ offersCount, cuelinkOffersCount }: HomeHeaderProps) => {
           </div>
         </div>
         
-        <div className="flex items-center space-x-3">
-          <div className="flex space-x-2">
-            <div className="bg-white/15 backdrop-blur-sm rounded-lg p-2 text-center min-w-[60px]">
+        <div className="flex items-center space-x-2.5">
+          <div className="flex space-x-1.5">
+            <div className="bg-white/15 backdrop-blur-sm rounded-lg px-2 py-1.5 text-center min-w-[50px]">
               <div className="text-sm font-bold text-monkeyYellow">{offersCount}+</div>
               <div className="text-[10px] text-white/80 font-medium">Deals</div>
             </div>
-            <div className="bg-white/15 backdrop-blur-sm rounded-lg p-2 text-center min-w-[60px]">
+            <div className="bg-white/15 backdrop-blur-sm rounded-lg px-2 py-1.5 text-center min-w-[50px]">
               <div className="text-sm font-bold text-monkeyYellow">{cuelinkOffersCount}+</div>
               <div className="text-[10px] text-white/80 font-medium">Flash</div>
             </div>
@@ -81,11 +81,11 @@ const HomeHeader = ({ offersCount, cuelinkOffersCount }: HomeHeaderProps) => {
           
           <Link 
             to="/notifications" 
-            className="flex items-center bg-white/20 backdrop-blur-sm text-white px-3 py-2 rounded-lg hover:bg-white/30 transition-all duration-200 shadow-sm"
+            className="flex items-center bg-white/20 backdrop-blur-sm text-white px-2.5 py-1.5 rounded-lg hover:bg-white/30 transition-all duration-200 shadow-sm"
           >
-            <Bell className="w-4 h-4 mr-1" />
+            <Bell className="w-3.5 h-3.5 mr-1" />
             <span className="font-medium text-xs">Alerts</span>
-            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-monkeyYellow text-[10px] text-black ml-1 font-bold">
+            <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-monkeyYellow text-[9px] text-black ml-1 font-bold">
               3
             </span>
           </Link>
