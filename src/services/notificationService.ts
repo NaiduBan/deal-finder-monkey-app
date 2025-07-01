@@ -150,12 +150,65 @@ export async function createSystemNotification(
   message: string,
   userId?: string
 ): Promise<boolean> {
-  return createNotification({
-    userId,
-    title,
-    message,
-    type: 'system'
-  });
+  try {
+    if (userId) {
+      // Send to specific user
+      return createNotification({
+        userId,
+        title,
+        message,
+        type: 'system'
+      });
+    } else {
+      // Send to all users - get all user IDs first
+      const { data: profiles, error } = await supabase
+        .from('profiles')
+        .select('id');
+
+      if (error) {
+        console.error('Error fetching profiles for system notification:', error);
+        return false;
+      }
+
+      if (!profiles || profiles.length === 0) {
+        console.log('No users found for system notification');
+        return true;
+      }
+
+      // Create notifications for all users
+      const notifications = profiles.map(profile => ({
+        user_id: profile.id,
+        title,
+        message,
+        type: 'system' as const,
+        offer_id: null
+      }));
+
+      const { error: insertError } = await supabase
+        .from('notifications')
+        .insert(notifications);
+
+      if (insertError) {
+        console.error('Error creating system notifications:', insertError);
+        return false;
+      }
+
+      // Send push notifications to current user only (to avoid spam)
+      pushNotificationService.showLocalNotification({
+        title,
+        message,
+        icon: 'https://offersmonkey.com/favicon.ico',
+        url: '/home',
+        type: 'general'
+      });
+
+      console.log(`Created system notification for ${profiles.length} users`);
+      return true;
+    }
+  } catch (error) {
+    console.error('Exception creating system notification:', error);
+    return false;
+  }
 }
 
 export async function createDailyOfferNotification(
@@ -199,7 +252,6 @@ export async function createBulkNotifications(
       return 0;
     }
 
-    // Handle the case where data might be null
     if (!data) {
       return 0;
     }

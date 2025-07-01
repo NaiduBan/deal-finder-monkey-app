@@ -16,6 +16,11 @@ const PWAInstallPrompt = () => {
   // Show if installable OR if notifications can be enabled
   const shouldShow = (isInstallable || (isNotificationSupported && !isSubscribed)) && !dismissed;
 
+  // Don't show if notifications are already subscribed and app is not installable
+  if (isSubscribed && !isInstallable) {
+    return null;
+  }
+
   if (!shouldShow) {
     return null;
   }
@@ -29,7 +34,11 @@ const PWAInstallPrompt = () => {
         title: "Notifications Enabled! 🎉",
         description: "You'll now receive alerts for flash deals and personalized offers",
       });
-      setDismissed(true); // Hide the prompt after successful subscription
+      setDismissed(true);
+      // Force a small delay to ensure state updates
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } else {
       toast({
         title: "Permission Required",
