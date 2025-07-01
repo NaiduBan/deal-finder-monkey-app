@@ -48,45 +48,44 @@ const HomeHeader = ({ offersCount, cuelinkOffersCount }: HomeHeaderProps) => {
   }
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-r from-spring-green-600 to-spring-green-700 rounded-2xl p-8 text-white shadow-xl">
+    <div className="relative overflow-hidden bg-gradient-to-r from-spring-green-600 to-spring-green-700 rounded-2xl p-6 mb-6 text-white shadow-lg max-w-5xl mx-auto">
       {/* Subtle background pattern */}
       <div className="absolute inset-0 bg-white/5 rounded-2xl"></div>
-      <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-20 translate-x-20"></div>
-      <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-16 -translate-x-16"></div>
+      <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
       
       <div className="relative z-10 flex items-center justify-between">
-        <div className="flex items-center space-x-6">
-          <div className="w-16 h-16 bg-monkeyYellow rounded-2xl flex items-center justify-center shadow-lg">
-            <Sparkles className="w-8 h-8 text-white" />
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12 bg-monkeyYellow rounded-xl flex items-center justify-center shadow-md">
+            <Sparkles className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold mb-2">Welcome back!</h1>
-            <div className="flex items-center space-x-2">
-              <MapPin className="w-5 h-5 text-monkeyYellow" />
-              <span className="text-lg text-white/90 font-medium">{user.location}</span>
+            <h1 className="text-2xl font-bold">Welcome back!</h1>
+            <div className="flex items-center space-x-2 mt-1">
+              <MapPin className="w-4 h-4 text-monkeyYellow" />
+              <span className="text-sm text-white/90 font-medium">{user.location}</span>
             </div>
           </div>
         </div>
         
-        <div className="flex items-center space-x-6">
-          <div className="flex space-x-4">
-            <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-4 text-center min-w-[100px]">
-              <div className="text-2xl font-bold text-monkeyYellow">{offersCount}+</div>
-              <div className="text-sm text-white/80 font-medium">Deals</div>
+        <div className="flex items-center space-x-4">
+          <div className="flex space-x-3">
+            <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 text-center min-w-[80px]">
+              <div className="text-lg font-bold text-monkeyYellow">{offersCount}+</div>
+              <div className="text-xs text-white/80 font-medium">Deals</div>
             </div>
-            <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-4 text-center min-w-[100px]">
-              <div className="text-2xl font-bold text-monkeyYellow">{cuelinkOffersCount}+</div>
-              <div className="text-sm text-white/80 font-medium">Flash</div>
+            <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 text-center min-w-[80px]">
+              <div className="text-lg font-bold text-monkeyYellow">{cuelinkOffersCount}+</div>
+              <div className="text-xs text-white/80 font-medium">Flash</div>
             </div>
           </div>
           
           <Link 
             to="/notifications" 
-            className="flex items-center bg-white/20 backdrop-blur-sm text-white px-6 py-4 rounded-2xl hover:bg-white/30 transition-all duration-200 shadow-lg"
+            className="flex items-center bg-white/20 backdrop-blur-sm text-white px-4 py-3 rounded-xl hover:bg-white/30 transition-all duration-200 shadow-sm"
           >
-            <Bell className="w-6 h-6 mr-3" />
-            <span className="font-medium">Alerts</span>
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-monkeyYellow text-sm text-black ml-3 font-bold">
+            <Bell className="w-5 h-5 mr-2" />
+            <span className="font-medium text-sm">Alerts</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-monkeyYellow text-xs text-black ml-2 font-bold">
               3
             </span>
           </Link>
