@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +10,7 @@ import SearchAndFilters from './home/SearchAndFilters';
 import OfferCard from './OfferCard';
 import CuelinkOfferCard from './CuelinkOfferCard';
 import CuelinkPagination from './CuelinkPagination';
+import PWAInstallPrompt from './PWAInstallPrompt';
 
 const HomeScreen = () => {
   const isMobile = useIsMobile();
@@ -132,6 +132,11 @@ const HomeScreen = () => {
       {/* Main content */}
       <div className={`space-y-6 ${isMobile ? 'p-4 pt-20' : 'w-full'}`}>
         <div className={`${!isMobile ? 'max-w-[1440px] mx-auto px-6 py-8' : ''}`}>
+          {/* PWA Install Prompt - Added without disturbing layout */}
+          <div className="mb-4">
+            <PWAInstallPrompt />
+          </div>
+          
           <QuickStatsSection 
             displayedOffersCount={displayedOffers.length}
             cuelinkOffersCount={cuelinkOffers.length}
