@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import AdminCuelinkManager from './AdminCuelinkManager';
 import AdminCategoriesManager from './AdminCategoriesManager';
 import AdminSettings from './AdminSettings';
 import AdminBannersManager from './AdminBannersManager';
+import AdminNotificationManager from './AdminNotificationManager';
 import { 
   LogOut, 
   BarChart3, 
@@ -71,7 +71,7 @@ const AdminPanel = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8 lg:w-fit bg-white border shadow-sm">
+          <TabsList className="grid w-full grid-cols-9 lg:w-fit bg-white border shadow-sm">
             <TabsTrigger value="dashboard" className="flex items-center space-x-2 data-[state=active]:bg-green-50 data-[state=active]:text-green-700">
               <BarChart3 className="h-4 w-4" />
               <span className="hidden sm:inline">Dashboard</span>
@@ -95,6 +95,10 @@ const AdminPanel = () => {
             <TabsTrigger value="categories" className="flex items-center space-x-2 data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700">
               <FolderOpen className="h-4 w-4" />
               <span className="hidden sm:inline">Categories</span>
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex items-center space-x-2 data-[state=active]:bg-yellow-50 data-[state=active]:text-yellow-700">
+              <Bell className="h-4 w-4" />
+              <span className="hidden sm:inline">Notifications</span>
             </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center space-x-2 data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700">
               <Activity className="h-4 w-4" />
@@ -128,6 +132,10 @@ const AdminPanel = () => {
           
           <TabsContent value="categories" className="space-y-6">
             <AdminCategoriesManager />
+          </TabsContent>
+
+          <TabsContent value="notifications" className="space-y-6">
+            <AdminNotificationManager />
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
