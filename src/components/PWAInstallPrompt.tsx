@@ -13,19 +13,27 @@ const PWAInstallPrompt = () => {
   const { toast } = useToast();
   const [dismissed, setDismissed] = React.useState(false);
 
+  // Check if notification prompt was previously dismissed
+  const [notificationPromptDismissed, setNotificationPromptDismissed] = React.useState(() => {
+    return localStorage.getItem('offersmonkey-notification-prompt-dismissed') === 'true';
+  });
+
   // Don't show if notifications are already subscribed and app is not installable
   if (isSubscribed && !isInstallable) {
     return null;
   }
 
-  // Show if installable OR if notifications can be enabled
-  const shouldShow = (isInstallable || (isNotificationSupported && !isSubscribed)) && !dismissed;
+  // Don't show notification prompt if it was previously dismissed
+  const shouldShowNotificationPrompt = isNotificationSupported && !isSubscribed && !notificationPromptDismissed;
+
+  // Show if installable OR if notifications can be enabled (and not previously dismissed)
+  const shouldShow = (isInstallable || shouldShowNotificationPrompt) && !dismissed;
 
   if (!shouldShow) {
     return null;
   }
 
-  const isMainlyForNotifications = !isInstallable && isNotificationSupported && !isSubscribed;
+  const isMainlyForNotifications = !isInstallable && shouldShowNotificationPrompt;
 
   const handleEnableNotifications = async () => {
     // Check if permission is already denied
@@ -51,6 +59,15 @@ const PWAInstallPrompt = () => {
         description: "Please allow notifications in your browser to receive deal alerts",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleDismiss = () => {
+    setDismissed(true);
+    // If this is mainly for notifications, remember that user dismissed it
+    if (isMainlyForNotifications) {
+      localStorage.setItem('offersmonkey-notification-prompt-dismissed', 'true');
+      setNotificationPromptDismissed(true);
     }
   };
 
@@ -88,7 +105,7 @@ const PWAInstallPrompt = () => {
                 Install
               </Button>
             )}
-            {isNotificationSupported && !isSubscribed && (
+            {shouldShowNotificationPrompt && (
               <Button
                 onClick={handleEnableNotifications}
                 size="sm"
@@ -102,7 +119,7 @@ const PWAInstallPrompt = () => {
               </Button>
             )}
             <Button
-              onClick={() => setDismissed(true)}
+              onClick={handleDismiss}
               size="sm"
               variant="ghost"
               className="text-white hover:bg-white/20 p-1 h-8 w-8"
