@@ -48,7 +48,7 @@ const HomeHeader = ({ offersCount, cuelinkOffersCount }: HomeHeaderProps) => {
   }
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-r from-spring-green-600 to-spring-green-700 rounded-2xl p-6 mb-6 text-white shadow-lg">
+    <div className="relative overflow-hidden bg-gradient-to-r from-spring-green-600 to-spring-green-700 rounded-2xl p-6 mb-6 text-white shadow-lg max-w-5xl mx-auto">
       {/* Subtle background pattern */}
       <div className="absolute inset-0 bg-white/5 rounded-2xl"></div>
       <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
