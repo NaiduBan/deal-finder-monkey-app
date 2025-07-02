@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const PWAInstallPrompt = () => {
   const { isInstallable, installApp } = usePWA();
-  const { isSupported: isNotificationSupported, isSubscribed, subscribe, permission } = usePushNotifications();
+  const { isSupported: isNotificationSupported, isSubscribed, subscribe, permission, isLoading } = usePushNotifications();
   const { toast } = useToast();
   const [dismissed, setDismissed] = React.useState(false);
 
@@ -36,27 +36,36 @@ const PWAInstallPrompt = () => {
   const isMainlyForNotifications = !isInstallable && shouldShowNotificationPrompt;
 
   const handleEnableNotifications = async () => {
-    // Check if permission is already denied
-    if (permission === 'denied') {
+    try {
+      const success = await subscribe();
+      if (success) {
+        toast({
+          title: "Notifications Enabled! 🎉",
+          description: "You'll now receive alerts for flash deals and personalized offers",
+        });
+        setDismissed(true);
+      } else {
+        // Check the actual permission state after attempting to subscribe
+        const currentPermission = Notification.permission;
+        if (currentPermission === 'denied') {
+          toast({
+            title: "Notifications Blocked",
+            description: "Please enable notifications in your browser settings and refresh the page",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Permission Required",
+            description: "Please allow notifications when prompted by your browser",
+            variant: "destructive"
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error enabling notifications:', error);
       toast({
-        title: "Notifications Blocked",
-        description: "Please enable notifications in your browser settings and refresh the page",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const success = await subscribe();
-    if (success) {
-      toast({
-        title: "Notifications Enabled! 🎉",
-        description: "You'll now receive alerts for flash deals and personalized offers",
-      });
-      setDismissed(true);
-    } else {
-      toast({
-        title: "Permission Required",
-        description: "Please allow notifications in your browser to receive deal alerts",
+        title: "Error",
+        description: "Failed to enable notifications. Please try again.",
         variant: "destructive"
       });
     }
