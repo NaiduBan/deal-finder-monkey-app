@@ -28,7 +28,7 @@ const OfferCard = ({ offer, isMobile }: OfferCardProps) => {
   };
 
   return (
-    <div className={`h-full flex flex-col bg-gradient-to-br from-white to-gray-50/50 rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group ${
+    <div className={`flex flex-col bg-gradient-to-br from-white to-gray-50/50 rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group ${
       offer.sponsored ? 'ring-2 ring-yellow-400/30 shadow-yellow-200/30' : ''
     }`}>
       {/* Image Container */}
@@ -74,7 +74,7 @@ const OfferCard = ({ offer, isMobile }: OfferCardProps) => {
       </div>
       
       {/* Content */}
-      <div className="p-5 flex-1 flex flex-col bg-white">
+      <div className="p-5 flex flex-col bg-white">
         {/* Store Badge */}
         <div className="inline-flex items-center w-fit mb-3">
           <span className="bg-gradient-to-r from-spring-green-100 to-emerald-100 text-spring-green-800 text-xs font-bold px-3 py-1.5 rounded-full border border-spring-green-200">
@@ -90,7 +90,7 @@ const OfferCard = ({ offer, isMobile }: OfferCardProps) => {
         )}
         
         {/* Description */}
-        <p className="text-sm text-gray-600 line-clamp-3 flex-1 leading-relaxed mb-4">
+        <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed mb-4">
           {offer.description || "Offer Description"}
         </p>
 

@@ -186,7 +186,7 @@ const HomeScreen = () => {
                     )}
                     
                     {!error && displayedOffers.length > 0 ? (
-                      <div className={`grid gap-4 ${
+                      <div className={`grid gap-4 auto-rows-max ${
                         isMobile 
                           ? 'grid-cols-2' 
                           : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
@@ -249,7 +249,7 @@ const HomeScreen = () => {
               </TabsContent>
               
               <TabsContent value="nearby" className="space-y-4">
-                <div className={`grid gap-4 ${
+                <div className={`grid gap-4 auto-rows-max ${
                   isMobile 
                     ? 'grid-cols-2' 
                     : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
@@ -346,7 +346,7 @@ const HomeScreen = () => {
                         <div className="mb-4 text-sm text-gray-600">
                           Showing {amazonOffers.length} Amazon offers
                         </div>
-                        <div className={`grid gap-4 ${
+                        <div className={`grid gap-4 auto-rows-max ${
                           isMobile 
                             ? 'grid-cols-2' 
                             : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
