@@ -4,7 +4,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useHomeScreen } from '@/hooks/useHomeScreen';
 import HomeHeader from './home/HomeHeader';
-import QuickStatsSection from './home/QuickStatsSection';
 import SmartFeaturesSection from './home/SmartFeaturesSection';
 import SearchAndFilters from './home/SearchAndFilters';
 import OfferCard from './OfferCard';
@@ -141,13 +140,6 @@ const HomeScreen = () => {
           <HomeHeader 
             offersCount={offers.length} 
             cuelinkOffersCount={cuelinkOffers.length} 
-          />
-          
-          {/* Quick Stats Cards in organized grid */}
-          <QuickStatsSection 
-            displayedOffersCount={displayedOffers.length}
-            cuelinkOffersCount={cuelinkOffers.length}
-            categoriesCount={dynamicCategories.length}
           />
           
           {/* Smart Features Section */}
