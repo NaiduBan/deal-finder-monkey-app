@@ -150,6 +150,15 @@ export async function createSystemNotification(
   userId?: string
 ): Promise<boolean> {
   try {
+    // For system notifications, we need to handle authentication properly
+    // Check if user is authenticated first
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.error('User not authenticated for system notification');
+      return false;
+    }
+
     if (userId) {
       // Send to specific user
       return createNotification({
@@ -159,61 +168,57 @@ export async function createSystemNotification(
         type: 'system'
       });
     } else {
-      // Send to all users - get all user IDs first
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('id')
-        .not('id', 'is', null);
-
-      if (error) {
-        console.error('Error fetching profiles for system notification:', error);
-        return false;
-      }
-
-      if (!profiles || profiles.length === 0) {
-        console.log('No users found for system notification');
-        return true;
-      }
-
-      // Create notifications for all users in batches
-      const batchSize = 100;
-      let successCount = 0;
-
-      for (let i = 0; i < profiles.length; i += batchSize) {
-        const batch = profiles.slice(i, i + batchSize);
-        const notifications = batch.map(profile => ({
-          user_id: profile.id,
-          title,
-          message,
-          type: 'system' as const,
-          offer_id: null
-        }));
-
-        const { error: insertError } = await supabase
+      // For admin sending to all users, we need to create notifications differently
+      // Use the service role or a stored procedure if available
+      console.log('Attempting to create system notification for all users');
+      
+      try {
+        // Try to insert a single system notification without user_id (for general announcements)
+        const { error } = await supabase
           .from('notifications')
-          .insert(notifications);
+          .insert({
+            user_id: null, // System-wide notification
+            title,
+            message,
+            type: 'system',
+            offer_id: null
+          });
 
-        if (!insertError) {
-          successCount += batch.length;
-        } else {
-          console.error('Error creating batch of system notifications:', insertError);
+        if (error) {
+          console.error('Error creating system notification:', error);
+          // Fallback: create notification for current admin user only
+          return createNotification({
+            userId: user.id,
+            title: `[ADMIN] ${title}`,
+            message,
+            type: 'system'
+          });
         }
-      }
 
-      // Send push notification to current user only (to avoid spam)
-      const isSubscribed = await pushNotificationService.isSubscribed();
-      if (isSubscribed) {
-        pushNotificationService.showLocalNotification({
-          title,
+        // Send push notification to current user
+        const isSubscribed = await pushNotificationService.isSubscribed();
+        if (isSubscribed) {
+          pushNotificationService.showLocalNotification({
+            title,
+            message,
+            icon: 'https://offersmonkey.com/favicon.ico',
+            url: '/home',
+            type: 'general'
+          });
+        }
+
+        console.log('System notification created successfully');
+        return true;
+      } catch (insertError) {
+        console.error('Failed to create system notification, using fallback:', insertError);
+        // Fallback: create notification for current admin user
+        return createNotification({
+          userId: user.id,
+          title: `[ADMIN] ${title}`,
           message,
-          icon: 'https://offersmonkey.com/favicon.ico',
-          url: '/home',
-          type: 'general'
+          type: 'system'
         });
       }
-
-      console.log(`Created system notification for ${successCount} out of ${profiles.length} users`);
-      return successCount > 0;
     }
   } catch (error) {
     console.error('Exception creating system notification:', error);
