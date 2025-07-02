@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useHomeScreen } from '@/hooks/useHomeScreen';
+import { AdvancedHomeLayout } from './desktop/AdvancedHomeLayout';
 import HomeHeader from './home/HomeHeader';
 import QuickStatsSection from './home/QuickStatsSection';
 import SmartFeaturesSection from './home/SmartFeaturesSection';
@@ -14,6 +15,7 @@ import PWAInstallPrompt from './PWAInstallPrompt';
 
 const HomeScreen = () => {
   const isMobile = useIsMobile();
+  const homeScreenData = useHomeScreen();
   const {
     // State
     searchQuery,
@@ -40,7 +42,7 @@ const HomeScreen = () => {
     handleCuelinkPageChange,
     // Constants
     cuelinkItemsPerPage
-  } = useHomeScreen();
+  } = homeScreenData;
 
   useEffect(() => {
     console.log("Home Screen Rendered");
@@ -121,6 +123,21 @@ const HomeScreen = () => {
     (cuelinkCurrentPage - 1) * cuelinkItemsPerPage,
     cuelinkCurrentPage * cuelinkItemsPerPage
   );
+
+  // Enhanced data object for advanced layout
+  const enhancedHomeScreenData = {
+    ...homeScreenData,
+    displayedOffers,
+    amazonOffers,
+    displayedCuelinkOffers,
+    paginatedCuelinkOffers,
+    totalCuelinkPages
+  };
+
+  // Use advanced layout for desktop
+  if (!isMobile) {
+    return <AdvancedHomeLayout homeScreenData={enhancedHomeScreenData} />;
+  }
 
   return (
     <div className={`bg-gradient-to-br from-spring-green-50 via-white to-spring-green-100 min-h-screen ${isMobile ? 'pb-16' : 'pt-20'}`}>
