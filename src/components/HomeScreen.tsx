@@ -128,40 +128,47 @@ const HomeScreen = () => {
       <div className="absolute inset-0 bg-[linear-gradient(45deg,_transparent_25%,_rgba(156,146,172,0.03)_25%,_rgba(156,146,172,0.03)_50%,_transparent_50%,_transparent_75%,_rgba(156,146,172,0.03)_75%,_rgba(156,146,172,0.03))] bg-[length:60px_60px] opacity-30"></div>
       <div className="absolute top-20 right-20 w-72 h-72 bg-gradient-to-br from-spring-green-300/20 to-emerald-400/20 rounded-full blur-3xl animate-pulse"></div>
       <div className="absolute bottom-20 left-20 w-96 h-96 bg-gradient-to-br from-indigo-300/20 to-purple-400/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
-      <HomeHeader 
-        offersCount={offers.length} 
-        cuelinkOffersCount={cuelinkOffers.length} 
-      />
       
-      {/* Main content */}
-      <div className={`space-y-6 ${isMobile ? 'p-4 pt-20' : 'w-full'}`}>
+      {/* Main content with better organization */}
+      <div className={`space-y-8 relative z-10 ${isMobile ? 'p-4 pt-20' : 'w-full'}`}>
         <div className={`${!isMobile ? 'max-w-[1440px] mx-auto px-6 py-8' : ''}`}>
-          {/* PWA Install Prompt - Added without disturbing layout */}
-          <div className="mb-4">
+          {/* PWA Install Prompt */}
+          <div className="mb-6">
             <PWAInstallPrompt />
           </div>
           
+          {/* Enhanced Header */}
+          <HomeHeader 
+            offersCount={offers.length} 
+            cuelinkOffersCount={cuelinkOffers.length} 
+          />
+          
+          {/* Quick Stats Cards in organized grid */}
           <QuickStatsSection 
             displayedOffersCount={displayedOffers.length}
             cuelinkOffersCount={cuelinkOffers.length}
             categoriesCount={dynamicCategories.length}
           />
           
+          {/* Smart Features Section */}
           <SmartFeaturesSection />
           
-          <SearchAndFilters 
-            searchQuery={searchQuery}
-            onSearchChange={handleSearch}
-            isUsingMockData={isUsingMockData}
-            hasLoadedPreferences={hasLoadedPreferences}
-            userPreferences={userPreferences}
-            dynamicCategories={dynamicCategories}
-            selectedCategory={selectedCategory}
-            onCategorySelect={handleCategoryClick}
-            isDataLoading={isDataLoading}
-            debouncedSearchTerm={debouncedSearchTerm}
-            onClearFilters={handleClearFilters}
-          />
+          {/* Search and Filters - Better organized */}
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30 mb-8">
+            <SearchAndFilters 
+              searchQuery={searchQuery}
+              onSearchChange={handleSearch}
+              isUsingMockData={isUsingMockData}
+              hasLoadedPreferences={hasLoadedPreferences}
+              userPreferences={userPreferences}
+              dynamicCategories={dynamicCategories}
+              selectedCategory={selectedCategory}
+              onCategorySelect={handleCategoryClick}
+              isDataLoading={isDataLoading}
+              debouncedSearchTerm={debouncedSearchTerm}
+              onClearFilters={handleClearFilters}
+            />
+          </div>
           
           {/* Enhanced Offers section with better tabs */}
           <div className="relative">
