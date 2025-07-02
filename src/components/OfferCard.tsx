@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Offer } from '@/types';
-import { Bookmark, BookmarkCheck, Tag, Star } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Tag, Star, Users, ThumbsUp, Eye } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,13 @@ const OfferCard = ({ offer, isMobile }: OfferCardProps) => {
     } else {
       saveOffer(offer.id);
     }
+  };
+
+  // Mock social proof data - in real app this would come from the database
+  const socialProof = {
+    usedCount: Math.floor(Math.random() * 500) + 50,
+    rating: (Math.random() * 2 + 3).toFixed(1), // 3.0 - 5.0
+    verificationRate: Math.floor(Math.random() * 30) + 70 // 70-100%
   };
 
   return (
@@ -101,17 +108,40 @@ const OfferCard = ({ offer, isMobile }: OfferCardProps) => {
           </p>
         )}
         
+        {/* Social Proof Section */}
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/50">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Users className="w-3 h-3" />
+              <span>{socialProof.usedCount} used</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <ThumbsUp className="w-3 h-3" />
+              <span>{socialProof.rating} ⭐</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Eye className="w-3 h-3" />
+              <span>{socialProof.verificationRate}% verified</span>
+            </div>
+          </div>
+          {socialProof.verificationRate > 85 && (
+            <Badge className="bg-primary/10 text-primary border-none text-xs">
+              Verified ✓
+            </Badge>
+          )}
+        </div>
+
         {/* Code Display */}
         {offer.code && (
-          <div className="mt-auto">
-            <div className="relative p-4 bg-gradient-to-r from-spring-green-50 to-emerald-50 border-2 border-dashed border-spring-green-300 rounded-xl cursor-pointer hover:from-spring-green-100 hover:to-emerald-100 hover:border-spring-green-400 transition-all duration-200 group/code">
+          <div className="mt-4">
+            <div className="relative p-4 bg-gradient-to-r from-primary/5 to-primary/10 border-2 border-dashed border-primary/30 rounded-xl cursor-pointer hover:from-primary/10 hover:to-primary/20 hover:border-primary/50 transition-all duration-200 group/code">
               <div className="text-center">
-                <span className="text-xs text-spring-green-600 uppercase tracking-wider font-medium block mb-1">Coupon Code</span>
-                <p className="text-lg font-mono font-bold text-spring-green-800 tracking-wider">
+                <span className="text-xs text-primary uppercase tracking-wider font-medium block mb-1">Coupon Code</span>
+                <p className="text-lg font-mono font-bold text-primary tracking-wider">
                   {offer.code}
                 </p>
               </div>
-              <div className="absolute inset-0 bg-spring-green-200/20 rounded-xl opacity-0 group-hover/code:opacity-100 transition-opacity duration-200" />
+              <div className="absolute inset-0 bg-primary/10 rounded-xl opacity-0 group-hover/code:opacity-100 transition-opacity duration-200" />
             </div>
           </div>
         )}

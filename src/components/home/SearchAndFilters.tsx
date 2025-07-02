@@ -1,10 +1,14 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Crown } from 'lucide-react';
+import { Search, Crown, Filter, SlidersHorizontal, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import CategoryItem from '@/components/CategoryItem';
 import { Category } from '@/types';
 
@@ -20,6 +24,9 @@ interface SearchAndFiltersProps {
   isDataLoading: boolean;
   debouncedSearchTerm: string;
   onClearFilters: () => void;
+  onPriceRangeChange?: (range: [number, number]) => void;
+  onDiscountFilterChange?: (discount: string) => void;
+  onSortChange?: (sort: string) => void;
 }
 
 const SearchAndFilters = ({
@@ -33,8 +40,31 @@ const SearchAndFilters = ({
   onCategorySelect,
   isDataLoading,
   debouncedSearchTerm,
-  onClearFilters
+  onClearFilters,
+  onPriceRangeChange,
+  onDiscountFilterChange,
+  onSortChange
 }: SearchAndFiltersProps) => {
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
+  const [discountFilter, setDiscountFilter] = useState<string>('');
+  const [sortBy, setSortBy] = useState<string>('');
+
+  const handlePriceRangeChange = (value: number[]) => {
+    const range: [number, number] = [value[0], value[1]];
+    setPriceRange(range);
+    onPriceRangeChange?.(range);
+  };
+
+  const handleDiscountChange = (value: string) => {
+    setDiscountFilter(value);
+    onDiscountFilterChange?.(value);
+  };
+
+  const handleSortChange = (value: string) => {
+    setSortBy(value);
+    onSortChange?.(value);
+  };
   const hasPersonalization = hasLoadedPreferences && (
     userPreferences.brands.length > 0 || 
     userPreferences.stores.length > 0 || 
@@ -76,16 +106,113 @@ const SearchAndFilters = ({
         </div>
       )}
 
-      {/* Search Bar */}
+      {/* Enhanced Search Bar with Filters */}
       <div className="relative mb-6">
-        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-        <Input
-          type="search"
-          placeholder="🔍 Search for offers, stores, categories..."
-          className="pl-12 pr-4 py-3 w-full border-gray-200 rounded-xl text-lg shadow-sm focus:shadow-md transition-shadow"
-          value={searchQuery}
-          onChange={onSearchChange}
-        />
+        <div className="flex gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+            <Input
+              type="search"
+              placeholder="🔍 Search for offers, stores, categories..."
+              className="pl-12 pr-4 py-3 w-full border-border rounded-xl text-lg shadow-sm focus:shadow-md transition-shadow"
+              value={searchQuery}
+              onChange={onSearchChange}
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            className={`px-4 py-3 rounded-xl border-border ${showAdvancedFilters ? 'bg-primary/10 border-primary' : ''}`}
+          >
+            <SlidersHorizontal className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Advanced Filters Panel */}
+        {showAdvancedFilters && (
+          <div className="mt-4 p-6 bg-card rounded-xl border border-border shadow-lg space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-lg">Advanced Filters</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAdvancedFilters(false)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Price Range */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">Price Range</label>
+                <div className="px-3">
+                  <Slider
+                    value={priceRange}
+                    onValueChange={handlePriceRangeChange}
+                    max={10000}
+                    min={0}
+                    step={100}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <span>₹{priceRange[0]}</span>
+                    <span>₹{priceRange[1]}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Discount Filter */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">Minimum Discount</label>
+                <Select value={discountFilter} onValueChange={handleDiscountChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select discount" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Any discount</SelectItem>
+                    <SelectItem value="10">10% or more</SelectItem>
+                    <SelectItem value="25">25% or more</SelectItem>
+                    <SelectItem value="50">50% or more</SelectItem>
+                    <SelectItem value="75">75% or more</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Sort Options */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">Sort by</label>
+                <Select value={sortBy} onValueChange={handleSortChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sort offers" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Relevance</SelectItem>
+                    <SelectItem value="discount">Highest Discount</SelectItem>
+                    <SelectItem value="ending-soon">Ending Soon</SelectItem>
+                    <SelectItem value="newest">Newest First</SelectItem>
+                    <SelectItem value="popular">Most Popular</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Quick Filter Tags */}
+            <div className="flex flex-wrap gap-2 pt-4 border-t border-border">
+              <span className="text-sm text-muted-foreground mr-3">Quick filters:</span>
+              {['Ending Today', 'Free Shipping', 'No Code Required', 'Verified'].map((tag) => (
+                <Badge
+                  key={tag}
+                  variant="outline"
+                  className="cursor-pointer hover:bg-primary/10 hover:border-primary transition-colors"
+                >
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Categories carousel */}

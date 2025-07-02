@@ -6,6 +6,8 @@ import { useHomeScreen } from '@/hooks/useHomeScreen';
 import HomeHeader from './home/HomeHeader';
 import SmartFeaturesSection from './home/SmartFeaturesSection';
 import SearchAndFilters from './home/SearchAndFilters';
+import TrendingDealsSection from './home/TrendingDealsSection';
+import QuickStatsWidget from './home/QuickStatsWidget';
 import OfferCard from './OfferCard';
 import CuelinkOfferCard from './CuelinkOfferCard';
 import CuelinkPagination from './CuelinkPagination';
@@ -144,6 +146,12 @@ const HomeScreen = () => {
           
           {/* Smart Features Section */}
           <SmartFeaturesSection />
+          
+          {/* Quick Stats Widget */}
+          <QuickStatsWidget />
+          
+          {/* Trending Deals Section */}
+          <TrendingDealsSection offers={localFilteredOffers} />
           
           {/* Search and Filters - Better organized */}
           <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30 mb-8">
