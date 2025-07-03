@@ -360,7 +360,7 @@ const ChatbotScreen = () => {
       {/* Messages Area - Proper height calculation and spacing */}
       <div className={`flex-1 min-h-0 relative ${isMobile ? 'mt-20' : ''}`}>
         <ScrollArea className="h-full">
-          <div className="p-3 md:p-4 pb-4 w-full">
+          <div className="p-3 md:p-4 pb-4 max-w-4xl mx-auto">
             <div className="space-y-4 md:space-y-6">
               {displayMessages.map((message) => (
                 <div key={message.id} className="space-y-4">

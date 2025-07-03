@@ -119,7 +119,7 @@ const CategoryScreen = () => {
     <div className={`min-h-screen bg-gray-50 ${isMobile ? 'pb-16' : 'pt-20'}`}>
       {/* Header */}
       <div className={`bg-white shadow-sm border-b sticky z-10 ${isMobile ? 'top-0' : 'top-20'}`}>
-        <div className={`${isMobile ? 'px-4 py-4' : 'px-6 py-6 w-full'}`}>
+        <div className={`${isMobile ? 'px-4 py-4' : 'px-6 py-6 max-w-7xl mx-auto'}`}>
           <div className="flex items-center space-x-4">
             <Link to="/categories" className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
               <ChevronLeft className="w-5 h-5 text-gray-600" />
@@ -142,7 +142,7 @@ const CategoryScreen = () => {
       </div>
 
       {/* Content */}
-      <div className={`${isMobile ? 'p-4' : 'p-8 w-full'}`}>
+      <div className={`${isMobile ? 'p-4' : 'p-8 max-w-7xl mx-auto'}`}>
         {categoryOffers.length === 0 ? (
           <div className="text-center py-16">
             <div className="p-4 bg-gray-100 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
