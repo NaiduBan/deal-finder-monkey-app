@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { BannerItem } from '@/types';
 import { getBanners } from '@/services/api';
+import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
 
 const BannerCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -40,22 +42,32 @@ const BannerCarousel = () => {
         style={{ transform: `translateX(-${currentIndex * 100}%)` }}
       >
         {banners.map((banner) => (
-          <Link 
-            key={banner.id} 
-            to={banner.link}
-            className="min-w-full w-full"
-          >
-            <div className="relative">
-              <img 
-                src={banner.imageUrl} 
-                alt={banner.title}
-                className="w-full h-40 object-cover"
-              />
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                <h3 className="text-white font-semibold">{banner.title}</h3>
+          <div key={banner.id} className="min-w-full w-full relative">
+            <img 
+              src={banner.imageUrl} 
+              alt={banner.title}
+              className="w-full h-60 object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
+              <div className="absolute bottom-0 left-0 right-0 p-6">
+                <h2 className="text-white text-2xl font-bold mb-2">{banner.title}</h2>
+                <p className="text-white/90 text-sm mb-4">Limited time offer - Don't miss out!</p>
+                <div className="flex gap-3">
+                  <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+                    <Link to={banner.link}>
+                      Shop Now
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" className="bg-white/10 border-white/30 text-white hover:bg-white/20">
+                    <Link to={banner.link}>
+                      Grab Deal
+                    </Link>
+                  </Button>
+                </div>
               </div>
             </div>
-          </Link>
+          </div>
         ))}
       </div>
 

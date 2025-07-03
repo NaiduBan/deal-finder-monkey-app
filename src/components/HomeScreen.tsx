@@ -8,6 +8,7 @@ import TrendingDealsSection from './home/TrendingDealsSection';
 import QuickStatsWidget from './home/QuickStatsWidget';
 import OffersTabsSection from './home/OffersTabsSection';
 import PWAInstallPrompt from './PWAInstallPrompt';
+import BannerCarousel from './BannerCarousel';
 
 const HomeScreen = () => {
   const {
@@ -133,6 +134,11 @@ const HomeScreen = () => {
         offersCount={offers.length} 
         cuelinkOffersCount={cuelinkOffers.length} 
       />
+      
+      {/* Hero Banner Carousel */}
+      <div className="mb-8">
+        <BannerCarousel />
+      </div>
       
       {/* Smart Features Section */}
       <SmartFeaturesSection />
