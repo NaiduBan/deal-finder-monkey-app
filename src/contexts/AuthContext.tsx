@@ -117,7 +117,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }, 0);
         } else if (event === 'SIGNED_OUT') {
           setUserProfile(null);
+          // Clear all localStorage data that might cause conflicts
           localStorage.removeItem('user');
+          localStorage.removeItem('supabase.auth.token');
+          localStorage.removeItem('sb-vtxtnyivbmvcmxuuqknn-auth-token');
           if (mounted) {
             setLoading(false);
           }
@@ -178,11 +181,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
       
-      // Clear all local state
+      // Clear all local state and localStorage
       setSession(null);
       setUser(null);
       setUserProfile(null);
       localStorage.removeItem('user');
+      localStorage.removeItem('supabase.auth.token');
+      localStorage.removeItem('sb-vtxtnyivbmvcmxuuqknn-auth-token');
       
     } catch (error: any) {
       toast({

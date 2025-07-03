@@ -17,32 +17,13 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 const getInitialUser = (): User => {
-  try {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-      return {
-        ...parsedUser,
-        savedOffers: parsedUser.savedOffers || [],
-        points: 0 // Remove points completely
-      };
-    } else {
-      return {
-        ...mockUser,
-        location: 'India',
-        savedOffers: [],
-        points: 0 // Remove points completely
-      };
-    }
-  } catch (error) {
-    console.error('Error retrieving user from localStorage:', error);
-    return {
-      ...mockUser,
-      location: 'India',
-      savedOffers: [],
-      points: 0 // Remove points completely
-    };
-  }
+  // Always start with clean mock user - localStorage will be synced later
+  return {
+    ...mockUser,
+    location: 'India',
+    savedOffers: [],
+    points: 0
+  };
 };
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
@@ -65,7 +46,12 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           points: 0 // Remove points completely
         };
         
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        // Only store essential data in localStorage, avoid conflicts
+        try {
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+        } catch (error) {
+          console.error('Error saving user to localStorage:', error);
+        }
         return updatedUser;
       });
       
@@ -77,17 +63,21 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
             .select('offer_id')
             .eq('user_id', session.user.id);
           
-          if (savedOffers) {
-            setUser(prevUser => {
-              const updatedUser = {
-                ...prevUser,
-                savedOffers: savedOffers.map((item: any) => item.offer_id)
-              };
-              
-              localStorage.setItem('user', JSON.stringify(updatedUser));
-              return updatedUser;
-            });
-          }
+           if (savedOffers) {
+             setUser(prevUser => {
+               const updatedUser = {
+                 ...prevUser,
+                 savedOffers: savedOffers.map((item: any) => item.offer_id)
+               };
+               
+               try {
+                 localStorage.setItem('user', JSON.stringify(updatedUser));
+               } catch (error) {
+                 console.error('Error saving user to localStorage:', error);
+               }
+               return updatedUser;
+             });
+           }
         } catch (error) {
           console.error('Error fetching saved offers:', error);
         }
@@ -103,7 +93,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         points: 0 // Remove points completely
       };
       setUser(guestUser);
-      localStorage.setItem('user', JSON.stringify(guestUser));
+      try {
+        localStorage.setItem('user', JSON.stringify(guestUser));
+      } catch (error) {
+        console.error('Error saving guest user to localStorage:', error);
+      }
     }
   }, [session, userProfile]);
 
@@ -130,7 +124,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                 ...prevUser,
                 savedOffers: [...prevUser.savedOffers, payload.new.offer_id]
               };
-              localStorage.setItem('user', JSON.stringify(updatedUser));
+               try {
+                 localStorage.setItem('user', JSON.stringify(updatedUser));
+               } catch (error) {
+                 console.error('Error saving user to localStorage:', error);
+               }
               return updatedUser;
             });
           } else if (payload.eventType === 'DELETE') {
@@ -139,7 +137,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                 ...prevUser,
                 savedOffers: prevUser.savedOffers.filter(id => id !== payload.old.offer_id)
               };
-              localStorage.setItem('user', JSON.stringify(updatedUser));
+               try {
+                 localStorage.setItem('user', JSON.stringify(updatedUser));
+               } catch (error) {
+                 console.error('Error saving user to localStorage:', error);
+               }
               return updatedUser;
             });
           }
@@ -163,7 +165,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           savedOffers: [...prevUser.savedOffers, offerId]
         };
         
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        try {
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+        } catch (error) {
+          console.error('Error saving user to localStorage:', error);
+        }
         return updatedUser;
       });
       
@@ -187,7 +193,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                 savedOffers: prevUser.savedOffers.filter(id => id !== offerId)
               };
               
-              localStorage.setItem('user', JSON.stringify(updatedUser));
+              try {
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+              } catch (error) {
+                console.error('Error saving user to localStorage:', error);
+              }
               return updatedUser;
             });
             
@@ -220,7 +230,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         savedOffers: prevUser.savedOffers.filter(id => id !== offerId)
       };
       
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      try {
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      } catch (error) {
+        console.error('Error saving user to localStorage:', error);
+      }
       return updatedUser;
     });
     
@@ -243,7 +257,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
               savedOffers: [...prevUser.savedOffers, offerId]
             };
             
-            localStorage.setItem('user', JSON.stringify(updatedUser));
+            try {
+              localStorage.setItem('user', JSON.stringify(updatedUser));
+            } catch (error) {
+              console.error('Error saving user to localStorage:', error);
+            }
             return updatedUser;
           });
           
@@ -277,7 +295,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         location
       };
       
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      try {
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      } catch (error) {
+        console.error('Error saving user to localStorage:', error);
+      }
       return updatedUser;
     });
     
