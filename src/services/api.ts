@@ -105,7 +105,6 @@ export const addOffer = async (offerData: Partial<Offer>): Promise<Offer> => {
     featured: offerData.featured || false,
     publisherExclusive: offerData.publisherExclusive || false,
     sponsored: offerData.sponsored || false,
-    banner: offerData.banner || false,
     url: offerData.url || null,
     smartlink: offerData.smartlink || null,
     offerType: offerData.offerType || null,

@@ -37,7 +37,6 @@ interface Offer {
   image_url: string;
   featured: string;
   sponsored: boolean;
-  banner: boolean;
   terms_and_conditions: string;
 }
 
@@ -106,52 +105,6 @@ const AdminOffersManager = () => {
     } catch (error) {
       console.error('Error:', error);
       toast.error('An error occurred while updating the offer');
-    }
-  };
-
-  const toggleSponsored = async (lmdId: number, currentValue: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('Offers_data')
-        .update({ sponsored: !currentValue })
-        .eq('lmd_id', lmdId);
-
-      if (error) {
-        console.error('Error updating sponsored status:', error);
-        toast.error('Failed to update sponsored status');
-        return;
-      }
-
-      setOffers(offers.map(offer => 
-        offer.lmd_id === lmdId ? { ...offer, sponsored: !currentValue } : offer
-      ));
-      toast.success('Sponsored status updated successfully');
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error('An error occurred while updating sponsored status');
-    }
-  };
-
-  const toggleBanner = async (lmdId: number, currentValue: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('Offers_data')
-        .update({ banner: !currentValue })
-        .eq('lmd_id', lmdId);
-
-      if (error) {
-        console.error('Error updating banner status:', error);
-        toast.error('Failed to update banner status');
-        return;
-      }
-
-      setOffers(offers.map(offer => 
-        offer.lmd_id === lmdId ? { ...offer, banner: !currentValue } : offer
-      ));
-      toast.success('Banner status updated successfully');
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error('An error occurred while updating banner status');
     }
   };
 
@@ -348,20 +301,9 @@ const AdminOffersManager = () => {
                         {offer.featured === 'true' && (
                           <Badge variant="default" className="text-xs">Featured</Badge>
                         )}
-                        <Badge 
-                          variant={offer.sponsored ? "secondary" : "outline"} 
-                          className="text-xs cursor-pointer"
-                          onClick={() => toggleSponsored(offer.lmd_id, offer.sponsored)}
-                        >
-                          {offer.sponsored ? 'Sponsored' : 'Not Sponsored'}
-                        </Badge>
-                        <Badge 
-                          variant={offer.banner ? "default" : "outline"} 
-                          className="text-xs cursor-pointer"
-                          onClick={() => toggleBanner(offer.lmd_id, offer.banner)}
-                        >
-                          {offer.banner ? 'Banner' : 'Not Banner'}
-                        </Badge>
+                        {offer.sponsored && (
+                          <Badge variant="secondary" className="text-xs">Sponsored</Badge>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">

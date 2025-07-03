@@ -11,8 +11,6 @@ interface OffersTabsSectionProps {
   displayedOffers: Offer[];
   amazonOffers: Offer[];
   nearbyOffers: Offer[];
-  sponsoredOffers: Offer[];
-  bannerOffers: Offer[];
   
   // Cuelink data
   paginatedCuelinkOffers: CuelinkOffer[];
@@ -41,8 +39,6 @@ const OffersTabsSection = ({
   displayedOffers,
   amazonOffers,
   nearbyOffers,
-  sponsoredOffers,
-  bannerOffers,
   paginatedCuelinkOffers,
   cuelinkCurrentPage,
   totalCuelinkPages,
@@ -78,13 +74,11 @@ const OffersTabsSection = ({
               <span className="text-xs font-medium text-yellow-700">Live Updates</span>
             </div>
           </div>
-          <TabsList className="grid w-full max-w-2xl grid-cols-6 bg-gradient-to-r from-indigo-50 to-purple-50 p-1.5 rounded-2xl border border-indigo-200/50 shadow-inner">
+          <TabsList className="grid w-full max-w-lg grid-cols-4 bg-gradient-to-r from-indigo-50 to-purple-50 p-1.5 rounded-2xl border border-indigo-200/50 shadow-inner">
             <TabsTrigger value="all" className="text-sm font-semibold rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">All Deals</TabsTrigger>
             <TabsTrigger value="nearby" className="text-sm font-semibold rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-spring-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">Nearby</TabsTrigger>
             <TabsTrigger value="flash" className="text-sm font-semibold rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">Flash</TabsTrigger>
             <TabsTrigger value="amazon" className="text-sm font-semibold rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">Amazon</TabsTrigger>
-            <TabsTrigger value="sponsors" className="text-sm font-semibold rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">Sponsors</TabsTrigger>
-            <TabsTrigger value="banners" className="text-sm font-semibold rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">Banners</TabsTrigger>
           </TabsList>
         </div>
         
@@ -151,46 +145,6 @@ const OffersTabsSection = ({
               showRefresh: true,
               showPreferences: offers.length > 0,
               preferencesLink: "/preferences/stores"
-            }}
-          />
-        </TabsContent>
-        
-        <TabsContent value="sponsors" className="space-y-4">
-          <OffersList 
-            offers={sponsoredOffers}
-            isLoading={isDataLoading || isLoading}
-            error={error}
-            onLoadMore={loadMoreOffers}
-            emptyStateConfig={{
-              title: "No sponsored offers found",
-              description: offers.length === 0 
-                ? "No sponsored offers available" 
-                : debouncedSearchTerm 
-                  ? `No sponsored offers match "${debouncedSearchTerm}"`
-                  : "Check back later for sponsored deals",
-              showRefresh: true,
-              showPreferences: offers.length > 0,
-              preferencesLink: "/preferences/brands"
-            }}
-          />
-        </TabsContent>
-        
-        <TabsContent value="banners" className="space-y-4">
-          <OffersList 
-            offers={bannerOffers}
-            isLoading={isDataLoading || isLoading}
-            error={error}
-            onLoadMore={loadMoreOffers}
-            emptyStateConfig={{
-              title: "No banner offers found",
-              description: offers.length === 0 
-                ? "No banner offers available" 
-                : debouncedSearchTerm 
-                  ? `No banner offers match "${debouncedSearchTerm}"`
-                  : "Check back later for banner deals",
-              showRefresh: true,
-              showPreferences: offers.length > 0,
-              preferencesLink: "/preferences/brands"
             }}
           />
         </TabsContent>

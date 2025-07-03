@@ -53,7 +53,6 @@ export const transformSupabaseOffer = (item: any, index?: number): Offer => {
     featured: item.featured === "true" || item.featured === "1",
     publisherExclusive: item.publisher_exclusive === "true" || item.publisher_exclusive === "1",
     sponsored: item.sponsored === true,
-    banner: item.banner === true,
     url: item.url || "",
     smartlink: item.smartlink || "",
     offerType: item.type || "",

@@ -99,44 +99,6 @@ const HomeScreen = () => {
   // Filter nearby offers (non-Amazon)
   const nearbyOffers = displayedOffers.filter(offer => !offer.isAmazon);
 
-  // Filter sponsored offers
-  const sponsoredOffers = localFilteredOffers.filter(offer => {
-    if (!offer.sponsored) return false;
-    
-    // Apply search filter if present
-    if (debouncedSearchTerm) {
-      const searchTermLower = debouncedSearchTerm.toLowerCase();
-      const matchesSearch = 
-        (offer.title && offer.title.toLowerCase().includes(searchTermLower)) ||
-        (offer.store && offer.store.toLowerCase().includes(searchTermLower)) ||
-        (offer.description && offer.description.toLowerCase().includes(searchTermLower)) ||
-        (offer.category && offer.category.toLowerCase().includes(searchTermLower));
-      
-      if (!matchesSearch) return false;
-    }
-    
-    return true;
-  });
-
-  // Filter banner offers
-  const bannerOffers = localFilteredOffers.filter(offer => {
-    if (!offer.banner) return false;
-    
-    // Apply search filter if present
-    if (debouncedSearchTerm) {
-      const searchTermLower = debouncedSearchTerm.toLowerCase();
-      const matchesSearch = 
-        (offer.title && offer.title.toLowerCase().includes(searchTermLower)) ||
-        (offer.store && offer.store.toLowerCase().includes(searchTermLower)) ||
-        (offer.description && offer.description.toLowerCase().includes(searchTermLower)) ||
-        (offer.category && offer.category.toLowerCase().includes(searchTermLower));
-      
-      if (!matchesSearch) return false;
-    }
-    
-    return true;
-  });
-
   // Filter Cuelink offers for Flash Deals tab
   const displayedCuelinkOffers = cuelinkOffers.filter(offer => {
     if (debouncedSearchTerm) {
@@ -209,8 +171,6 @@ const HomeScreen = () => {
         displayedOffers={displayedOffers}
         amazonOffers={amazonOffers}
         nearbyOffers={nearbyOffers}
-        sponsoredOffers={sponsoredOffers}
-        bannerOffers={bannerOffers}
         paginatedCuelinkOffers={paginatedCuelinkOffers}
         cuelinkCurrentPage={cuelinkCurrentPage}
         totalCuelinkPages={totalCuelinkPages}

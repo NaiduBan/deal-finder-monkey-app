@@ -27,7 +27,6 @@ export interface Offer {
   featured: boolean;
   publisherExclusive: boolean;
   sponsored: boolean;
-  banner: boolean;
   url: string | null;
   smartlink: string | null;
   offerType: string | null;

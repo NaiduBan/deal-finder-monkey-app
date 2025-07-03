@@ -351,7 +351,6 @@ export type Database = {
       }
       Offers_data: {
         Row: {
-          banner: boolean
           categories: string | null
           code: string | null
           description: string | null
@@ -375,7 +374,6 @@ export type Database = {
           url: string | null
         }
         Insert: {
-          banner?: boolean
           categories?: string | null
           code?: string | null
           description?: string | null
@@ -399,7 +397,6 @@ export type Database = {
           url?: string | null
         }
         Update: {
-          banner?: boolean
           categories?: string | null
           code?: string | null
           description?: string | null
