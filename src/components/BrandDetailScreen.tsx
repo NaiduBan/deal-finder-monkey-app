@@ -214,7 +214,7 @@ const BrandDetailScreen = () => {
     <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/50 ${isMobile ? 'pb-16' : 'pt-20'}`}>
       {/* Header */}
       <div className={`bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-100/80 sticky z-10 ${isMobile ? 'top-0' : 'top-20'}`}>
-        <div className={`${isMobile ? 'px-4 py-4' : 'px-6 py-6 max-w-7xl mx-auto'}`}>
+        <div className={`${isMobile ? 'px-4 py-4' : 'px-6 py-6 w-full'}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Link to="/brands" className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
@@ -246,7 +246,7 @@ const BrandDetailScreen = () => {
       </div>
 
       {/* Content */}
-      <div className={`${isMobile ? 'p-4 space-y-6' : 'p-8 max-w-7xl mx-auto space-y-8'}`}>
+      <div className={`${isMobile ? 'p-4 space-y-6' : 'p-8 w-full space-y-8'}`}>
         {/* Brand Overview */}
         <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3'}`}>
           <Card className="bg-white/80 backdrop-blur-sm border-purple-200/60">
