@@ -133,7 +133,7 @@ const BrandsScreen = () => {
     <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50/50 ${isMobile ? 'pb-16' : 'pt-20'}`}>
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-100/80 sticky top-0 z-10" style={{ top: isMobile ? '0' : '80px' }}>
-        <div className={`${isMobile ? 'px-4 py-4' : 'px-6 py-6 max-w-7xl mx-auto'}`}>
+        <div className={`${isMobile ? 'px-4 py-4' : 'px-6 py-6'}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {isMobile && (
@@ -177,7 +177,7 @@ const BrandsScreen = () => {
       </div>
 
       {/* Content */}
-      <div className={`${isMobile ? 'p-4 space-y-6' : 'p-8 max-w-7xl mx-auto space-y-8'}`}>
+      <div className={`${isMobile ? 'p-4 space-y-6' : 'p-8 space-y-8'}`}>
         {/* Search and Filters */}
         <div className="space-y-4">
           <div className="relative">

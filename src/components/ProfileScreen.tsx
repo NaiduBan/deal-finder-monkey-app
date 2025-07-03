@@ -100,7 +100,7 @@ const ProfileScreen = () => {
     <div className={`bg-gray-50 dark:bg-gray-900 min-h-screen ${isMobile ? 'pb-16' : ''}`}>
       {/* Header */}
       <div className={`${isMobile ? 'bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 dark:from-green-600 dark:via-emerald-600 dark:to-teal-700 text-white relative overflow-hidden' : 'bg-white dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700/50'}`}>
-        <div className={`${isMobile ? 'relative z-10 px-4 py-6' : 'max-w-7xl mx-auto px-6 py-16'}`}>
+        <div className={`${isMobile ? 'relative z-10 px-4 py-6' : 'px-6 py-16'}`}>
           {isMobile ? (
              <>
               <div className="absolute inset-0 bg-black/5">
@@ -166,7 +166,7 @@ const ProfileScreen = () => {
       </div>
 
       {/* Content */}
-      <div className={`${isMobile ? 'p-4 space-y-6 -mt-4' : 'max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-12'}`}>
+      <div className={`${isMobile ? 'p-4 space-y-6 -mt-4' : 'px-4 md:px-6 lg:px-8 py-12'}`}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           
           {/* Left Column */}

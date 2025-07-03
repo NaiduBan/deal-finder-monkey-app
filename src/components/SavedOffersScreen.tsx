@@ -319,7 +319,7 @@ const SavedOffersScreen = () => {
 
       {/* Main content - desktop with max-width container */}
       <div className={`space-y-6 ${isMobile ? 'p-4' : 'w-full'}`}>
-        <div className={`${!isMobile ? 'max-w-[1440px] mx-auto px-6 py-8' : ''}`}>
+        <div className={`${!isMobile ? 'px-6 py-8' : ''}`}>
           {/* Desktop header */}
           {!isMobile && (
             <div className="flex items-center justify-between mb-8">
