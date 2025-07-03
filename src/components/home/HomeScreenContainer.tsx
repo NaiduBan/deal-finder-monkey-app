@@ -17,7 +17,7 @@ const HomeScreenContainer = ({ children }: HomeScreenContainerProps) => {
       
       {/* Main content with better organization */}
       <div className={`space-y-8 relative z-10 ${isMobile ? 'p-4 pt-20' : 'w-full'}`}>
-        <div className={`${!isMobile ? 'max-w-[1440px] mx-auto px-6 py-8' : ''}`}>
+        <div className={`${!isMobile ? 'w-full px-6 py-8' : ''}`}>
           {children}
         </div>
       </div>
