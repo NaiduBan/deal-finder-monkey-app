@@ -63,10 +63,12 @@ const CategoryItem = ({ category }: CategoryItemProps) => {
   return (
     <div className="flex-shrink-0">
       <div 
-        className={`category-card w-20 h-20 flex flex-col items-center justify-center ${getBgColor()} rounded-lg p-2 border border-gray-100 shadow-sm`}
+        className={`group category-card w-20 h-20 flex flex-col items-center justify-center ${getBgColor()} rounded-lg p-2 border border-gray-100 shadow-sm cursor-pointer hover:shadow-lg hover:scale-105 hover:border-primary/30 transition-all duration-200 active:scale-95`}
       >
-        {getIcon()}
-        <span className="text-xs text-center mt-1 font-medium line-clamp-1">{category.name}</span>
+        <div className="transition-transform duration-200 group-hover:scale-110">
+          {getIcon()}
+        </div>
+        <span className="text-xs text-center mt-1 font-medium line-clamp-1 transition-colors duration-200 group-hover:text-primary">{category.name}</span>
       </div>
     </div>
   );

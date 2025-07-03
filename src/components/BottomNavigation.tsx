@@ -20,7 +20,7 @@ const ListItem = ({ to, title, children }: { to: string, title: string, children
       <NavigationMenuLink asChild>
         <Link
           to={to}
-          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-200 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer hover:scale-105 active:scale-95"
         >
           <div className="text-sm font-medium leading-none">{title}</div>
           <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
@@ -58,7 +58,7 @@ const BottomNavigation = () => {
             {/* Menu button */}
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="flex flex-col items-center py-2 px-2 text-white/80 hover:text-monkeyYellow transition-colors"
+              className="flex flex-col items-center py-2 px-2 text-white/80 hover:text-monkeyYellow transition-all duration-200 cursor-pointer hover:scale-110 active:scale-95"
             >
               <div className="p-1 rounded-full">
                 <Menu className="w-5 h-5" />
@@ -74,8 +74,8 @@ const BottomNavigation = () => {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex flex-col items-center py-2 px-2 ${
-                    active ? 'text-monkeyYellow' : 'text-white/80'
+                  className={`flex flex-col items-center py-2 px-2 transition-all duration-200 cursor-pointer hover:scale-110 active:scale-95 ${
+                    active ? 'text-monkeyYellow' : 'text-white/80 hover:text-white'
                   }`}
                 >
                   <div className={`p-1 rounded-full ${active ? 'bg-white/20' : ''}`}>
@@ -91,7 +91,7 @@ const BottomNavigation = () => {
         {/* Floating Chatbot Icon for Mobile */}
         <Link
           to="/chatbot"
-          className="fixed bottom-20 right-4 z-40 bg-gradient-to-r from-monkeyGreen to-green-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110"
+          className="fixed bottom-20 right-4 z-40 bg-gradient-to-r from-monkeyGreen to-green-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-110 active:scale-95 hover:rotate-3"
         >
           <MessageCircle className="w-6 h-6" />
         </Link>
@@ -125,7 +125,7 @@ const BottomNavigation = () => {
       <div className="fixed top-0 left-0 right-0 z-20 bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-3">
           <div className="flex items-center justify-between">
-            <Link to="/home" className="flex items-center space-x-3">
+            <Link to="/home" className="flex items-center space-x-3 cursor-pointer hover:scale-105 transition-transform duration-200">
               <div className="w-8 h-8 flex items-center justify-center">
                 <img src="https://offersmonkey.com/favicon.ico" alt="OffersMonkey Logo" className="w-full h-full rounded-full" />
               </div>
@@ -180,7 +180,7 @@ const BottomNavigation = () => {
       {/* Floating Chatbot Icon for Desktop */}
       <Link
         to="/chatbot"
-        className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-monkeyGreen to-green-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110"
+        className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-monkeyGreen to-green-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-110 active:scale-95 hover:rotate-3"
       >
         <MessageCircle className="w-6 h-6" />
       </Link>

@@ -42,11 +42,11 @@ const BannerCarousel = () => {
         style={{ transform: `translateX(-${currentIndex * 100}%)` }}
       >
         {banners.map((banner) => (
-          <div key={banner.id} className="min-w-full w-full relative">
+          <div key={banner.id} className="min-w-full w-full relative group cursor-pointer">
             <img 
               src={banner.imageUrl} 
               alt={banner.title}
-              className="w-full h-60 object-cover"
+              className="w-full h-60 object-cover transition-transform duration-700 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent">
               <div className="absolute bottom-0 left-0 right-0 p-6">
@@ -77,8 +77,8 @@ const BannerCarousel = () => {
           <button
             key={index}
             onClick={() => setCurrentIndex(index)}
-            className={`w-2 h-2 rounded-full ${
-              currentIndex === index ? 'bg-white' : 'bg-white/50'
+            className={`w-2 h-2 rounded-full transition-all duration-200 cursor-pointer hover:scale-125 ${
+              currentIndex === index ? 'bg-white' : 'bg-white/50 hover:bg-white/75'
             }`}
             aria-label={`Go to slide ${index + 1}`}
           />
