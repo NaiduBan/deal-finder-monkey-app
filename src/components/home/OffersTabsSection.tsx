@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Offer, CuelinkOffer } from '@/types';
 import OffersList from './OffersList';
 import CuelinkOffersList from './CuelinkOffersList';
+import BannerCarousel from '../BannerCarousel';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface OffersTabsSectionProps {
@@ -74,11 +75,13 @@ const OffersTabsSection = ({
               <span className="text-xs font-medium text-yellow-700">Live Updates</span>
             </div>
           </div>
-          <TabsList className="grid w-full max-w-lg grid-cols-4 bg-gradient-to-r from-indigo-50 to-purple-50 p-1.5 rounded-2xl border border-indigo-200/50 shadow-inner">
-            <TabsTrigger value="all" className="text-sm font-semibold rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">All Deals</TabsTrigger>
-            <TabsTrigger value="nearby" className="text-sm font-semibold rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-spring-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">Nearby</TabsTrigger>
-            <TabsTrigger value="flash" className="text-sm font-semibold rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">Flash</TabsTrigger>
-            <TabsTrigger value="amazon" className="text-sm font-semibold rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">Amazon</TabsTrigger>
+          <TabsList className="grid w-full max-w-4xl grid-cols-6 bg-gradient-to-r from-indigo-50 to-purple-50 p-1.5 rounded-2xl border border-indigo-200/50 shadow-inner">
+            <TabsTrigger value="all" className="text-xs font-semibold rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">All Deals</TabsTrigger>
+            <TabsTrigger value="nearby" className="text-xs font-semibold rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-spring-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">Nearby</TabsTrigger>
+            <TabsTrigger value="flash" className="text-xs font-semibold rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">Flash</TabsTrigger>
+            <TabsTrigger value="amazon" className="text-xs font-semibold rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">Amazon</TabsTrigger>
+            <TabsTrigger value="sponsors" className="text-xs font-semibold rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">Sponsors</TabsTrigger>
+            <TabsTrigger value="banners" className="text-xs font-semibold rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">Banners</TabsTrigger>
           </TabsList>
         </div>
         
@@ -147,6 +150,30 @@ const OffersTabsSection = ({
               preferencesLink: "/preferences/stores"
             }}
           />
+        </TabsContent>
+        
+        <TabsContent value="sponsors" className="space-y-4">
+          <OffersList 
+            offers={displayedOffers.filter(offer => offer.sponsored)}
+            isLoading={isDataLoading || isLoading}
+            error={error}
+            onLoadMore={loadMoreOffers}
+            emptyStateConfig={{
+              title: "No sponsored offers found",
+              description: offers.length === 0 
+                ? "No offers available in the database" 
+                : debouncedSearchTerm 
+                  ? `No sponsored offers match "${debouncedSearchTerm}"`
+                  : "Check back later for sponsored deals",
+              showRefresh: true,
+              showPreferences: offers.length > 0,
+              preferencesLink: "/preferences/brands"
+            }}
+          />
+        </TabsContent>
+        
+        <TabsContent value="banners" className="space-y-4">
+          <BannerCarousel />
         </TabsContent>
       </Tabs>
     </div>
