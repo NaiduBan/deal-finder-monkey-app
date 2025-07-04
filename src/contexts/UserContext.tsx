@@ -17,7 +17,7 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 const getInitialUser = (): User => {
-  // Always start with clean mock user - localStorage will be synced later
+  // Always start with clean mock user
   return {
     ...mockUser,
     location: 'India',
@@ -35,25 +35,15 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (session?.user && userProfile) {
       console.log('UserContext: Syncing with authenticated user', session.user.id);
-      setUser(prevUser => {
-        const updatedUser = {
-          ...prevUser,
-          id: session.user.id,
-          email: userProfile.email || session.user.email || '',
-          name: userProfile.name || '',
-          phone: userProfile.phone || '',
-          location: userProfile.location || 'India',
-          points: 0 // Remove points completely
-        };
-        
-        // Only store essential data in localStorage, avoid conflicts
-        try {
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-        } catch (error) {
-          console.error('Error saving user to localStorage:', error);
-        }
-        return updatedUser;
-      });
+      setUser(prevUser => ({
+        ...prevUser,
+        id: session.user.id,
+        email: userProfile.email || session.user.email || '',
+        name: userProfile.name || '',
+        phone: userProfile.phone || '',
+        location: userProfile.location || 'India',
+        points: 0
+      }));
       
       // Fetch saved offers for authenticated user
       const fetchSavedOffers = async () => {
@@ -64,19 +54,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
             .eq('user_id', session.user.id);
           
            if (savedOffers) {
-             setUser(prevUser => {
-               const updatedUser = {
-                 ...prevUser,
-                 savedOffers: savedOffers.map((item: any) => item.offer_id)
-               };
-               
-               try {
-                 localStorage.setItem('user', JSON.stringify(updatedUser));
-               } catch (error) {
-                 console.error('Error saving user to localStorage:', error);
-               }
-               return updatedUser;
-             });
+             setUser(prevUser => ({
+               ...prevUser,
+               savedOffers: savedOffers.map((item: any) => item.offer_id)
+             }));
            }
         } catch (error) {
           console.error('Error fetching saved offers:', error);
@@ -90,14 +71,9 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         ...mockUser,
         location: 'India',
         savedOffers: [],
-        points: 0 // Remove points completely
+        points: 0
       };
       setUser(guestUser);
-      try {
-        localStorage.setItem('user', JSON.stringify(guestUser));
-      } catch (error) {
-        console.error('Error saving guest user to localStorage:', error);
-      }
     }
   }, [session, userProfile]);
 
@@ -119,31 +95,15 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           console.log('Saved offer change detected:', payload);
           
           if (payload.eventType === 'INSERT') {
-            setUser(prevUser => {
-              const updatedUser = {
-                ...prevUser,
-                savedOffers: [...prevUser.savedOffers, payload.new.offer_id]
-              };
-               try {
-                 localStorage.setItem('user', JSON.stringify(updatedUser));
-               } catch (error) {
-                 console.error('Error saving user to localStorage:', error);
-               }
-              return updatedUser;
-            });
+            setUser(prevUser => ({
+              ...prevUser,
+              savedOffers: [...prevUser.savedOffers, payload.new.offer_id]
+            }));
           } else if (payload.eventType === 'DELETE') {
-            setUser(prevUser => {
-              const updatedUser = {
-                ...prevUser,
-                savedOffers: prevUser.savedOffers.filter(id => id !== payload.old.offer_id)
-              };
-               try {
-                 localStorage.setItem('user', JSON.stringify(updatedUser));
-               } catch (error) {
-                 console.error('Error saving user to localStorage:', error);
-               }
-              return updatedUser;
-            });
+            setUser(prevUser => ({
+              ...prevUser,
+              savedOffers: prevUser.savedOffers.filter(id => id !== payload.old.offer_id)
+            }));
           }
         }
       )
@@ -159,19 +119,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     
     if (!user.savedOffers.includes(offerId)) {
       // Update local state first for responsiveness
-      setUser(prevUser => {
-        const updatedUser = {
-          ...prevUser,
-          savedOffers: [...prevUser.savedOffers, offerId]
-        };
-        
-        try {
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-        } catch (error) {
-          console.error('Error saving user to localStorage:', error);
-        }
-        return updatedUser;
-      });
+      setUser(prevUser => ({
+        ...prevUser,
+        savedOffers: [...prevUser.savedOffers, offerId]
+      }));
       
       // If user is authenticated, save to Supabase
       if (session?.user) {
@@ -187,19 +138,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
           if (error) {
             console.error('Error saving offer to Supabase:', error);
             // Revert local state if Supabase update fails
-            setUser(prevUser => {
-              const updatedUser = {
-                ...prevUser,
-                savedOffers: prevUser.savedOffers.filter(id => id !== offerId)
-              };
-              
-              try {
-                localStorage.setItem('user', JSON.stringify(updatedUser));
-              } catch (error) {
-                console.error('Error saving user to localStorage:', error);
-              }
-              return updatedUser;
-            });
+            setUser(prevUser => ({
+              ...prevUser,
+              savedOffers: prevUser.savedOffers.filter(id => id !== offerId)
+            }));
             
             toast({
               title: "Error saving offer",
@@ -224,19 +166,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     console.log('Unsaving offer:', offerId);
     
     // Update local state first for responsiveness
-    setUser(prevUser => {
-      const updatedUser = {
-        ...prevUser,
-        savedOffers: prevUser.savedOffers.filter(id => id !== offerId)
-      };
-      
-      try {
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-      } catch (error) {
-        console.error('Error saving user to localStorage:', error);
-      }
-      return updatedUser;
-    });
+    setUser(prevUser => ({
+      ...prevUser,
+      savedOffers: prevUser.savedOffers.filter(id => id !== offerId)
+    }));
     
     // If user is authenticated, remove from Supabase
     if (session?.user) {
@@ -251,19 +184,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         if (error) {
           console.error('Error removing offer from Supabase:', error);
           // Revert local state if Supabase update fails
-          setUser(prevUser => {
-            const updatedUser = {
-              ...prevUser,
-              savedOffers: [...prevUser.savedOffers, offerId]
-            };
-            
-            try {
-              localStorage.setItem('user', JSON.stringify(updatedUser));
-            } catch (error) {
-              console.error('Error saving user to localStorage:', error);
-            }
-            return updatedUser;
-          });
+          setUser(prevUser => ({
+            ...prevUser,
+            savedOffers: [...prevUser.savedOffers, offerId]
+          }));
           
           toast({
             title: "Error removing offer",
@@ -289,19 +213,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
   const updateLocation = async (location: string) => {
     // Update local state first for responsiveness
-    setUser(prevUser => {
-      const updatedUser = {
-        ...prevUser,
-        location
-      };
-      
-      try {
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-      } catch (error) {
-        console.error('Error saving user to localStorage:', error);
-      }
-      return updatedUser;
-    });
+    setUser(prevUser => ({
+      ...prevUser,
+      location
+    }));
     
     // If user is authenticated, update location in Supabase
     if (session?.user) {
