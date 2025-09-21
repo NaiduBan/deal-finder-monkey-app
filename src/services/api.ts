@@ -1,11 +1,13 @@
 // Mock API service to replace old api.ts
-import { mockApiService } from './mockApiService';
+import { apiService } from './index';
 
 export const api = {
-  fetchBanners: mockApiService.fetchBanners,
-  fetchOffers: mockApiService.fetchOffers,
-  fetchCategories: mockApiService.fetchCategories,
-  searchOffers: mockApiService.searchOffers
+  fetchBanners: apiService.fetchBanners,
+  fetchOffers: apiService.fetchOffers,
+  fetchCategories: apiService.fetchCategories,
+  searchOffers: apiService.searchOffers
 };
+
+export const getBanners = apiService.fetchBanners;
 
 export default api;

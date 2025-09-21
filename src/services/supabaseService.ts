@@ -1,5 +1,7 @@
 // Mock replacement for supabaseService
-import { mockDatabase } from '@/data/mockDatabase';
+import { MockDatabase } from '@/data/mockDatabase';
+
+const mockDatabase = new MockDatabase();
 
 export const supabaseService = {
   getBanners: async () => {

@@ -1,11 +1,11 @@
 // Complete mock replacement for Supabase client
-import { mockApiService } from '@/services/mockApiService';
+import { apiService } from '@/services';
 
 // Mock Supabase client that provides the same interface
 export const supabase = {
   auth: {
     signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
-      const result = await mockApiService.auth.signIn(email, password);
+      const result = await apiService.auth.signIn(email, password);
       if (result.success) {
         localStorage.setItem('mock-user', JSON.stringify(result.user));
         return {
@@ -21,7 +21,7 @@ export const supabase = {
     
     signUp: async ({ email, password, options }: { email: string; password: string; options?: any }) => {
       const name = options?.data?.name || email.split('@')[0];
-      const result = await mockApiService.auth.signUp(email, password, name);
+      const result = await apiService.auth.signUp(email, password, name);
       if (result.success) {
         localStorage.setItem('mock-user', JSON.stringify(result.user));
         return {
@@ -37,21 +37,26 @@ export const supabase = {
     
     signOut: async () => {
       localStorage.removeItem('mock-user');
-      await mockApiService.auth.signOut();
+      await apiService.auth.signOut();
       return { error: null };
     },
     
     getSession: async () => {
-      const result = await mockApiService.auth.getSession();
+      const result = await apiService.auth.getSession();
       return {
         data: { session: result.session, user: result.user },
         error: null
       };
     },
 
-    resetPasswordForEmail: async (email: string) => {
+    resetPasswordForEmail: async (email: string, options?: any) => {
       // Mock password reset
       return { data: {}, error: null };
+    },
+
+    onAuthStateChange: (callback: Function) => {
+      // Mock auth state change listener
+      return { data: { subscription: { unsubscribe: () => {} } } };
     }
   },
   
@@ -79,7 +84,7 @@ export const supabase = {
         ...createQueryBuilder(),
         eq: (column: string, value: any) => createQueryBuilder()
       }),
-      count: () => ({ data: [], error: null, count: 0 })
+      single: () => createQueryBuilder()
     });
 
     return createQueryBuilder();
@@ -95,9 +100,9 @@ export const supabase = {
       // Mock function calls
       if (functionName === 'chat-with-ai') {
         const message = options?.body?.message || '';
-        const result = await mockApiService.ai.chat(message);
+        const result = await apiService.ai.chat(message);
         return {
-          data: { response: result.response, offers: result.offers },
+          data: { response: result.response, offers: result.offers, showOnlyCards: result.showOnlyCards, audioContent: result.audioContent },
           error: null
         };
       }
@@ -105,7 +110,7 @@ export const supabase = {
       if (functionName === 'text-to-speech') {
         // Mock TTS - return a mock audio URL
         return {
-          data: { audioUrl: 'data:audio/wav;base64,mock-audio-data' },
+          data: { audioUrl: 'data:audio/wav;base64,mock-audio-data', audioContent: 'mock-audio-content' },
           error: null
         };
       }
@@ -124,11 +129,13 @@ export const supabase = {
 
   channel: (channelName: string) => ({
     on: (event: string, callback: Function) => ({
-      subscribe: () => ({}),
+      subscribe: (callback?: Function) => ({}),
       unsubscribe: () => ({})
     }),
-    subscribe: () => ({}),
+    subscribe: (callback?: Function) => ({}),
     unsubscribe: () => ({}),
     removeChannel: () => ({})
-  })
+  }),
+
+  removeChannel: () => ({})
 };

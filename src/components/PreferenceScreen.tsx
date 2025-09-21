@@ -264,7 +264,7 @@ const PreferenceScreen = () => {
 
     return () => {
       console.log('Cleaning up subscription');
-      supabase.removeChannel(channel);
+      channel.subscribe();
     };
   }, [session, type]);
 
