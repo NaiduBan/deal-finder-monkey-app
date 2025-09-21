@@ -56,47 +56,33 @@ export const supabase = {
   },
   
   from: (table: string) => {
-    const queryBuilder = {
-      select: (columns?: string) => ({
-        ...queryBuilder,
-        data: [],
-        error: null,
-        eq: (column: string, value: any) => ({ ...queryBuilder, data: [], error: null }),
-        order: (column: string, options?: any) => ({ ...queryBuilder, data: [], error: null }),
-        not: (column: string, operator: string, value: any) => ({ ...queryBuilder, data: [], error: null }),
-        or: (query: string) => ({ ...queryBuilder, data: [], error: null }),
-        ilike: (column: string, pattern: string) => ({ ...queryBuilder, data: [], error: null }),
-        count: () => ({ data: [], error: null, count: 0 })
-      }),
-      
-      insert: (data: any) => ({
-        ...queryBuilder,
-        data: [data],
-        error: null
-      }),
-      
+    const createQueryBuilder = () => ({
+      data: [],
+      error: null,
+      count: 0,
+      select: (columns?: string) => createQueryBuilder(),
+      eq: (column: string, value: any) => createQueryBuilder(),
+      neq: (column: string, value: any) => createQueryBuilder(),
+      not: (column: string, operator: string, value: any) => createQueryBuilder(),
+      order: (column: string, options?: any) => createQueryBuilder(),
+      or: (query: string) => createQueryBuilder(),
+      ilike: (column: string, pattern: string) => createQueryBuilder(),
+      in: (column: string, values: any[]) => createQueryBuilder(),
+      limit: (count: number) => createQueryBuilder(),
+      insert: (data: any) => createQueryBuilder(),
       update: (data: any) => ({
-        ...queryBuilder,
-        eq: (column: string, value: any) => ({ data: [data], error: null }),
-        data: [data],
-        error: null
+        ...createQueryBuilder(),
+        eq: (column: string, value: any) => createQueryBuilder()
       }),
-      
-      upsert: (data: any) => ({
-        ...queryBuilder,
-        data: [data],
-        error: null
-      }),
-      
+      upsert: (data: any) => createQueryBuilder(),
       delete: () => ({
-        ...queryBuilder,
-        eq: (column: string, value: any) => ({ data: [], error: null }),
-        data: [],
-        error: null
-      })
-    };
+        ...createQueryBuilder(),
+        eq: (column: string, value: any) => createQueryBuilder()
+      }),
+      count: () => ({ data: [], error: null, count: 0 })
+    });
 
-    return queryBuilder;
+    return createQueryBuilder();
   },
   
   rpc: (functionName: string, params?: any) => ({
@@ -137,7 +123,10 @@ export const supabase = {
   },
 
   channel: (channelName: string) => ({
-    on: (event: string, callback: Function) => ({}),
+    on: (event: string, callback: Function) => ({
+      subscribe: () => ({}),
+      unsubscribe: () => ({})
+    }),
     subscribe: () => ({}),
     unsubscribe: () => ({}),
     removeChannel: () => ({})
