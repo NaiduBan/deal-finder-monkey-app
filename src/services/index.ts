@@ -1,4 +1,4 @@
 
 // Export all services from this index file
-export * from './supabaseService';
-// Note: offersDataService has been removed
+export * from './mockApiService';
+// Note: supabaseService has been replaced with mockApiService

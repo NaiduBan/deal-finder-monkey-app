@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useAdmin } from '@/contexts/AdminContext';
+import { useMockAdmin } from '@/contexts/MockAdminContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +11,7 @@ const AdminLogin = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAdmin();
+  const { login } = useMockAdmin();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

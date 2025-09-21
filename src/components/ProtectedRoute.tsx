@@ -1,14 +1,14 @@
 
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useMockAuth } from '@/contexts/MockAuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { session, loading } = useAuth();
+  const { session, loading } = useMockAuth();
 
   if (loading) {
     return (

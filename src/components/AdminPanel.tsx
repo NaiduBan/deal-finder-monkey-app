@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAdmin } from '@/contexts/AdminContext';
+import { useMockAdmin } from '@/contexts/MockAdminContext';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminDashboard from './admin/AdminDashboard';
@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 
 const AdminPanel = () => {
-  const { adminUser, logout } = useAdmin();
+  const { adminUser, logout } = useMockAdmin();
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const handleLogout = () => {

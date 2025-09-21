@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { applyPreferencesToOffers } from '@/services/supabaseService';
+import { applyPreferencesToOffers, fetchUserPreferences } from '@/services/mockApiService';
 import { Offer } from '@/types';
 
 export const useUserPreferences = (offers: Offer[]) => {
@@ -18,21 +17,17 @@ export const useUserPreferences = (offers: Offer[]) => {
     const fetchAndApplyUserPreferences = async () => {
       try {
         console.log("Fetching user preferences...");
-        const { data: { session } } = await supabase.auth.getSession();
+        const mockSession = localStorage.getItem('mock_session');
         
-        if (session) {
-          const { data, error } = await supabase
-            .from('user_preferences')
-            .select('*')
-            .eq('user_id', session.user.id);
+        if (mockSession) {
+          const session = JSON.parse(mockSession);
+          if (session.user) {
+            const data = await fetchUserPreferences(session.user.id);
             
-          if (error) {
-            console.error('Error fetching user preferences:', error);
-          } else if (data) {
             const preferences: {[key: string]: string[]} = {
-              brands: data.filter(p => p.preference_type === 'brands').map(p => p.preference_id),
-              stores: data.filter(p => p.preference_type === 'stores').map(p => p.preference_id),
-              banks: data.filter(p => p.preference_type === 'banks').map(p => p.preference_id)
+              brands: data.filter(p => p.preferenceType === 'brands').map(p => p.preferenceId),
+              stores: data.filter(p => p.preferenceType === 'stores').map(p => p.preferenceId),
+              banks: data.filter(p => p.preferenceType === 'banks').map(p => p.preferenceId)
             };
             
             setUserPreferences(preferences);
@@ -71,77 +66,62 @@ export const useUserPreferences = (offers: Offer[]) => {
     fetchAndApplyUserPreferences();
   }, [offers]);
 
-  // Listen for real-time preference changes and update immediately
+  // Mock real-time preference changes listener
   useEffect(() => {
-    const setupRealtimeListener = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    const setupMockListener = () => {
+      const mockSession = localStorage.getItem('mock_session');
       
-      if (!session?.user) return;
+      if (!mockSession) return;
 
-      console.log('Setting up real-time preference listener for home screen');
+      console.log('Setting up mock preference listener for home screen');
 
-      const channel = supabase
-        .channel('home-preference-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'user_preferences',
-            filter: `user_id=eq.${session.user.id}`
-          },
-          async (payload) => {
-            console.log('Home screen detected preference change:', payload);
+      // Mock real-time updates by polling preferences every 30 seconds
+      const interval = setInterval(async () => {
+        try {
+          const session = JSON.parse(mockSession);
+          if (session.user) {
+            const data = await fetchUserPreferences(session.user.id);
             
-            // Refetch all preferences immediately
-            try {
-              const { data, error } = await supabase
-                .from('user_preferences')
-                .select('*')
-                .eq('user_id', session.user.id);
-                
-              if (!error && data) {
-                const newPreferences: {[key: string]: string[]} = {
-                  brands: data.filter(p => p.preference_type === 'brands').map(p => p.preference_id),
-                  stores: data.filter(p => p.preference_type === 'stores').map(p => p.preference_id),
-                  banks: data.filter(p => p.preference_type === 'banks').map(p => p.preference_id)
-                };
-                
-                setUserPreferences(newPreferences);
-                console.log('Updated preferences in home screen:', newPreferences);
-                
-                // Apply new preferences immediately
-                if (offers && offers.length > 0) {
-                  const hasPreferences = newPreferences.brands.length > 0 || 
-                                       newPreferences.stores.length > 0 || 
-                                       newPreferences.banks.length > 0;
-                  
-                  if (hasPreferences) {
-                    console.log('Applying new preferences to offers');
-                    const filtered = applyPreferencesToOffers(offers, newPreferences);
-                    const finalOffers = filtered.length > 0 ? filtered : offers;
-                    setLocalFilteredOffers(finalOffers);
-                    console.log('Applied new preferences - showing', finalOffers.length, 'offers');
-                  } else {
-                    console.log('No preferences, showing all offers');
-                    setLocalFilteredOffers(offers);
-                  }
-                }
+            const newPreferences: {[key: string]: string[]} = {
+              brands: data.filter(p => p.preferenceType === 'brands').map(p => p.preferenceId),
+              stores: data.filter(p => p.preferenceType === 'stores').map(p => p.preferenceId),
+              banks: data.filter(p => p.preferenceType === 'banks').map(p => p.preferenceId)
+            };
+            
+            setUserPreferences(newPreferences);
+            console.log('Updated preferences in home screen:', newPreferences);
+            
+            // Apply new preferences immediately
+            if (offers && offers.length > 0) {
+              const hasPreferences = newPreferences.brands.length > 0 || 
+                                   newPreferences.stores.length > 0 || 
+                                   newPreferences.banks.length > 0;
+              
+              if (hasPreferences) {
+                console.log('Applying new preferences to offers');
+                const filtered = applyPreferencesToOffers(offers, newPreferences);
+                const finalOffers = filtered.length > 0 ? filtered : offers;
+                setLocalFilteredOffers(finalOffers);
+                console.log('Applied new preferences - showing', finalOffers.length, 'offers');
+              } else {
+                console.log('No preferences, showing all offers');
+                setLocalFilteredOffers(offers);
               }
-            } catch (error) {
-              console.error('Error refetching preferences:', error);
             }
           }
-        )
-        .subscribe();
+        } catch (error) {
+          console.error('Error refetching preferences:', error);
+        }
+      }, 30000);
 
       return () => {
         console.log('Cleaning up home screen preference listener');
-        supabase.removeChannel(channel);
+        clearInterval(interval);
       };
     };
 
-    setupRealtimeListener();
+    const cleanup = setupMockListener();
+    return cleanup;
   }, [offers]);
 
   // Update local filtered offers when offers change

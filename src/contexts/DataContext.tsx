@@ -1,9 +1,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Offer, Category } from '@/types';
-import { fetchCategories, fetchOffers, applyPreferencesToOffers } from '@/services/supabaseService';
+import { fetchCategories, fetchOffers, applyPreferencesToOffers, fetchUserPreferences } from '@/services/mockApiService';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from "@/integrations/supabase/client";
 
 interface DataContextType {
   offers: Offer[];
@@ -31,13 +30,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     banks: []
   });
 
-  // Get current user session
+  // Get current user session from mock auth
   useEffect(() => {
-    const getCurrentUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setCurrentUserId(session.user.id);
-        console.log('Current user ID set:', session.user.id);
+    const getCurrentUser = () => {
+      const mockSession = localStorage.getItem('mock_session');
+      if (mockSession) {
+        const session = JSON.parse(mockSession);
+        if (session.user) {
+          setCurrentUserId(session.user.id);
+          console.log('Current user ID set:', session.user.id);
+        }
       } else {
         setCurrentUserId(null);
         console.log('No current user found');
@@ -46,23 +48,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     getCurrentUser();
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session?.user?.id);
-      if (session?.user) {
-        setCurrentUserId(session.user.id);
-      } else {
-        setCurrentUserId(null);
-        // Reset preferences when user logs out
-        setUserPreferences({
-          brands: [],
-          stores: [],
-          banks: []
-        });
+    // Listen for storage changes to detect auth changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'mock_session') {
+        getCurrentUser();
+        if (!e.newValue) {
+          // User logged out
+          setUserPreferences({
+            brands: [],
+            stores: [],
+            banks: []
+          });
+        }
       }
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   // Enhanced function to fetch user preferences
@@ -75,15 +77,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('Fetching preferences for user:', userId);
       
-      const { data: preferencesData, error } = await supabase
-        .from('user_preferences')
-        .select('*')
-        .eq('user_id', userId);
-        
-      if (error) {
-        console.error('Error fetching user preferences:', error);
-        return;
-      }
+      const preferencesData = await fetchUserPreferences(userId);
       
       console.log('Received preferences data:', preferencesData?.length || 0, 'items');
       
@@ -94,8 +88,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
       
       preferencesData?.forEach((pref: any) => {
-        if (preferences[pref.preference_type as keyof typeof preferences]) {
-          preferences[pref.preference_type as keyof typeof preferences].push(pref.preference_id);
+        if (preferences[pref.preferenceType as keyof typeof preferences]) {
+          preferences[pref.preferenceType as keyof typeof preferences].push(pref.preferenceId);
         }
       });
       
@@ -165,36 +159,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [currentUserId]);
 
-  // Listen for preference changes in the user_preferences table
+  // Mock real-time preference changes listener
   useEffect(() => {
     if (!currentUserId) return;
 
-    console.log('Setting up realtime listener for preference changes');
+    console.log('Setting up mock preference changes listener');
     
-    const channel = supabase
-      .channel('public:user_preferences')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'user_preferences',
-          filter: `user_id=eq.${currentUserId}`
-        },
-        (payload) => {
-          console.log('Preference change detected:', payload);
-          getUserPreferences(currentUserId).then((preferences) => {
-            if (preferences && offers.length > 0) {
-              applyPreferencesToCurrentOffers(offers, preferences);
-            }
-          });
+    // Mock real-time updates by polling preferences every 30 seconds
+    const interval = setInterval(() => {
+      getUserPreferences(currentUserId).then((preferences) => {
+        if (preferences && offers.length > 0) {
+          applyPreferencesToCurrentOffers(offers, preferences);
         }
-      )
-      .subscribe();
+      });
+    }, 30000);
 
     return () => {
       console.log('Removing preference changes listener');
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, [currentUserId, offers]);
 

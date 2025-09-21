@@ -8,12 +8,12 @@ import { MapPin, Check, Mail, Lock, User, Phone, Eye, EyeOff } from "lucide-reac
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/contexts/AuthContext';
+import { useMockAuth } from '@/contexts/MockAuthContext';
 
 const LoginScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { session, loading: authLoading } = useAuth();
+  const { session, loading: authLoading, signIn, signUp } = useMockAuth();
   
   // Login form state
   const [email, setEmail] = useState('');

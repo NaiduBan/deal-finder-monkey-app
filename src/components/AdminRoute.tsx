@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useAdmin } from '@/contexts/AdminContext';
+import { useMockAdmin } from '@/contexts/MockAdminContext';
 import AdminLogin from './AdminLogin';
 
 interface AdminRouteProps {
@@ -8,7 +8,7 @@ interface AdminRouteProps {
 }
 
 const AdminRoute = ({ children }: AdminRouteProps) => {
-  const { isAuthenticated, isLoading } = useAdmin();
+  const { isAuthenticated, isLoading } = useMockAdmin();
 
   if (isLoading) {
     return (

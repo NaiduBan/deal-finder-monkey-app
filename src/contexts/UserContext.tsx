@@ -3,8 +3,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { User } from '@/types';
 import { mockUser } from '@/mockData';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from '@/contexts/AuthContext';
+import { fetchUserSavedOffers, saveOfferForUser, unsaveOfferForUser } from '@/services/mockApiService';
 
 interface UserContextType {
   user: User;
@@ -28,91 +27,83 @@ const getInitialUser = (): User => {
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User>(getInitialUser);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { toast } = useToast();
-  const { session, userProfile } = useAuth();
 
-  // Sync with auth context
+  // Get current user from mock auth
   useEffect(() => {
-    if (session?.user && userProfile) {
-      console.log('UserContext: Syncing with authenticated user', session.user.id);
-      setUser(prevUser => ({
-        ...prevUser,
-        id: session.user.id,
-        email: userProfile.email || session.user.email || '',
-        name: userProfile.name || '',
-        phone: userProfile.phone || '',
-        location: userProfile.location || 'India',
-        points: 0
-      }));
-      
-      // Fetch saved offers for authenticated user
-      const fetchSavedOffers = async () => {
-        try {
-          const { data: savedOffers } = await supabase
-            .from('saved_offers')
-            .select('offer_id')
-            .eq('user_id', session.user.id);
+    const getCurrentUser = () => {
+      const mockSession = localStorage.getItem('mock_session');
+      if (mockSession) {
+        const session = JSON.parse(mockSession);
+        if (session.user) {
+          console.log('UserContext: Syncing with authenticated user', session.user.id);
+          setCurrentUserId(session.user.id);
+          setUser(prevUser => ({
+            ...prevUser,
+            id: session.user.id,
+            email: session.user.email || '',
+            name: session.user.user_metadata?.name || '',
+            location: 'India',
+            points: 0
+          }));
           
-           if (savedOffers) {
-             setUser(prevUser => ({
-               ...prevUser,
-               savedOffers: savedOffers.map((item: any) => item.offer_id)
-             }));
-           }
-        } catch (error) {
-          console.error('Error fetching saved offers:', error);
-        }
-      };
-      
-      fetchSavedOffers();
-    } else if (!session) {
-      console.log('UserContext: No session, using guest user');
-      const guestUser = {
-        ...mockUser,
-        location: 'India',
-        savedOffers: [],
-        points: 0
-      };
-      setUser(guestUser);
-    }
-  }, [session, userProfile]);
-
-  // Real-time subscription for saved offers
-  useEffect(() => {
-    if (!session?.user) return;
-
-    const channel = supabase
-      .channel('saved-offers-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'saved_offers',
-          filter: `user_id=eq.${session.user.id}`
-        },
-        (payload) => {
-          console.log('Saved offer change detected:', payload);
-          
-          if (payload.eventType === 'INSERT') {
+          // Fetch saved offers for authenticated user
+          fetchUserSavedOffers(session.user.id).then(savedOffers => {
             setUser(prevUser => ({
               ...prevUser,
-              savedOffers: [...prevUser.savedOffers, payload.new.offer_id]
+              savedOffers: savedOffers
             }));
-          } else if (payload.eventType === 'DELETE') {
-            setUser(prevUser => ({
-              ...prevUser,
-              savedOffers: prevUser.savedOffers.filter(id => id !== payload.old.offer_id)
-            }));
-          }
+          }).catch(error => {
+            console.error('Error fetching saved offers:', error);
+          });
         }
-      )
-      .subscribe();
+      } else {
+        console.log('UserContext: No session, using guest user');
+        setCurrentUserId(null);
+        const guestUser = {
+          ...mockUser,
+          location: 'India',
+          savedOffers: [],
+          points: 0
+        };
+        setUser(guestUser);
+      }
+    };
+
+    getCurrentUser();
+
+    // Listen for storage changes to detect auth changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'mock_session') {
+        getCurrentUser();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Mock real-time subscription for saved offers
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    // Mock real-time updates by periodically checking saved offers
+    const interval = setInterval(() => {
+      fetchUserSavedOffers(currentUserId).then(savedOffers => {
+        setUser(prevUser => ({
+          ...prevUser,
+          savedOffers: savedOffers
+        }));
+      }).catch(error => {
+        console.error('Error fetching saved offers:', error);
+      });
+    }, 30000); // Check every 30 seconds
 
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
-  }, [session]);
+  }, [currentUserId]);
 
   const saveOffer = async (offerId: string) => {
     console.log('Saving offer:', offerId);
@@ -124,20 +115,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         savedOffers: [...prevUser.savedOffers, offerId]
       }));
       
-      // If user is authenticated, save to Supabase
-      if (session?.user) {
+      // If user is authenticated, save using mock API
+      if (currentUserId) {
         try {
-          console.log('Saving to Supabase:', offerId, 'User ID:', session.user.id);
-          const { error } = await supabase
-            .from('saved_offers')
-            .insert({
-              user_id: session.user.id,
-              offer_id: offerId
-            });
+          console.log('Saving to mock API:', offerId, 'User ID:', currentUserId);
+          const success = await saveOfferForUser(currentUserId, offerId);
             
-          if (error) {
-            console.error('Error saving offer to Supabase:', error);
-            // Revert local state if Supabase update fails
+          if (!success) {
+            // Revert local state if mock API update fails
             setUser(prevUser => ({
               ...prevUser,
               savedOffers: prevUser.savedOffers.filter(id => id !== offerId)
@@ -171,19 +156,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       savedOffers: prevUser.savedOffers.filter(id => id !== offerId)
     }));
     
-    // If user is authenticated, remove from Supabase
-    if (session?.user) {
+    // If user is authenticated, remove using mock API
+    if (currentUserId) {
       try {
-        console.log('Removing from Supabase:', offerId, 'User ID:', session.user.id);
-        const { error } = await supabase
-          .from('saved_offers')
-          .delete()
-          .eq('user_id', session.user.id)
-          .eq('offer_id', offerId);
+        console.log('Removing from mock API:', offerId, 'User ID:', currentUserId);
+        const success = await unsaveOfferForUser(currentUserId, offerId);
           
-        if (error) {
-          console.error('Error removing offer from Supabase:', error);
-          // Revert local state if Supabase update fails
+        if (!success) {
+          // Revert local state if mock API update fails
           setUser(prevUser => ({
             ...prevUser,
             savedOffers: [...prevUser.savedOffers, offerId]
@@ -218,17 +198,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       location
     }));
     
-    // If user is authenticated, update location in Supabase
-    if (session?.user) {
+    // If user is authenticated, update location in mock storage
+    if (currentUserId) {
       try {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ location })
-          .eq('id', session.user.id);
-          
-        if (error) {
-          console.error('Error updating location in Supabase:', error);
-        }
+        // In a real app, this would update the user profile via mock API
+        console.log('Location updated in mock storage for user:', currentUserId);
       } catch (error) {
         console.error('Exception while updating location:', error);
       }

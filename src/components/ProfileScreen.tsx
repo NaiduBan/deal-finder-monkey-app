@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useUser } from '@/contexts/UserContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useMockAuth } from '@/contexts/MockAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import EditProfile from './EditProfile';
@@ -14,7 +14,7 @@ import DarkModeToggle from './DarkModeToggle';
 
 const ProfileScreen = () => {
   const { user } = useUser();
-  const { session, signOut, userProfile } = useAuth();
+  const { session, signOut, userProfile } = useMockAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [isLoading, setIsLoading] = useState(false);
