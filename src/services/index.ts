@@ -1,4 +1,5 @@
-
-// Export all services from this index file
+// Central service exports - using only mock services
 export * from './mockApiService';
-// Note: supabaseService has been replaced with mockApiService
+
+// Default export for the main API service
+export { mockApiService as apiService } from './mockApiService';
