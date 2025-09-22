@@ -42,6 +42,7 @@ const LoginScreen = () => {
 
   // Check if user is already logged in
   useEffect(() => {
+    console.log("LoginScreen useEffect - session:", session, "authLoading:", authLoading);
     if (session && !authLoading) {
       console.log("User already authenticated, redirecting to home");
       navigate('/home', { replace: true });
@@ -133,18 +134,9 @@ const LoginScreen = () => {
     setResetLoading(true);
     
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      
-      if (error) {
-        toast({
-          title: "Reset failed",
-          description: error.message,
-          variant: "destructive",
-        });
-        return;
-      }
+      // For mock auth, we'll just show a success message
+      // In real implementation, this would call supabase.auth.resetPasswordForEmail
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
       
       toast({
         title: "Reset email sent",
@@ -190,34 +182,22 @@ const LoginScreen = () => {
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      console.log("Attempting login with MockAuth...");
+      const result = await signIn(email, password);
+      console.log("Login result:", result);
       
-      if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          toast({
-            title: "Login failed",
-            description: "Invalid email or password. Please check your credentials and try again.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Login failed",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
+      if (!result.success) {
+        toast({
+          title: "Login failed",
+          description: result.error || "Invalid email or password. Please check your credentials and try again.",
+          variant: "destructive",
+        });
         return;
       }
       
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
-      
-      navigate('/home', { replace: true });
+      console.log("Login successful, waiting for session update...");
+      // Navigation will be handled automatically by the useEffect hook
+      // when the session state updates
       
     } catch (error: any) {
       console.error('Authentication error:', error);
@@ -283,20 +263,14 @@ const LoginScreen = () => {
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: signUpData.email,
-        password: signUpData.password,
-        options: {
-          data: {
-            name: signUpData.name,
-            phone: signUpData.phone,
-            location: signUpData.location,
-          }
-        }
+      const result = await signUp(signUpData.email, signUpData.password, {
+        name: signUpData.name,
+        phone: signUpData.phone,
+        location: signUpData.location,
       });
       
-      if (error) {
-        if (error.message.includes('already') || error.message.includes('exists')) {
+      if (!result.success) {
+        if (result.error?.includes('already') || result.error?.includes('exists')) {
           toast({
             title: "Account exists",
             description: "This email is already registered. Please login instead.",
@@ -307,32 +281,15 @@ const LoginScreen = () => {
         } else {
           toast({
             title: "Sign up failed",
-            description: error.message,
+            description: result.error || "Failed to create account",
             variant: "destructive",
           });
         }
         return;
       }
       
-      toast({
-        title: "Account created successfully",
-        description: "Please check your email to confirm your account, or you can login directly.",
-      });
-      
-      // Try to sign in automatically
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: signUpData.email,
-        password: signUpData.password
-      });
-      
-      if (!signInError) {
-        navigate('/home', { replace: true });
-      } else {
-        // Switch to login tab if auto-login fails
-        setActiveTab('login');
-        setEmail(signUpData.email);
-        setPassword(signUpData.password);
-      }
+      // Navigation will be handled automatically by the useEffect hook
+      // when the session state updates
       
     } catch (error: any) {
       console.error('Sign up error:', error);

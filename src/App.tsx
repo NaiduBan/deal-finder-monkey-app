@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import { UserProvider } from "./contexts/UserContext";
 import { DataProvider } from "./contexts/DataContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { MockAuthProvider } from "./contexts/MockAuthContext";
 import { AdminProvider } from "./contexts/AdminContext";
 import { ThemeProvider } from "./components/ThemeProvider";
 
@@ -60,13 +61,15 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 const ProvidersWrapper = ({ children }: { children: React.ReactNode }) => (
   <ThemeProvider defaultTheme="light">
     <AdminProvider>
-      <AuthProvider>
-        <UserProvider>
-          <DataProvider>
-            {children}
-          </DataProvider>
-        </UserProvider>
-      </AuthProvider>
+      <MockAuthProvider>
+        <AuthProvider>
+          <UserProvider>
+            <DataProvider>
+              {children}
+            </DataProvider>
+          </UserProvider>
+        </AuthProvider>
+      </MockAuthProvider>
     </AdminProvider>
   </ThemeProvider>
 );
