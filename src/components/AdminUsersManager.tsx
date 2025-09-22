@@ -172,8 +172,9 @@ const AdminUsersManager = () => {
         return;
       }
 
-      // Mock CSV import
-      const result = await mockApiService.importUsersCSV(csvText);
+      const { data, error } = await supabase
+        .from('profiles')
+        .upsert(profileData, { onConflict: 'id' });
 
       if (error) {
         console.error('Error uploading profiles:', error);

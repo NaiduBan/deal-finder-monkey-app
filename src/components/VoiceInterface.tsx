@@ -148,9 +148,9 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
         throw error;
       }
 
-      if (data?.audioUrl) {
-        await playerRef.current.playAudio(data.audioUrl);
-        onAudioResponse(data.audioUrl);
+      if (data?.audioContent) {
+        await playerRef.current.playAudio(data.audioContent);
+        onAudioResponse(data.audioContent);
       }
     } catch (error) {
       console.error('Error playing audio:', error);
