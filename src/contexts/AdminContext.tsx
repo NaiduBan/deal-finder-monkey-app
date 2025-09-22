@@ -64,12 +64,12 @@ export const AdminProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.rpc('authenticate_admin', {
+      const { data, error } = await supabase.rpc('authenticate_admin_secure', {
         p_email: email,
         p_password: password
       });
 
-      if (error || !data || data.length === 0) {
+      if (error || !data || data.length === 0 || !data[0].success) {
         return { success: false, error: 'Invalid credentials' };
       }
 
@@ -82,6 +82,7 @@ export const AdminProvider = ({ children }: { children: React.ReactNode }) => {
       };
 
       setAdminUser(user);
+      // Store token securely - consider using httpOnly cookies in production
       localStorage.setItem('admin_token', adminData.session_token);
       
       return { success: true };
